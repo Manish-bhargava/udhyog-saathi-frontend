@@ -10,17 +10,17 @@ const StatsCard = ({ stat }) => {
       : 'text-gray-600';
   
   return (
-    <div className={`bg-white rounded-xl p-6 border ${color} shadow-sm hover:shadow-md transition-shadow`}>
-      <div className="flex justify-between items-start mb-4">
+    <div className={`bg-white rounded-xl p-5 border ${color} shadow-sm hover:shadow-md transition-shadow`}>
+      <div className="flex justify-between items-start">
         <div>
-          <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
             {label}
           </p>
-          <h3 className="text-3xl font-bold text-gray-900 mt-2">{value}</h3>
+          <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
         </div>
-        <div className="text-3xl">{icon}</div>
+        <div className="text-2xl">{icon}</div>
       </div>
-      <div className={`text-sm font-medium ${changeColor}`}>
+      <div className={`text-xs font-medium ${changeColor} mt-3`}>
         {change}
       </div>
     </div>

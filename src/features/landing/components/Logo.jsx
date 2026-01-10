@@ -10,7 +10,7 @@ const Logo = ({ size = "normal", invert = false, onClick = () => {} }) => {
     
   return (
     <div 
-      className={`${boxSize} ${colors} flex items-center justify-center shadow-lg border box-border flex-shrink-0 cursor-pointer`}
+      className={`${boxSize} ${colors} flex items-center justify-center shadow-lg border box-border shrink-0 cursor-pointer`}
       onClick={onClick}
     >
       <span className={`font-black ${textSize} tracking-tighter`}>US</span>

@@ -1,47 +1,40 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../auth/context/AuthContext';
 
 export const useDashboard = () => {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeNav, setActiveNav] = useState('overview');
 
-  // Mock user data (in real app, get from auth context/API)
-  const user = {
-    name: 'Rajesh Gupta',
-    email: 'rajesh@guptatextiles.com',
-    businessName: 'Gupta Textiles',
-    avatar: 'RG',
-    role: 'Owner'
-  };
-
-  // Mock stats data
+  // Stats data - would come from API in real app
   const stats = [
     {
       label: 'Total Sales',
-      value: '₹1.42L',
-      change: '+12%',
+      value: '₹0', // Would be fetched from API
+      change: '+0%',
       icon: '💰',
       color: 'bg-green-50 text-green-700 border-green-100'
     },
     {
       label: 'Active Orders',
-      value: '14',
-      change: '+2 new',
+      value: '0',
+      change: '+0 new',
       icon: '📦',
       color: 'bg-blue-50 text-blue-700 border-blue-100'
     },
     {
       label: 'Pending Bills',
-      value: '3',
+      value: '0',
       change: 'Action needed',
       icon: '📄',
       color: 'bg-orange-50 text-orange-700 border-orange-100'
     },
     {
       label: 'Customers',
-      value: '102',
-      change: '+5 this month',
+      value: '0',
+      change: '+0 this month',
       icon: '👥',
       color: 'bg-purple-50 text-purple-700 border-purple-100'
     }
@@ -69,14 +62,11 @@ export const useDashboard = () => {
 
   const handleNavClick = (path) => {
     setActiveNav(path);
-    // In real app, update route or content
     console.log(`Navigating to: ${path}`);
   };
 
   const handleLogout = () => {
-    // In real app, clear auth tokens and redirect
-    console.log('Logging out...');
-    navigate('/login');
+    logout();
   };
 
   const handleToggleSidebar = () => {

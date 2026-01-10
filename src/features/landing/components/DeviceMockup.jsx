@@ -3,20 +3,20 @@ import Logo from './Logo';
 
 const DeviceMockup = () => {
   return (
-    <div className="relative mt-8 h-[300px] md:h-[650px] w-full max-w-6xl mx-auto flex items-end justify-center">
+    <div className="relative mt-8 h-75 md:h-162.5 w-full max-w-6xl mx-auto flex items-end justify-center">
       
       {/* LAPTOP MOCKUP */}
       <div className="relative w-full md:w-[85%] z-10 transform transition-transform duration-500 hover:scale-[1.01]">
         {/* Lid / Screen Frame */}
-        <div className="bg-gray-900 rounded-t-[0.5rem] md:rounded-t-[1.5rem] p-2 md:p-3 pb-0 shadow-2xl relative">
+        <div className="bg-gray-900 rounded-t-lg md:rounded-t-3xl p-2 md:p-3 pb-0 shadow-2xl relative">
           {/* Camera */}
           <div className="absolute top-1 md:top-2 left-1/2 -translate-x-1/2 w-8 md:w-16 h-1 bg-black rounded-full z-20"></div>
           
           {/* SCREEN CONTENT */}
-          <div className="bg-gray-100 aspect-[16/10] w-full rounded-t-sm md:rounded-t-lg overflow-hidden flex">
+          <div className="bg-gray-100 aspect-16/10 w-full rounded-t-sm md:rounded-t-lg overflow-hidden flex">
             
             {/* Sidebar (Dark Blue) */}
-            <div className="w-[240px] hidden md:flex bg-slate-900 flex-col py-6 px-4 space-y-6">
+            <div className="w-60 hidden md:flex bg-slate-900 flex-col py-6 px-4 space-y-6">
               {/* Sidebar Logo */}
               <div className="flex items-center space-x-3 text-white mb-4">
                 <Logo size="small" invert={true} />
@@ -124,9 +124,9 @@ const DeviceMockup = () => {
       </div>
 
       {/* PHONE MOCKUP */}
-      <div className="hidden md:block absolute bottom-0 right-4 md:-right-4 z-20 w-[160px] md:w-[240px] transform hover:-translate-y-2 transition-transform duration-300">
+      <div className="hidden md:block absolute bottom-0 right-4 md:-right-4 z-20 w-40 md:w-60 transform hover:-translate-y-2 transition-transform duration-300">
         <div className="bg-gray-900 rounded-[2.5rem] p-2 md:p-3 shadow-2xl border-4 border-gray-800">
-          <div className="bg-white rounded-[2rem] overflow-hidden h-[320px] md:h-[480px] relative flex flex-col">
+          <div className="bg-white rounded-4xl overflow-hidden h-80 md:h-120 relative flex flex-col">
             {/* Notch */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-b-xl z-20"></div>
             
@@ -153,7 +153,7 @@ const DeviceMockup = () => {
               </div>
 
               {/* Banner */}
-              <div className="bg-gradient-to-r from-teal-400 to-emerald-500 rounded-xl p-4 text-white relative overflow-hidden">
+              <div className="bg-linear-to-r from-teal-400 to-emerald-500 rounded-xl p-4 text-white relative overflow-hidden">
                 <div className="relative z-10">
                   <p className="font-bold text-sm">Save Big on Time!</p>
                   <p className="text-xs opacity-90 mb-2">Use AI for auto-billing.</p>

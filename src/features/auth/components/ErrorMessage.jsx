@@ -28,7 +28,7 @@ const ErrorMessage = ({ children, type = 'error', className = '', ...props }) =>
       className={`rounded-xl border px-4 py-3 flex items-start space-x-3 ${styles[type]} ${className}`}
       {...props}
     >
-      <div className="flex-shrink-0 mt-0.5">
+      <div className="shrink-0 mt-0.5">
         {icons[type] || icons.error}
       </div>
       <div className="flex-1 text-sm">

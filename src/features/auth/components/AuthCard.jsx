@@ -7,7 +7,7 @@ const AuthCard = ({ children, title, subtitle, footer, className = '' }) => {
         <div className="p-8">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-linear-to-br from-blue-600 to-blue-500 text-white rounded-xl flex items-center justify-center shadow-lg">
                 <span className="font-black text-2xl tracking-tighter">US</span>
               </div>
             </div>

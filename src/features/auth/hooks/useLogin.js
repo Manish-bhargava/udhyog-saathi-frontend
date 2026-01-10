@@ -1,64 +1,42 @@
 import { useState } from 'react';
-import { useAuthForm } from './useAuthForm';
-import { validationRules } from '../types';
-
-const validateLogin = (field, value) => {
-  switch (field) {
-    case 'email':
-      if (!value) return 'Email is required';
-      if (!validationRules.email.pattern.test(value)) return validationRules.email.message;
-      return '';
-    case 'password':
-      if (!value) return 'Password is required';
-      if (value.length < validationRules.password.minLength) return validationRules.password.message;
-      return '';
-    default:
-      return '';
-  }
-};
+import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../api';
 
 export const useLogin = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [loginSuccess, setLoginSuccess] = useState(false); // Add this line
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  const form = useAuthForm({
-    email: '',
-    password: ''
-  }, validateLogin);
-
-  const handleLogin = async (formData) => {
-    setIsLoading(true);
-    setAuthError('');
-    setLoginSuccess(false);
+  const login = async (credentials) => {
+    setLoading(true);
+    setError(null);
     
-    // Mock API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-      
-      // Mock validation
-      if (formData.email === 'demo@udhyogsaathi.com' && formData.password === 'password') {
-        console.log('Login successful:', formData);
-        setLoginSuccess(true);
-        // In real app, you would:
-        // 1. Set authentication token
-        // 2. Redirect to dashboard
-        // 3. Update auth state
-      } else {
-        throw new Error('Invalid credentials. Try demo@udhyogsaathi.com / password');
+      // Validate required fields
+      if (!credentials.email || !credentials.password) {
+        throw { message: 'Email and password are required' };
       }
-    } catch (error) {
-      setAuthError(error.message);
+
+      // Call API with only email and password
+      const response = await authAPI.login({
+        email: credentials.email,
+        password: credentials.password
+      });
+      
+      if (response.status === 200) {
+        // Navigate to dashboard
+        navigate('/dashboard');
+        return { success: true, data: response.data };
+      } else {
+        throw { message: response.message || 'Login failed' };
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred during login');
+      return { success: false, error: err.message };
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  return {
-    ...form,
-    isLoading,
-    authError,
-    loginSuccess, // Add this to the return object
-    handleLogin: form.handleSubmit(handleLogin)
-  };
+  return { login, loading, error };
 };

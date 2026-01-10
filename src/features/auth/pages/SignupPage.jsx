@@ -1,249 +1,157 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSignup } from '../hooks/useSignup';
+import { useAuthForm } from '../hooks/useAuthForm';
 import AuthCard from '../components/AuthCard';
+import Heading from '../components/Heading';
+import Subheading from '../components/Subheading';
 import InputField from '../components/InputField';
 import PasswordField from '../components/PasswordField';
 import Button from '../components/Button';
 import ErrorMessage from '../components/ErrorMessage';
 import Divider from '../components/Divider';
 import SocialLoginButton from '../components/SocialLoginButton';
-import Heading from '../components/Heading';
-import Subheading from '../components/Subheading';
+import Logo from '../../../components/Logo';
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const {
-    values,
-    errors,
-    touched,
-    isLoading,
-    authError,
-    successMessage,
-    handleChange,
-    handleBlur,
-    handleSignup
-  } = useSignup();
+  const { signup, loading, error: apiError } = useSignup();
+  
+  // Initialize form state with all required fields for signup
+  const { formState, errors, handleChange, validateForm } = useAuthForm({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
 
+  const [localError, setLocalError] = useState('');
 
-  const handleSocialSignup = (provider) => {
-    console.log(`Signup with ${provider}`);
-    // In real app, implement OAuth flow
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLocalError('');
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
+    // Check if passwords match
+    if (formState.password !== formState.confirmPassword) {
+      setLocalError('Passwords do not match');
+      return;
+    }
+    
+    // Prepare data for API - includes name field
+    const userData = {
+      name: formState.name,
+      email: formState.email,
+      password: formState.password
+    };
+    
+    const result = await signup(userData);
+    
+    if (result.success) {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleSocialLogin = (provider) => {
+    console.log(`Logging in with ${provider}`);
+    // Implement social login logic here
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
-      <AuthCard
-        title="Create Account"
-        subtitle="Join thousands of businesses using UdhyogSaathi"
-        footer={
-          <div className="text-center text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link 
-              to="/login" 
-              className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
-            >
-              Sign in here
-            </Link>
-          </div>
-        }
-      >
-        {successMessage && (
-          <ErrorMessage type="success">
-            {successMessage}
-          </ErrorMessage>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <AuthCard>
+        <div className="text-center mb-8">
+          <Logo className="mx-auto h-12 w-auto" />
+          <Heading>Create your account</Heading>
+          <Subheading>Start your free trial today</Subheading>
+        </div>
+
+        {(apiError || localError) && (
+          <ErrorMessage message={apiError || localError} />
         )}
 
-        {authError && (
-          <ErrorMessage type="error">
-            {authError}
-          </ErrorMessage>
-        )}
-
-        <form onSubmit={handleSignup} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField
-              label="Full Name"
-              type="text"
-              placeholder="John Doe"
-              value={values.name}
-              onChange={(value) => handleChange('name', value)}
-              onBlur={() => handleBlur('name')}
-              error={errors.name}
-              touched={touched.name}
-              required
-              icon="👤"
-            />
-
-            <InputField
-              label="Business Name"
-              type="text"
-              placeholder="Your Business Pvt. Ltd."
-              value={values.businessName}
-              onChange={(value) => handleChange('businessName', value)}
-              onBlur={() => handleBlur('businessName')}
-              error={errors.businessName}
-              touched={touched.businessName}
-              required
-              icon="🏢"
-            />
-          </div>
-
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          {/* Name field - required for signup */}
+          <InputField
+            label="Full Name"
+            type="text"
+            name="name"
+            value={formState.name || ''}
+            onChange={handleChange}
+            error={errors.name}
+            required
+            placeholder="Enter your full name"
+          />
+          
           <InputField
             label="Email Address"
             type="email"
-            placeholder="you@business.com"
-            value={values.email}
-            onChange={(value) => handleChange('email', value)}
-            onBlur={() => handleBlur('email')}
+            name="email"
+            value={formState.email || ''}
+            onChange={handleChange}
             error={errors.email}
-            touched={touched.email}
             required
-            icon="✉️"
+            placeholder="Enter your email"
           />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField
-              label="Phone Number"
-              type="tel"
-              placeholder="9876543210"
-              value={values.phoneNumber}
-              onChange={(value) => handleChange('phoneNumber', value)}
-              onBlur={() => handleBlur('phoneNumber')}
-              error={errors.phoneNumber}
-              touched={touched.phoneNumber}
-              required
-              icon="📱"
-            />
-
-
-            {/* Password field with unique ID */}
-            <PasswordField
-              label="Password"
-              placeholder="Create password"
-              value={values.password}
-              onChange={(value) => handleChange('password', value)}
-              onBlur={() => handleBlur('password')}
-              error={errors.password}
-              touched={touched.password}
-              required
-              showStrength
-              id="create-password" // Unique ID
-            />
-          </div>
-
-          {/* Confirm Password field with unique ID */}
+          
+          <PasswordField
+            label="Password"
+            name="password"
+            value={formState.password || ''}
+            onChange={handleChange}
+            error={errors.password}
+            required
+            placeholder="Create a password"
+          />
+          
           <PasswordField
             label="Confirm Password"
-            placeholder="Re-enter password"
-            value={values.confirmPassword}
-            onChange={(value) => handleChange('confirmPassword', value)}
-            onBlur={() => handleBlur('confirmPassword')}
+            name="confirmPassword"
+            value={formState.confirmPassword || ''}
+            onChange={handleChange}
             error={errors.confirmPassword}
-            touched={touched.confirmPassword}
             required
-            id="confirm-password" // Unique ID
+            placeholder="Confirm your password"
           />
-
-          <div className="space-y-4">
-            <div className="flex items-start">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
-                required
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-                I agree to the{' '}
-                <Link to="/terms" className="font-medium text-blue-600 hover:text-blue-500">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" className="font-medium text-blue-600 hover:text-blue-500">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            <div className="flex items-start">
-              <input
-                id="newsletter"
-                name="newsletter"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
-              />
-              <label htmlFor="newsletter" className="ml-2 block text-sm text-gray-700">
-                Send me product updates, tips, and offers via email
-              </label>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
+          
+          <Button 
+            type="submit" 
+            disabled={loading}
             fullWidth
-            isLoading={isLoading}
           >
-            Create Account
+            {loading ? 'Creating account...' : 'Sign up'}
           </Button>
         </form>
 
-        <Divider text="Or sign up with" />
+        <Divider>Or continue with</Divider>
 
-        <div className="space-y-4">
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <SocialLoginButton 
-            provider="google"
-            onClick={() => handleSocialSignup('google')}
-            disabled={isLoading}
+            provider="google" 
+            onClick={() => handleSocialLogin('google')}
           />
-          
           <SocialLoginButton 
-            provider="linkedin"
-            onClick={() => handleSocialSignup('linkedin')}
-            disabled={isLoading}
+            provider="github" 
+            onClick={() => handleSocialLogin('github')}
           />
         </div>
 
-        <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-          <Heading level="h3" size="sm" className="text-blue-800 mb-2">
-            Why Join UdhyogSaathi?
-          </Heading>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li className="flex items-center">
-              <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Manage Kacha & Pakka bills seamlessly
-            </li>
-            <li className="flex items-center">
-              <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              AI-powered business insights
-            </li>
-            <li className="flex items-center">
-              <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              14-day free trial, no credit card needed
-            </li>
-          </ul>
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link 
+              to="/login" 
+              className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            >
+              Log in
+            </Link>
+          </p>
         </div>
       </AuthCard>
-
-      <div className="mt-8 text-center">
-        <button
-          onClick={() => navigate('/')}
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to home
-        </button>
-      </div>
     </div>
   );
 };
