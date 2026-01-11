@@ -1,122 +1,125 @@
 import React, { useState } from 'react';
-import Logo from '../../../components/Logo';
+import { Link } from 'react-router-dom';
 
-const Sidebar = ({ 
-  user, 
-  navItems, 
-  activeNav, 
-  onNavClick, 
-  onLogout,
-  sidebarOpen = true 
-}) => {
+const Sidebar = ({ user, navItems, activeNav, onNavClick, onLogout, sidebarOpen }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   return (
-    <aside className="h-screen bg-slate-900 text-white flex flex-col shadow-xl">
-      {/* Logo Section - Top aligned */}
-      <div className="pt-4 px-4 border-b border-slate-700 flex-shrink-0">
-        <div className="flex items-center space-x-3 py-3">
-          <Logo size="small" invert={true} />
-          <div>
-            <h1 className="font-bold text-lg">UdhyogSaathi</h1>
-            <p className="text-slate-400 text-xs">Business Dashboard</p>
+    <div className={`
+      bg-slate-900 text-white h-full
+      flex flex-col
+      overflow-y-auto
+      transition-all duration-300
+      ${sidebarOpen ? 'w-64' : 'w-20 lg:w-20'}
+    `}>
+      {/* Logo/Brand */}
+      <div className="p-4 border-b border-slate-800">
+        <div className={`flex items-center ${sidebarOpen ? 'space-x-3' : 'justify-center'}`}>
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-xl font-bold">U</span>
           </div>
+          {sidebarOpen && (
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold truncate">UdhyogSaathi</h2>
+              <p className="text-slate-400 text-xs truncate">Business Suite</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Navigation - Takes remaining space */}
-      <nav className="flex-1 px-3 py-4">
-        <ul className="space-y-1">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <button
-                onClick={() => onNavClick(item.path)}
-                className={`
-                  w-full flex items-center space-x-8 px-8 py-2.5 rounded-lg
-                  transition-all duration-200
-                  ${activeNav === item.path
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                  }
-                `}
-              >
-                <span className="text-base">{item.icon}</span>
-                <span className="font-medium text-sm">{item.label}</span>
-                {item.path === 'kacha-bills' && (
-                  <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    3
-                  </span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
+      {/* Navigation */}
+      <nav className="flex-1 p-2 space-y-1">
+        {navItems.map((item, index) => (
+          <button
+            key={index}
+            onClick={() => onNavClick(item.path)}
+            className={`
+              w-full flex items-center rounded-lg
+              transition-all duration-200
+              ${activeNav === item.path 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'hover:bg-slate-800 text-slate-300'
+              }
+              ${sidebarOpen ? 'px-4 py-3 space-x-3' : 'px-3 py-3 justify-center'}
+            `}
+          >
+            <span className="text-xl">{item.icon}</span>
+            {sidebarOpen && (
+              <span className="font-medium text-sm">{item.label}</span>
+            )}
+            {sidebarOpen && activeNav === item.path && (
+              <span className="ml-auto w-2 h-2 bg-white rounded-full"></span>
+            )}
+          </button>
+        ))}
       </nav>
 
-      {/* Profile and Logout Section at Bottom */}
-      <div className="border-t border-slate-700 px-3 py-4 flex-shrink-0">
-        {/* Profile Section with Hover Dropdown */}
-        <div className="relative mb-3">
-          <div 
-            className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors"
-            onMouseEnter={() => setShowProfileMenu(true)}
-            onMouseLeave={() => setShowProfileMenu(false)}
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
+      {/* Profile Section - Moved to bottom */}
+      <div className="p-4 border-t border-slate-800">
+        <div 
+          className="relative"
+          onMouseEnter={() => setShowProfileMenu(true)}
+          onMouseLeave={() => setShowProfileMenu(false)}
+        >
+          {/* Profile Button */}
+          <button
+            className={`
+              w-full flex items-center rounded-lg
+              transition-all duration-200
+              hover:bg-slate-800 text-slate-300
+              ${sidebarOpen ? 'px-4 py-3 space-x-3' : 'px-3 py-3 justify-center'}
+            `}
           >
-            <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center font-bold text-sm">
-              {user.avatar}
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-lg font-bold">
+              {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
             </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-xs truncate">{user.name}</h2>
-              <p className="text-slate-400 text-xs truncate">{user.businessName}</p>
-            </div>
-            <svg 
-              className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showProfileMenu ? 'rotate-180' : ''}`}
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
+            {sidebarOpen && (
+              <div className="flex-1 min-w-0 text-left">
+                <p className="font-semibold text-sm truncate">{user?.name || 'User'}</p>
+                <p className="text-slate-400 text-xs truncate">{user?.email || 'user@example.com'}</p>
+              </div>
+            )}
+            {sidebarOpen && (
+              <svg 
+                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${showProfileMenu ? 'rotate-180' : ''}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            )}
+          </button>
 
-          {/* Dropdown Menu */}
-          {showProfileMenu && (
-            <div 
-              className="absolute bottom-full left-0 right-0 mb-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50"
-              onMouseEnter={() => setShowProfileMenu(true)}
-              onMouseLeave={() => setShowProfileMenu(false)}
-            >
-              <button
-                onClick={() => {
-                  console.log('Navigate to profile');
-                  setShowProfileMenu(false);
-                }}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-slate-700 transition-colors text-sm"
+          {/* Profile Dropdown Menu - Shows on hover */}
+          {sidebarOpen && showProfileMenu && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 rounded-lg shadow-lg overflow-hidden z-50">
+              <Link
+                to="/profile"
+                className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 transition-colors duration-200"
               >
-                <span className="text-sm">👤</span>
-                <span className="font-medium">My Profile</span>
-              </button>
-              <button
-                onClick={() => {
-                  onLogout();
-                  setShowProfileMenu(false);
-                }}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-slate-700 transition-colors border-t border-slate-700 text-sm"
+                <span className="mr-3">👤</span>
+                Profile
+              </Link>
+              <button 
+                onClick={onLogout}
+                className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-red-600 transition-colors duration-200"
               >
-                <span className="text-sm">🚪</span>
-                <span className="font-medium">Logout</span>
+                <span className="mr-3">🚪</span>
+                Logout
               </button>
             </div>
           )}
         </div>
 
         {/* Version Info */}
-        <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-700">
-          Version 1.0.0
-        </div>
+        {sidebarOpen && (
+          <div className="mt-4 text-center text-slate-500 text-xs">
+            <p>v1.0.0 • UdhyogSaathi</p>
+          </div>
+        )}
       </div>
-    </aside>
+    </div>
   );
 };
 

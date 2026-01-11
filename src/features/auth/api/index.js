@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 // Create axios instance
 const api = axios.create({
@@ -8,6 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 seconds timeout
 });
 
 // Request interceptor to add token if available
@@ -16,15 +17,17 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     
+    // Debug logging
+    console.log('Request interceptor - User ID:', user._id);
+    console.log('Request interceptor - Token present:', !!token);
+    
     // Add Authorization header if token exists
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Authorization header set with token:', token.substring(0, 20) + '...');
     }
     
-    // Add user ID if available (some endpoints might need it)
-    if (user?._id) {
-      config.headers['User-Id'] = user._id;
-    }
+    // Note: Removed User-Id header as backend gets user from req.user (set by auth middleware)
     
     return config;
   },
@@ -35,8 +38,17 @@ api.interceptors.request.use(
 
 // Response interceptor for handling errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
+    console.error('API Error:', {
+      status: error.response?.status,
+      message: error.message,
+      url: error.config?.url,
+      method: error.config?.method
+    });
+    
     if (error.response?.status === 401) {
       // Clear local storage on unauthorized
       localStorage.removeItem('token');
@@ -45,6 +57,10 @@ api.interceptors.response.use(
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
+    } else if (error.code === 'ECONNABORTED') {
+      console.error('Request timeout');
+    } else if (error.response?.status === 404) {
+      console.error('Endpoint not found:', error.config.url);
     }
     return Promise.reject(error);
   }
@@ -64,7 +80,9 @@ export const authAPI = {
       if (response.data?.data) {
         const { password, ...userWithoutPassword } = response.data.data;
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        localStorage.setItem('token', userWithoutPassword._id); // Using _id as token
+        // IMPORTANT: Check if token is in response.data.token or response.data.data.token
+        const token = response.data.token || response.data.data?.token || userWithoutPassword._id;
+        localStorage.setItem('token', token);
       }
       
       return response.data;
@@ -75,7 +93,7 @@ export const authAPI = {
     }
   },
 
-  // Login API - Note: Login API only needs email and password (no name)
+  // Login API
   login: async (credentials) => {
     try {
       const response = await api.post('/auth/login', {
@@ -87,7 +105,10 @@ export const authAPI = {
       if (response.data?.data) {
         const { password, ...userWithoutPassword } = response.data.data;
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        localStorage.setItem('token', userWithoutPassword._id); // Using _id as token
+        // IMPORTANT: Check if token is in response.data.token or response.data.data.token
+        const token = response.data.token || response.data.data?.token || userWithoutPassword._id;
+        localStorage.setItem('token', token);
+        console.log('Token stored after login:', token);
       }
       
       return response.data;
@@ -118,12 +139,35 @@ export const authAPI = {
     }
   },
 
-  // Onboarding API
+  // Onboarding API - UPDATED with userId in body
   onboarding: async (onboardingData) => {
     try {
-      const response = await api.post('/user/onboarding', onboardingData);
+      console.log('Sending onboarding data to endpoint:', '/user/onboarding');
+      
+      // Get user from localStorage to include userId
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Add userId to the request body as fallback for backend
+      const dataWithUserId = {
+        ...onboardingData,
+        userId: user._id // Add userId as fallback
+      };
+      
+      console.log('Data being sent with userId:', dataWithUserId);
+      
+      const response = await api.post('/user/onboarding', dataWithUserId);
+      
+      console.log('Onboarding response:', response.data);
+      
       return response.data;
     } catch (error) {
+      console.error('Onboarding API error details:', {
+        status: error.response?.status,
+        message: error.message,
+        url: error.config?.url,
+        data: error.config?.data
+      });
+      
       throw error.response?.data || { 
         message: 'Onboarding failed. Please try again.' 
       };
@@ -171,6 +215,57 @@ export const authAPI = {
   // Get auth token
   getToken: () => {
     return localStorage.getItem('token');
+  },
+
+  // TEST ENDPOINT
+  testConnection: async () => {
+    try {
+      const response = await api.get('/auth/test');
+      return response.data;
+    } catch (error) {
+      console.error('Connection test failed:', error);
+      return { 
+        success: false, 
+        message: 'Cannot connect to backend server',
+        error: error.message 
+      };
+    }
+  },
+
+  // NEW: Test onboarding endpoint specifically
+  testOnboardingEndpoint: async () => {
+    try {
+      console.log('Testing onboarding endpoint...');
+      
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const token = localStorage.getItem('token');
+      
+      console.log('Current user ID:', user._id);
+      console.log('Current token:', token);
+      
+      // Try a simple POST to see if endpoint exists
+      const testData = {
+        companyName: 'Test Company',
+        companyEmail: 'test@test.com',
+        GST: 'TEST123',
+        userId: user._id
+      };
+      
+      const response = await api.post('/user/onboarding', testData);
+      return response.data;
+    } catch (error) {
+      console.error('Onboarding endpoint test failed:', {
+        status: error.response?.status,
+        message: error.message,
+        url: error.config?.url
+      });
+      return { 
+        success: false, 
+        message: 'Onboarding endpoint not accessible',
+        error: error.message,
+        status: error.response?.status
+      };
+    }
   }
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSignup } from '../hooks/useSignup';
 import { useAuthForm } from '../hooks/useAuthForm';
@@ -17,15 +17,20 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const { signup, loading, error: apiError } = useSignup();
   
-  // Initialize form state with all required fields for signup
+ // Initialize form state with all required fields for signup
   const { formState, errors, handleChange, validateForm } = useAuthForm({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
-  });
+  }, false); // Pass false for isLogin (or omit since default is false)
 
   const [localError, setLocalError] = useState('');
+
+  useEffect(() => {
+    // Clear any previous errors on mount
+    setLocalError('');
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,7 +57,10 @@ const SignupPage = () => {
     const result = await signup(userData);
     
     if (result.success) {
-      navigate('/dashboard');
+      // Use window.location to ensure complete page reload and state reset
+      window.location.href = '/dashboard';
+    } else {
+      setLocalError(result.error || 'Signup failed');
     }
   };
 

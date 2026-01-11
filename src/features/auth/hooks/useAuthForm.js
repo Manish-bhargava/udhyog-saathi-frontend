@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export const useAuthForm = (initialState = {}) => {
+export const useAuthForm = (initialState = {}, isLogin = false) => {
   const [formState, setFormState] = useState(initialState);
   const [errors, setErrors] = useState({});
 
@@ -38,21 +38,25 @@ export const useAuthForm = (initialState = {}) => {
   const validateForm = () => {
     const newErrors = {};
     
-    // Name validation
-    if (!formState.name?.trim()) {
-      newErrors.name = 'Name is required';
-    } else if (formState.name.length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+    // For login, only validate email and password
+    // For signup, validate all fields
+    if (!isLogin) {
+      // Name validation - only for signup
+      if (!formState.name?.trim()) {
+        newErrors.name = 'Name is required';
+      } else if (formState.name.length < 2) {
+        newErrors.name = 'Name must be at least 2 characters';
+      }
     }
     
-    // Email validation
+    // Email validation - for both login and signup
     if (!formState.email?.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
     
-    // Password validation
+    // Password validation - for both login and signup
     if (!formState.password?.trim()) {
       newErrors.password = 'Password is required';
     } else if (formState.password.length < 6) {
@@ -60,7 +64,7 @@ export const useAuthForm = (initialState = {}) => {
     }
     
     // Confirm password validation (only for signup)
-    if (formState.confirmPassword !== undefined) {
+    if (!isLogin && formState.confirmPassword !== undefined) {
       if (!formState.confirmPassword?.trim()) {
         newErrors.confirmPassword = 'Please confirm your password';
       } else if (formState.password !== formState.confirmPassword) {
@@ -68,6 +72,7 @@ export const useAuthForm = (initialState = {}) => {
       }
     }
     
+    console.log('Validation errors:', newErrors); // Debug log
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

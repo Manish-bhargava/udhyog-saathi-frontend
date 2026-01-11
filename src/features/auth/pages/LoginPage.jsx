@@ -21,16 +21,20 @@ const LoginPage = () => {
   const { formState, errors, handleChange, validateForm } = useAuthForm({
     email: '',
     password: ''
-  });
+  }, true); // Pass true for isLogin
+
 
   const [localError, setLocalError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted'); // Debug log
     setLocalError('');
     
     // Validate form
+    console.log('Form state before validation:', formState); // Debug log
     if (!validateForm()) {
+      console.log('Validation failed:', errors); // Debug log
       return;
     }
     
@@ -40,10 +44,17 @@ const LoginPage = () => {
       password: formState.password
     };
     
+    console.log('Attempting login with:', credentials); // Debug log
+    
     const result = await login(credentials);
+    console.log('Login result:', result); // Debug log
     
     if (result.success) {
+      console.log('Login successful, redirecting to dashboard'); // Debug log
       navigate('/dashboard');
+    } else {
+      console.log('Login failed:', result.error); // Debug log
+      setLocalError(result.error || 'Login failed');
     }
   };
 

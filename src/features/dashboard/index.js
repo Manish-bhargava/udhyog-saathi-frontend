@@ -10,6 +10,3 @@ export { default as QuickActions } from './components/QuickActions';
 
 // Export hooks
 export { useDashboard } from './hooks/useDashboard';
-
-// Export types
-export * from './types';
