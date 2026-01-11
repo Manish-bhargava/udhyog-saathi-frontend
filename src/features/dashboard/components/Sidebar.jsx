@@ -3,6 +3,20 @@ import { Link } from 'react-router-dom';
 
 const Sidebar = ({ user, navItems, activeNav, onNavClick, onLogout, sidebarOpen }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [billsMenuOpen, setBillsMenuOpen] = useState(false);
+
+  const isBillsActive = activeNav === '/bills/kacha' || 
+                      activeNav === '/bills/pakka' || 
+                      activeNav === '/bills/all';
+
+  const handleBillsClick = () => {
+    setBillsMenuOpen(!billsMenuOpen);
+  };
+
+  const handleBillsSubmenuClick = (path) => {
+    setBillsMenuOpen(false);
+    onNavClick(path);
+  };
 
   return (
     <div className={`
@@ -29,29 +43,118 @@ const Sidebar = ({ user, navItems, activeNav, onNavClick, onLogout, sidebarOpen 
 
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-1">
-        {navItems.map((item, index) => (
-          <button
-            key={index}
-            onClick={() => onNavClick(item.path)}
-            className={`
-              w-full flex items-center rounded-lg
-              transition-all duration-200
-              ${activeNav === item.path 
-                ? 'bg-blue-600 text-white shadow-lg' 
-                : 'hover:bg-slate-800 text-slate-300'
-              }
-              ${sidebarOpen ? 'px-4 py-3 space-x-3' : 'px-3 py-3 justify-center'}
-            `}
-          >
-            <span className="text-xl">{item.icon}</span>
-            {sidebarOpen && (
-              <span className="font-medium text-sm">{item.label}</span>
-            )}
-            {sidebarOpen && activeNav === item.path && (
-              <span className="ml-auto w-2 h-2 bg-white rounded-full"></span>
-            )}
-          </button>
-        ))}
+        {navItems.map((item, index) => {
+          // Check if this is the Bills item
+          if (item.label === 'Bills') {
+            return (
+              <div key={index} className="relative">
+                <button
+                  onClick={handleBillsClick}
+                  className={`
+                    w-full flex items-center rounded-lg
+                    transition-all duration-200
+                    ${isBillsActive 
+                      ? 'bg-blue-600 text-white shadow-lg' 
+                      : 'hover:bg-slate-800 text-slate-300'
+                    }
+                    ${sidebarOpen ? 'px-4 py-3 space-x-3' : 'px-3 py-3 justify-center'}
+                  `}
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  {sidebarOpen && (
+                    <>
+                      <span className="font-medium text-sm">{item.label}</span>
+                      <svg 
+                        className={`w-4 h-4 ml-auto transition-transform duration-200 ${billsMenuOpen ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                  {sidebarOpen && isBillsActive && (
+                    <span className="ml-auto w-2 h-2 bg-white rounded-full"></span>
+                  )}
+                </button>
+
+                {/* Bills Submenu */}
+                {sidebarOpen && billsMenuOpen && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    <button
+                      onClick={() => handleBillsSubmenuClick('/bills/kacha')}
+                      className={`
+                        w-full flex items-center px-4 py-2 rounded-lg
+                        transition-all duration-200 text-sm
+                        ${activeNav === '/bills/kacha'
+                          ? 'bg-blue-700 text-white'
+                          : 'hover:bg-slate-800 text-slate-300'
+                        }
+                      `}
+                    >
+                      <span className="mr-2">•</span>
+                      Kacha Bills
+                    </button>
+                    <button
+                      onClick={() => handleBillsSubmenuClick('/bills/pakka')}
+                      className={`
+                        w-full flex items-center px-4 py-2 rounded-lg
+                        transition-all duration-200 text-sm
+                        ${activeNav === '/bills/pakka'
+                          ? 'bg-blue-700 text-white'
+                          : 'hover:bg-slate-800 text-slate-300'
+                        }
+                      `}
+                    >
+                      <span className="mr-2">•</span>
+                      Pakka Bills
+                    </button>
+                    <button
+                      onClick={() => handleBillsSubmenuClick('/bills/all')}
+                      className={`
+                        w-full flex items-center px-4 py-2 rounded-lg
+                        transition-all duration-200 text-sm
+                        ${activeNav === '/bills/all'
+                          ? 'bg-blue-700 text-white'
+                          : 'hover:bg-slate-800 text-slate-300'
+                        }
+                      `}
+                    >
+                      <span className="mr-2">•</span>
+                      All Bills
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // Regular menu items
+          return (
+            <button
+              key={index}
+              onClick={() => onNavClick(item.path)}
+              className={`
+                w-full flex items-center rounded-lg
+                transition-all duration-200
+                ${activeNav === item.path 
+                  ? 'bg-blue-600 text-white shadow-lg' 
+                  : 'hover:bg-slate-800 text-slate-300'
+                }
+                ${sidebarOpen ? 'px-4 py-3 space-x-3' : 'px-3 py-3 justify-center'}
+              `}
+            >
+              <span className="text-xl">{item.icon}</span>
+              {sidebarOpen && (
+                <span className="font-medium text-sm">{item.label}</span>
+              )}
+              {sidebarOpen && activeNav === item.path && (
+                <span className="ml-auto w-2 h-2 bg-white rounded-full"></span>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Profile Section - Moved to bottom */}
