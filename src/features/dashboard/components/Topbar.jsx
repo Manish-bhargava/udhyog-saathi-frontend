@@ -1,67 +1,56 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-const Topbar = ({ 
-  user, 
-  onToggleSidebar,
-  title = "Dashboard"
-}) => {
+const Topbar = ({ title }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      console.log('Searching for:', searchQuery);
+      // Implement search functionality here
+    }
+  };
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
-          {/* Left Section */}
-          <div className="flex items-center space-x-4">
+    <div className="bg-white border-b border-gray-200 px-4 py-4 lg:px-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search bills, customers, reports..."
+              className="pl-10 pr-4 py-2 w-48 md:w-64 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+            />
             <button
-              onClick={onToggleSidebar}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+              type="button"
+              onClick={handleSearch}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
-            
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-              <p className="text-gray-500 text-sm">
-                Welcome back, {user.name.split(' ')[0]}! 👋
-              </p>
-            </div>
-          </div>
-
-          {/* Right Section */}
-          <div className="flex items-center space-x-4">
-            {/* Search */}
-            <div className="relative hidden md:block">
-              <input
-                type="text"
-                placeholder="Search anything..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-              />
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                🔍
-              </div>
-            </div>
-
-            {/* Notifications */}
-            <button className="relative p-2 rounded-lg hover:bg-gray-100">
-              <span className="text-xl">🔔</span>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-
-            {/* User Menu */}
-            <div className="flex items-center space-x-3">
-              <div className="hidden md:block text-right">
-                <p className="font-medium text-gray-900">{user.name}</p>
-                <p className="text-sm text-gray-500">{user.businessName}</p>
-              </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                {user.avatar}
-              </div>
-            </div>
-          </div>
+          </form>
+          
+          <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+            <span className="text-xl">🔔</span>
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+          
+          <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+            <span className="text-xl">💬</span>
+            <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></span>
+          </button>
         </div>
       </div>
-    </header>
+    </div>
   );
 };
 

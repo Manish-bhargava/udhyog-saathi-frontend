@@ -12,11 +12,10 @@ export { default as Subheading } from './components/Subheading';
 export { default as ErrorMessage } from './components/ErrorMessage';
 export { default as Divider } from './components/Divider';
 export { default as SocialLoginButton } from './components/SocialLoginButton';
+export { default as PrivateRoute } from './components/PrivateRoute';
 
-// Export hooks
-export { useLogin } from './hooks/useLogin';
-export { useSignup } from './hooks/useSignup';
-export { useAuthForm } from './hooks/useAuthForm';
+// Export context
+export { useAuth, AuthProvider } from './context/AuthContext';
 
-// Export types
-export * from './types';
+// Export API
+export { default as authAPI } from './api';
