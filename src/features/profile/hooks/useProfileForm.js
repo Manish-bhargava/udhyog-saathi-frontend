@@ -40,37 +40,42 @@ export const useProfileForm = (section, initialValues) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, customData = null) => {
+    // Only prevent default if it's a form submission event
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+    
+    console.log('handleSubmit called for section:', section, 'with data:', customData || formData);
     setIsLoading(true);
-    console.log('Form submission for', section, ':', formData);
     
     // Basic validation
     const newErrors = {};
+    const dataToValidate = customData || formData;
     
     if (section === 'company') {
-      const requiredFields = ['companyName', 'gstNumber', 'address', 'city', 'state', 'pincode', 'phone', 'email', 'bankName', 'accountNumber', 'ifscCode', 'branchName'];
+      const requiredFields = ['companyName', 'GST', 'companyAddress', 'companyPhone', 'companyEmail', 'bankName', 'accountNumber', 'IFSC', 'branchName'];
       requiredFields.forEach(key => {
-        if (!formData[key] || formData[key].trim() === '') {
+        if (!dataToValidate[key] || dataToValidate[key].trim() === '') {
           newErrors[key] = 'This field is required';
         }
       });
     } else if (section === 'personal') {
       const requiredFields = ['firstName', 'lastName', 'email'];
       requiredFields.forEach(key => {
-        if (!formData[key] || formData[key].trim() === '') {
+        if (!dataToValidate[key] || dataToValidate[key].trim() === '') {
           newErrors[key] = 'This field is required';
         }
       });
     } else if (section === 'password') {
       const requiredFields = ['current_password', 'new_password', 'confirm_password'];
       requiredFields.forEach(key => {
-        if (!formData[key] || formData[key].trim() === '') {
+        if (!dataToValidate[key] || dataToValidate[key].trim() === '') {
           newErrors[key] = 'This field is required';
         }
       });
       
-      if (formData.new_password !== formData.confirm_password) {
+      if (dataToValidate.new_password !== dataToValidate.confirm_password) {
         newErrors.confirm_password = 'Passwords do not match';
       }
     }
@@ -83,8 +88,9 @@ export const useProfileForm = (section, initialValues) => {
     }
     
     try {
-      const result = await updateProfile(section, formData);
-      console.log('Form submission result:', result);
+      console.log('Calling updateProfile API for section:', section);
+      const result = await updateProfile(section, dataToValidate);
+      console.log('updateProfile result:', result);
       setIsLoading(false);
       return result;
     } catch (error) {
@@ -95,6 +101,7 @@ export const useProfileForm = (section, initialValues) => {
   };
 
   const resetForm = () => {
+    console.log('Resetting form to initial values');
     setFormData(initialValues);
     setErrors({});
     setTouched({});

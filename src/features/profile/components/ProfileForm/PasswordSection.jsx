@@ -20,6 +20,7 @@ const PasswordSection = () => {
   });
   
   const [passwordStrength, setPasswordStrength] = useState(null);
+  const [validationError, setValidationError] = useState(null);
   
   const handlePasswordChange = (e) => {
     handleChange(e);
@@ -27,24 +28,40 @@ const PasswordSection = () => {
     if (e.target.name === 'new_password') {
       const validation = validatePassword(e.target.value);
       setPasswordStrength(validation);
+      // Clear validation error when user types
+      if (validationError) {
+        setValidationError(null);
+      }
     }
   };
   
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     
+    // Clear previous validation error
+    setValidationError(null);
+    
     // Additional validation for password strength
     if (formData.new_password) {
       const validation = validatePassword(formData.new_password);
+      setPasswordStrength(validation);
+      
       if (!validation.isValid) {
+        setValidationError('Password does not meet strength requirements');
+        console.error('Password validation failed:', validation);
         return;
       }
     }
     
+    console.log('Submitting password change form...');
+    
     const result = await handleSubmit(e);
+    console.log('Password change result:', result);
+    
     if (result?.success) {
       resetForm();
       setPasswordStrength(null);
+      setValidationError(null);
     }
   };
   
@@ -53,6 +70,13 @@ const PasswordSection = () => {
       <div className="border-b pb-4">
         <h3 className="text-lg font-semibold text-gray-900">Change Password</h3>
       </div>
+      
+      {/* Display validation error */}
+      {validationError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {validationError}
+        </div>
+      )}
       
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -145,7 +169,7 @@ const PasswordSection = () => {
             At least 8 characters long
           </li>
           <li className="flex items-center">
-            <svg className={`h-4 w-4 mr-2 ${/[A-Z]/.test(formData.new_password) ? 'text-green-500' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={`h-4 w-4 mr-2 ${/[A-Z]/.test(formData.new_password) && /[a-z]/.test(formData.new_password) ? 'text-green-500' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             Include uppercase and lowercase letters

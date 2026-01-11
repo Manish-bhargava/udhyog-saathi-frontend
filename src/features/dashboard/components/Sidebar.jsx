@@ -93,7 +93,7 @@ const Sidebar = ({ user, navItems, activeNav, onNavClick, onLogout, sidebarOpen 
 
           {/* Profile Dropdown Menu - Shows on hover */}
           {sidebarOpen && showProfileMenu && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 rounded-lg shadow-lg overflow-hidden z-50">
+            <div className="absolute bottom-full left-0 right-0 bg-slate-800 rounded-lg shadow-lg overflow-hidden z-50">
               <Link
                 to="/profile"
                 className="w-full flex items-center px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 transition-colors duration-200"
