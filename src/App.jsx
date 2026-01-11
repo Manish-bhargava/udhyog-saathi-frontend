@@ -10,6 +10,7 @@ import { Route, Routes } from 'react-router-dom'
 import TestAPI from './features/auth/pages/TestAPI'
 import DashboardLayout from './features/dashboard/components/DashboardLayout'
 import TestBackendRoutes from './features/auth/pages/TestBackendRoutes.jsx';
+import ChatInterface from './features/aiAssistant/ChatInterface'  
 
 function App() {
   return (
@@ -30,10 +31,11 @@ function App() {
           <Route path='/dashboard' element={<DashboardPage />} />
           <Route path='/profile' element={<ProfilePage />} />
           <Route path='/bills' element={<div className="p-6">Bills Page Coming Soon</div>} />
-          <Route path='/customers' element={<div className="p-6">Customers Page Coming Soon</div>} />
+          
           <Route path='/reports' element={<div className="p-6">Reports Page Coming Soon</div>} />
           <Route path='/settings' element={<div className="p-6">Settings Page Coming Soon</div>} />
         </Route>
+        <Route path='/ai-assistant' element={<ChatInterface/>} />
       </Routes>
     </AuthProvider>
   )
