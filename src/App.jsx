@@ -15,6 +15,7 @@ import {
   PakkaBillsPage, 
   AllBillsPage 
 } from './features/bills'
+import ChatInterface from './features/aiAssistant/ChatInterface'  
 
 function App() {
   return (
@@ -38,9 +39,12 @@ function App() {
           <Route path='/bills/pakka' element={<PakkaBillsPage />} />
           <Route path='/bills/all' element={<AllBillsPage />} />
           <Route path='/customers' element={<div className="p-6">Customers Page Coming Soon</div>} />
+          <Route path='/bills' element={<div className="p-6">Bills Page Coming Soon</div>} />
+          
           <Route path='/reports' element={<div className="p-6">Reports Page Coming Soon</div>} />
           <Route path='/settings' element={<div className="p-6">Settings Page Coming Soon</div>} />
         </Route>
+        <Route path='/ai-assistant' element={<ChatInterface/>} />
       </Routes>
     </AuthProvider>
   )
