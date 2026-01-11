@@ -15,21 +15,30 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const navigate = useNavigate();
 
   // Initialize auth state
   const initAuth = useCallback(() => {
     try {
+      const token = localStorage.getItem('token');
       const storedUser = authAPI.getCurrentUser();
-      if (storedUser) {
+      
+      if (token && storedUser) {
+        console.log('Auth initialized with user:', storedUser);
         setUser(storedUser);
+      } else {
+        console.log('No valid auth found during initialization');
+        setUser(null);
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      setUser(null);
     } finally {
       setLoading(false);
+      setIsInitialized(true);
     }
   }, []);
 
@@ -39,18 +48,49 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
+      console.log('AuthContext.login called with credentials:', { email: credentials.email });
+      
+      // Call API directly to get response
       const response = await authAPI.login(credentials);
-      if (response?.data || response?.status === 'success') {
+      
+      console.log('AuthContext.login API response:', {
+        status: response.status,
+        hasData: !!response.data,
+        hasToken: !!response.token
+      });
+      
+      if (response?.data || response?.status === 'success' || response?.status === 200) {
+        // Get fresh user data from localStorage (set by authAPI.login)
         const userData = authAPI.getCurrentUser();
+        
+        if (!userData) {
+          console.error('User data not found in localStorage after login');
+          throw new Error('Failed to retrieve user data after login');
+        }
+        
+        console.log('Setting user state with:', userData);
         setUser(userData);
+        
+        // Double-check token is stored
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('Token not found in localStorage after login');
+          throw new Error('Authentication token missing');
+        }
+        
+        console.log('Login successful, token stored:', token.substring(0, 20) + '...');
+        
         return { success: true, data: userData };
       }
+      
+      console.error('Login API response indicates failure:', response);
       return { success: false, error: response?.message || 'Login failed' };
+      
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('AuthContext login error:', error);
       return { 
         success: false, 
-        error: error?.message || 'Login failed. Please try again.' 
+        error: error.response?.data?.message || error.message || 'Login failed. Please try again.' 
       };
     }
   };
@@ -76,17 +116,25 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authAPI.logout();
-      setUser(null);
-      // Use window.location instead of navigate to ensure complete cleanup
-      window.location.href = '/login';
-      return { success: true };
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Logout API error:', error);
+    } finally {
+      // Always clear local state and storage
       setUser(null);
+      setIsInitialized(false);
+      
+      // Clear all localStorage data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      
+      // Clear any auth-related data
+      const authKeys = Object.keys(localStorage).filter(key => 
+        key.includes('auth') || key.includes('token') || key.includes('user')
+      );
+      authKeys.forEach(key => localStorage.removeItem(key));
+      
+      // Force navigation to login
       window.location.href = '/login';
-      return { success: false, error: error.message };
     }
   };
 
@@ -119,12 +167,16 @@ export const AuthProvider = ({ children }) => {
   // Function to refresh user from localStorage
   const refreshUser = useCallback(() => {
     try {
+      const token = localStorage.getItem('token');
       const storedUser = authAPI.getCurrentUser();
-      if (storedUser) {
+      
+      if (token && storedUser) {
         setUser(storedUser);
         return { success: true, data: storedUser };
       }
-      return { success: false, error: 'No user found' };
+      
+      console.warn('No valid token or user found during refresh');
+      return { success: false, error: 'No authenticated user found' };
     } catch (error) {
       console.error('Error refreshing user:', error);
       return { success: false, error: error.message };
@@ -132,18 +184,28 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const isAuthenticated = useCallback(() => {
-    return authAPI.isAuthenticated();
-  }, []);
+    const token = localStorage.getItem('token');
+    const userExists = !!user;
+    
+    console.log('isAuthenticated check:', {
+      hasToken: !!token,
+      hasUserState: userExists,
+      user: user
+    });
+    
+    return !!(token && user);
+  }, [user]);
 
   const value = {
     user,
     login,
     signup,
     logout,
-    updateUser,  // Added
-    refreshUser, // Added
+    updateUser,
+    refreshUser,
     isAuthenticated,
-    loading
+    loading,
+    isInitialized
   };
 
   return (

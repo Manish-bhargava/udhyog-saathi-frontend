@@ -12,28 +12,31 @@ export const useProfileProgress = () => {
     // Check personal info
     if (profile.personal) {
       total += 3;
-      if (profile.personal.firstName) completed++;
-      if (profile.personal.lastName) completed++;
-      if (profile.personal.email) completed++;
+      if (profile.personal.firstName?.trim()) completed++;
+      if (profile.personal.lastName?.trim()) completed++;
+      if (profile.personal.email?.trim()) completed++;
     }
     
-    // Check company info
+    // Check company info (removed companyLogo from count)
     if (profile.company) {
-      total += 5;
-      if (profile.company.companyName) completed++;
-      if (profile.company.GST) completed++;
-      if (profile.company.companyAddress) completed++;
-      if (profile.company.companyPhone) completed++;
-      if (profile.company.companyEmail) completed++;
+      total += 8; // Removed companyLogo from total count
+      if (profile.company.companyName?.trim()) completed++;
+      if (profile.company.GST?.trim()) completed++;
+      if (profile.company.companyAddress?.trim()) completed++;
+      if (profile.company.companyPhone?.trim()) completed++;
+      if (profile.company.companyEmail?.trim()) completed++;
+      if (profile.company.companyDescription?.trim()) completed++;
+      if (profile.company.companyStamp?.trim()) completed++;
+      if (profile.company.companySignature?.trim()) completed++;
     }
     
     // Check bank info
     if (profile.bank) {
       total += 4;
-      if (profile.bank.bankName) completed++;
-      if (profile.bank.accountNumber) completed++;
-      if (profile.bank.IFSC) completed++;
-      if (profile.bank.branchName) completed++;
+      if (profile.bank.bankName?.trim()) completed++;
+      if (profile.bank.accountNumber?.trim()) completed++;
+      if (profile.bank.IFSC?.trim()) completed++;
+      if (profile.bank.branchName?.trim()) completed++;
     }
     
     return total > 0 ? Math.round((completed / total) * 100) : 0;

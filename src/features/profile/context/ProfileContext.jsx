@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { profileAPI } from '../api/index.js';
 import { useAuth } from '../../auth/context/AuthContext';
 
@@ -16,9 +16,46 @@ export const ProfileProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  const { updateUser } = useAuth();
+  const { user, isAuthenticated, isInitialized, updateUser } = useAuth();
+  const timeoutRef = useRef(null);
+
+  const setMessageWithTimeout = useCallback((newMessage) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    setMessage(newMessage);
+    
+    if (newMessage) {
+      timeoutRef.current = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+    }
+  }, []);
+
+  const clearMessage = useCallback(() => {
+    setMessage(null);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const fetchProfile = useCallback(async () => {
+    if (!isAuthenticated() || !user) {
+      console.warn('Cannot fetch profile: No authenticated user');
+      setProfile(null);
+      return { success: false, error: 'No authenticated user' };
+    }
+    
     setLoading(true);
     try {
       const response = await profileAPI.getProfile();
@@ -29,7 +66,7 @@ export const ProfileProvider = ({ children }) => {
       return { success: false, error: 'Failed to load profile' };
     } catch (error) {
       console.error('Fetch profile error:', error);
-      setMessage({ 
+      setMessageWithTimeout({ 
         type: 'error', 
         text: 'Failed to load profile. Please try again.' 
       });
@@ -37,9 +74,18 @@ export const ProfileProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user, isAuthenticated, setMessageWithTimeout]);
 
   const updateProfile = useCallback(async (section, data) => {
+    if (!isAuthenticated() || !user) {
+      console.error('Cannot update profile: No authenticated user');
+      setMessageWithTimeout({ 
+        type: 'error', 
+        text: 'No authenticated user. Please log in again.' 
+      });
+      return { success: false, error: 'No authenticated user' };
+    }
+    
     setLoading(true);
     try {
       let response;
@@ -61,21 +107,21 @@ export const ProfileProvider = ({ children }) => {
       console.log('Update response for', section, ':', response);
       
       if (response.success) {
-        // If it's personal info, update the auth context user
-        if (section === 'personal') {
-          const updatedUserData = {
-            name: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
-            email: data.email
+        // Update user onboarding status if company info was completed
+        if (section === 'company') {
+          // Always set onboarding to true when company details are saved
+          const updatedUser = {
+            ...user,
+            onboarding: true
           };
-          
-          // Update user in AuthContext
-          await updateUser(updatedUserData);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          updateUser(updatedUser);
         }
         
-        // Refetch profile to update UI
+        // Force immediate refetch of profile to update progress bar
         await fetchProfile();
         
-        setMessage({ 
+        setMessageWithTimeout({ 
           type: 'success', 
           text: response.message || `${section.charAt(0).toUpperCase() + section.slice(1)} updated successfully` 
         });
@@ -83,7 +129,7 @@ export const ProfileProvider = ({ children }) => {
         return { success: true, data: response.data };
       }
       
-      setMessage({ 
+      setMessageWithTimeout({ 
         type: 'error', 
         text: response.message || `${section} update failed` 
       });
@@ -92,14 +138,15 @@ export const ProfileProvider = ({ children }) => {
     } catch (error) {
       console.error('Update profile error:', error);
       
-      // Check if it's a 404 error (endpoint not found)
       let errorMessage = error.message || 'Failed to update profile.';
       
       if (error.message?.includes('404') || error.error?.response?.status === 404) {
-        errorMessage = 'Onboarding endpoint not found. Please check if backend server is running and endpoint is registered.';
+        errorMessage = 'Onboarding endpoint not found. Please check if backend server is running.';
+      } else if (error.message?.includes('401')) {
+        errorMessage = 'Session expired. Please log in again.';
       }
       
-      setMessage({ 
+      setMessageWithTimeout({ 
         type: 'error', 
         text: errorMessage
       });
@@ -108,16 +155,21 @@ export const ProfileProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [updateUser, fetchProfile]);
+  }, [user, isAuthenticated, fetchProfile, setMessageWithTimeout, updateUser]);
 
-  const clearMessage = useCallback(() => {
-    setMessage(null);
-  }, []);
+  const isCompanyLocked = useCallback(() => {
+    return user?.onboarding === true;
+  }, [user]);
 
-  // Initial fetch on mount
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    if (isInitialized && isAuthenticated() && user) {
+      console.log('ProfileContext: Fetching profile for authenticated user:', user);
+      fetchProfile();
+    } else {
+      console.log('ProfileContext: No authenticated user, clearing profile');
+      setProfile(null);
+    }
+  }, [user, isAuthenticated, fetchProfile, isInitialized]);
 
   const value = {
     profile: profile || {
@@ -128,7 +180,6 @@ export const ProfileProvider = ({ children }) => {
         companyAddress: '', 
         companyPhone: '', 
         companyEmail: '',
-        companyLogo: '',
         companyDescription: '',
         companyStamp: '',
         companySignature: ''
@@ -145,6 +196,7 @@ export const ProfileProvider = ({ children }) => {
     fetchProfile,
     updateProfile,
     clearMessage,
+    isCompanyLocked: isCompanyLocked(),
     exportCompanyData: profileAPI.exportCompanyData,
     clearCompanyData: profileAPI.clearCompanyData
   };

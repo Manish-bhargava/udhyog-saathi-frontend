@@ -93,10 +93,11 @@ export const authAPI = {
     }
   },
 
-  // Login API
+  // Login API - UPDATED to include name in request body
   login: async (credentials) => {
     try {
       const response = await api.post('/auth/login', {
+        name: credentials.name || '', // Added name field
         email: credentials.email,
         password: credentials.password
       });
@@ -170,6 +171,30 @@ export const authAPI = {
       
       throw error.response?.data || { 
         message: 'Onboarding failed. Please try again.' 
+      };
+    }
+  },
+
+  // Change Password API - NEW endpoint
+  changePassword: async (passwordData) => {
+    try {
+      const response = await api.put('/auth/change-password', passwordData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to change password.' 
+      };
+    }
+  },
+
+  // Update Profile API - NEW endpoint
+  updateProfile: async (profileData) => {
+    try {
+      const response = await api.put('/auth/update-profile', profileData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { 
+        message: 'Failed to update profile.' 
       };
     }
   },

@@ -1,13 +1,34 @@
-import { authAPI } from '../../auth/api/index.js';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000,
+});
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('Profile API: Authorization header set with token');
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export const profileAPI = {
-  // Get profile data - returns empty structure
   async getProfile() {
     try {
-      // Get user from localStorage
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       
-      // Return default profile structure
       return {
         success: true,
         data: {
@@ -22,7 +43,6 @@ export const profileAPI = {
             companyAddress: '', 
             companyPhone: '', 
             companyEmail: '',
-            companyLogo: '',
             companyDescription: '',
             companyStamp: '',
             companySignature: ''
@@ -47,7 +67,6 @@ export const profileAPI = {
             companyAddress: '', 
             companyPhone: '', 
             companyEmail: '',
-            companyLogo: '',
             companyDescription: '',
             companyStamp: '',
             companySignature: ''
@@ -63,19 +82,16 @@ export const profileAPI = {
     }
   },
 
-  // Update company details (onboarding) - uses authAPI.onboarding
   async updateCompanyDetails(data) {
     try {
       console.log('Company data received:', data);
       
-      // Format data according to API requirements
       const formattedData = {
         companyName: data.companyName || '',
         companyEmail: data.companyEmail || data.email || '',
         companyAddress: data.companyAddress || 
           `${data.address || ''}, ${data.city || ''}, ${data.state || ''} - ${data.pincode || ''}`.trim(),
         companyPhone: data.companyPhone || data.phone || '',
-        companyLogo: data.companyLogo || '',
         companyDescription: data.companyDescription || '',
         GST: data.GST || data.gstNumber || '',
         companyStamp: data.companyStamp || '',
@@ -88,15 +104,14 @@ export const profileAPI = {
 
       console.log('Formatted data for API:', formattedData);
       
-      // Use the authAPI onboarding endpoint
-      const response = await authAPI.onboarding(formattedData);
+      const response = await api.post('/user/onboarding', formattedData);
       
       console.log('API Response:', response);
       
       return {
         success: true,
-        message: response.message || 'Company details saved successfully',
-        data: response.data || formattedData
+        message: response.data?.message || 'Company details saved successfully',
+        data: response.data?.data || formattedData
       };
       
     } catch (error) {
@@ -104,59 +119,93 @@ export const profileAPI = {
       
       throw {
         success: false,
-        message: error.message || 'Failed to save company details',
+        message: error.response?.data?.message || 'Failed to save company details',
         error: error
       };
     }
   },
 
-  // Update personal information
   async updatePersonalInfo(data) {
     try {
-      // Get current user from localStorage
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      
-      // Update user data
-      const updatedUser = {
-        ...user,
+      const formattedData = {
         name: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
-        email: data.email || user.email,
+        email: data.email || ''
       };
       
-      // Save back to localStorage
+      console.log('Updating personal info with:', formattedData);
+      
+      const response = await api.put('/auth/update-profile', formattedData);
+      
+      console.log('Update personal info response:', response);
+      
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const updatedUser = {
+        ...currentUser,
+        ...formattedData
+      };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
       return {
         success: true,
-        message: 'Personal information updated successfully',
+        message: response.data?.message || 'Personal information updated successfully',
         data: updatedUser
       };
     } catch (error) {
       console.error('Update personal info error:', error);
-      throw error;
+      throw {
+        success: false,
+        message: error.response?.data?.message || 'Failed to update personal information',
+        error: error
+      };
     }
   },
 
-  // Change password
   async changePassword(data) {
     try {
-      // Note: This endpoint might not exist yet
-      return {
-        success: true,
-        message: 'Password change endpoint not implemented yet'
+      console.log('Changing password with data:', {
+        current_password: data.current_password,
+        new_password: data.new_password,
+        confirm_password: data.confirm_password
+      });
+      
+      const formattedData = {
+        oldPassword: data.current_password,
+        newPassword: data.new_password
       };
+      
+      console.log('Sending to API with formatted data:', formattedData);
+      
+      const response = await api.put('/auth/change-password', formattedData);
+      
+      console.log('Change password response:', response);
+      
+      if (response.data?.success) {
+        return {
+          success: true,
+          message: response.data?.message || 'Password changed successfully',
+          data: response.data
+        };
+      } else {
+        throw {
+          success: false,
+          message: response.data?.message || 'Failed to change password'
+        };
+      }
+      
     } catch (error) {
       console.error('Change password error:', error);
-      throw error;
+      throw {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to change password',
+        error: error
+      };
     }
   },
 
-  // Export company data
   exportCompanyData() {
-    return null; // No local storage data
+    return null;
   },
 
-  // Clear company data
   clearCompanyData() {
     return { success: true, message: 'Company data cleared' };
   }
