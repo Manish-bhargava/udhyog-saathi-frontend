@@ -15,7 +15,6 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Profile API: Authorization header set with token');
     }
     return config;
   },
@@ -27,8 +26,50 @@ api.interceptors.request.use(
 export const profileAPI = {
   async getProfile() {
     try {
+      // Get user from localStorage first
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       
+      // Try to fetch actual profile data from the backend
+      try {
+        // First check if we have onboarding data stored locally
+        const onboardingData = localStorage.getItem('onboardingData');
+        
+        if (onboardingData) {
+          const parsedData = JSON.parse(onboardingData);
+          console.log('Found onboarding data in localStorage:', parsedData);
+          
+          return {
+            success: true,
+            data: {
+              personal: {
+                firstName: user.name?.split(' ')[0] || '',
+                lastName: user.name?.split(' ')[1] || '',
+                email: user.email || ''
+              },
+              company: { 
+                companyName: parsedData.companyName || '', 
+                GST: parsedData.GST || '', 
+                companyAddress: parsedData.companyAddress || '', 
+                companyPhone: parsedData.companyPhone || '', 
+                companyEmail: parsedData.companyEmail || '',
+                companyDescription: parsedData.companyDescription || '',
+                companyStamp: parsedData.companyStamp || '',
+                companySignature: parsedData.companySignature || ''
+              },
+              bank: { 
+                bankName: parsedData.bankName || '', 
+                accountNumber: parsedData.accountNumber || '', 
+                IFSC: parsedData.IFSC || '', 
+                branchName: parsedData.branchName || '' 
+              }
+            }
+          };
+        }
+      } catch (error) {
+        console.error('Error parsing onboarding data:', error);
+      }
+      
+      // Return default structure if no data found
       return {
         success: true,
         data: {
@@ -104,6 +145,9 @@ export const profileAPI = {
 
       console.log('Formatted data for API:', formattedData);
       
+      // Save to localStorage for immediate access
+      localStorage.setItem('onboardingData', JSON.stringify(formattedData));
+      
       const response = await api.post('/user/onboarding', formattedData);
       
       console.log('API Response:', response);
@@ -111,7 +155,8 @@ export const profileAPI = {
       return {
         success: true,
         message: response.data?.message || 'Company details saved successfully',
-        data: response.data?.data || formattedData
+        data: response.data?.data || formattedData,
+        onboardingCompleted: true
       };
       
     } catch (error) {
@@ -138,6 +183,7 @@ export const profileAPI = {
       
       console.log('Update personal info response:', response);
       
+      // Update user in localStorage
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       const updatedUser = {
         ...currentUser,
