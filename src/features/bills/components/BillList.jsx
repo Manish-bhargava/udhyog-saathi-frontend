@@ -1,7 +1,7 @@
 // src/features/bills/components/BillList.jsx
 import React, { useState } from 'react';
 
-const BillList = ({ bills, loading }) => {
+const BillList = ({ bills, loading, onViewBill, onDownloadBill }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
 
@@ -125,7 +125,7 @@ const BillList = ({ bills, loading }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        ₹{bill.totalAmount?.toFixed(2) || '0.00'}
+                        ₹{bill.totalAmount?.toFixed(2) || bill.grandTotal?.toFixed(2) || '0.00'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -140,10 +140,16 @@ const BillList = ({ bills, loading }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-3">
+                      <button 
+                        onClick={() => onViewBill(bill)}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
                         View
                       </button>
-                      <button className="text-gray-600 hover:text-gray-900">
+                      <button 
+                        onClick={() => onDownloadBill(bill)}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
                         Download
                       </button>
                     </td>

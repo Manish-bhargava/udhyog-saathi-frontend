@@ -26,56 +26,65 @@ api.interceptors.request.use(
 export const profileAPI = {
   async getProfile() {
     try {
-      // Get user from localStorage first
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const response = await api.get('/auth/profile');
+      console.log('Get Profile API Response:', response.data);
       
-      // Try to fetch actual profile data from the backend
-      try {
-        // First check if we have onboarding data stored locally
-        const onboardingData = localStorage.getItem('onboardingData');
+      if (response.data.success) {
+        const userData = response.data.data;
         
-        if (onboardingData) {
-          const parsedData = JSON.parse(onboardingData);
-          console.log('Found onboarding data in localStorage:', parsedData);
-          
-          return {
-            success: true,
-            data: {
-              personal: {
-                firstName: user.name?.split(' ')[0] || '',
-                lastName: user.name?.split(' ')[1] || '',
-                email: user.email || ''
-              },
-              company: { 
-                companyName: parsedData.companyName || '', 
-                GST: parsedData.GST || '', 
-                companyAddress: parsedData.companyAddress || '', 
-                companyPhone: parsedData.companyPhone || '', 
-                companyEmail: parsedData.companyEmail || '',
-                companyDescription: parsedData.companyDescription || '',
-                companyStamp: parsedData.companyStamp || '',
-                companySignature: parsedData.companySignature || ''
-              },
-              bank: { 
-                bankName: parsedData.bankName || '', 
-                accountNumber: parsedData.accountNumber || '', 
-                IFSC: parsedData.IFSC || '', 
-                branchName: parsedData.branchName || '' 
-              }
-            }
-          };
-        }
-      } catch (error) {
-        console.error('Error parsing onboarding data:', error);
+        // Extract name parts
+        const nameParts = userData.name?.split(' ') || [];
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        // Return structured profile data
+        return {
+          success: true,
+          data: {
+            personal: {
+              firstName: firstName,
+              lastName: lastName,
+              email: userData.email || ''
+            },
+            company: userData.company || { 
+              companyName: '', 
+              GST: '', 
+              companyAddress: '', 
+              companyPhone: '', 
+              companyEmail: '',
+              companyDescription: '',
+              companyStamp: '',
+              companySignature: ''
+            },
+            bank: userData.bank || { 
+              bankName: '', 
+              accountNumber: '', 
+              IFSC: '', 
+              branchName: '' 
+            },
+            onboarding: userData.onboarding || false,
+            isCompanyLocked: userData.isCompanyLocked || false
+          }
+        };
       }
       
-      // Return default structure if no data found
+      throw new Error(response.data.message || 'Failed to fetch profile');
+      
+    } catch (error) {
+      console.error('Get profile error:', error);
+      
+      // Fallback to current user data from localStorage
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const nameParts = user.name?.split(' ') || [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       return {
         success: true,
         data: {
           personal: {
-            firstName: user.name?.split(' ')[0] || '',
-            lastName: user.name?.split(' ')[1] || '',
+            firstName: firstName,
+            lastName: lastName,
             email: user.email || ''
           },
           company: { 
@@ -93,31 +102,9 @@ export const profileAPI = {
             accountNumber: '', 
             IFSC: '', 
             branchName: '' 
-          }
-        }
-      };
-    } catch (error) {
-      console.error('Get profile error:', error);
-      return {
-        success: true,
-        data: {
-          personal: { firstName: '', lastName: '', email: '' },
-          company: { 
-            companyName: '', 
-            GST: '', 
-            companyAddress: '', 
-            companyPhone: '', 
-            companyEmail: '',
-            companyDescription: '',
-            companyStamp: '',
-            companySignature: ''
           },
-          bank: { 
-            bankName: '', 
-            accountNumber: '', 
-            IFSC: '', 
-            branchName: '' 
-          }
+          onboarding: user.onboarding || false,
+          isCompanyLocked: false
         }
       };
     }
@@ -140,13 +127,11 @@ export const profileAPI = {
         accountNumber: data.accountNumber || '',
         IFSC: data.IFSC || data.ifscCode || '',
         bankName: data.bankName || '',
-        branchName: data.branchName || ''
+        branchName: data.branchName || '',
+        onboarding: true // Mark onboarding as complete
       };
 
       console.log('Formatted data for API:', formattedData);
-      
-      // Save to localStorage for immediate access
-      localStorage.setItem('onboardingData', JSON.stringify(formattedData));
       
       const response = await api.post('/user/onboarding', formattedData);
       

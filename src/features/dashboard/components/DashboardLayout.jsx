@@ -19,7 +19,7 @@ const DashboardLayout = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/bills/kacha', label: 'Bills', icon: '📄' },
-    { path: '/customers', label: 'Customers', icon: '👥' },
+    { path: '/ai-assistant', label: 'AI ASSISTANT', icon: '👥' },
     { path: '/reports', label: 'Reports', icon: '📈' },
     { path: '/settings', label: 'Settings', icon: '⚙️' },
   ];

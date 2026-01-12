@@ -37,6 +37,18 @@ const CompanySection = () => {
     const file = e.target.files[0];
     if (!file) return;
     
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File size should be less than 2MB');
+      return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result;

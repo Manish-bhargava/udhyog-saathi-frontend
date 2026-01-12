@@ -22,21 +22,29 @@ export const useProfileProgress = () => {
     
     // Check company info - only count fields that are actually filled
     if (profile.company) {
-      // Count mandatory fields
-      const mandatoryFields = [
+      // Count mandatory fields for progress calculation
+      const companyFields = [
         'companyName',
         'GST',
         'companyAddress', 
         'companyPhone', 
         'companyEmail',
-        'companyDescription',
-        'companyStamp',
-        'companySignature'
+        'companyDescription'
       ];
       
-      total += mandatoryFields.length;
+      total += companyFields.length;
       
-      mandatoryFields.forEach(field => {
+      companyFields.forEach(field => {
+        if (profile.company[field] && profile.company[field].trim() !== '') {
+          completed++;
+        }
+      });
+      
+      // Optional fields (add to total but don't require for completion)
+      const optionalFields = ['companyStamp', 'companySignature'];
+      total += optionalFields.length;
+      
+      optionalFields.forEach(field => {
         if (profile.company[field] && profile.company[field].trim() !== '') {
           completed++;
         }
@@ -55,14 +63,14 @@ export const useProfileProgress = () => {
       });
     }
     
-    // Calculate percentage
-    const calculated = total > 0 ? Math.round((completed / total) * 100) : 0;
+    // Calculate percentage (minimum 0, maximum 100)
+    const calculated = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
     console.log('Progress calculation:', { completed, total, calculated, profile });
     return calculated;
   };
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && profile) {
       const calculatedProgress = calculateProgress();
       setProgress(calculatedProgress);
       setIsComplete(calculatedProgress === 100);
