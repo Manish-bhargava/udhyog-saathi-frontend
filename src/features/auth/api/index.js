@@ -76,13 +76,21 @@ export const authAPI = {
         password: userData.password
       });
       
-      // Store user data (without password) and token
+      // Store user and token if provided in signup response
       if (response.data?.data) {
         const { password, ...userWithoutPassword } = response.data.data;
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        // IMPORTANT: Check if token is in response.data.token or response.data.data.token
-        const token = response.data.token || response.data.data?.token || userWithoutPassword._id;
-        localStorage.setItem('token', token);
+        const token = response.data.token || response.data.data.token;
+        
+        const userDataToStore = {
+          ...userWithoutPassword,
+          isOnboarded: false
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userDataToStore));
+        if (token) {
+            localStorage.setItem('token', token);
+            console.log('Signup successful, token stored.');
+        }
       }
       
       return response.data;
@@ -93,23 +101,33 @@ export const authAPI = {
     }
   },
 
-  // Login API - UPDATED to include name in request body
+  // Login API - UPDATED: Using real token from response
   login: async (credentials) => {
     try {
       const response = await api.post('/auth/login', {
-        name: credentials.name || '', // Added name field
+        name: credentials.name || '', 
         email: credentials.email,
         password: credentials.password
       });
       
-      // Store user data (without password) and token
       if (response.data?.data) {
         const { password, ...userWithoutPassword } = response.data.data;
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        // IMPORTANT: Check if token is in response.data.token or response.data.data.token
-        const token = response.data.token || response.data.data?.token || userWithoutPassword._id;
-        localStorage.setItem('token', token);
-        console.log('Token stored after login:', token);
+        // Extract real token from response (adjust path based on your backend structure)
+        const token = response.data.token || response.data.data.token;
+        
+        const userDataToStore = {
+          ...userWithoutPassword,
+          isOnboarded: userWithoutPassword.onboarding || userWithoutPassword.isOnboarded || false
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userDataToStore));
+        
+        if (token) {
+            localStorage.setItem('token', token);
+            console.log('Login successful, real token stored.');
+        } else {
+            console.warn('Login successful but no token found in response.');
+        }
       }
       
       return response.data;
@@ -120,7 +138,7 @@ export const authAPI = {
     }
   },
 
-  // Logout API
+  // Logout API - NO CHANGES
   logout: async () => {
     try {
       const response = await api.post('/auth/logout');
@@ -128,46 +146,46 @@ export const authAPI = {
       // Clear local storage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('onboardingData');
       
       return response.data;
     } catch (error) {
       // Even if API fails, clear local storage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('onboardingData');
       throw error.response?.data || { 
         message: 'Logged out successfully.' 
       };
     }
   },
 
-  // Onboarding API - UPDATED with userId in body
+  // Onboarding API - UPDATED for new response structure
   onboarding: async (onboardingData) => {
     try {
       console.log('Sending onboarding data to endpoint:', '/user/onboarding');
       
-      // Get user from localStorage to include userId
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      // Remove userId - backend gets it from token/context
+      const { userId, ...cleanData } = onboardingData;
       
-      // Add userId to the request body as fallback for backend
-      const dataWithUserId = {
-        ...onboardingData,
-        userId: user._id // Add userId as fallback
-      };
+      console.log('Data being sent:', cleanData);
       
-      console.log('Data being sent with userId:', dataWithUserId);
-      
-      const response = await api.post('/user/onboarding', dataWithUserId);
+      const response = await api.post('/user/onboarding', cleanData);
       
       console.log('Onboarding response:', response.data);
       
+      // Update user onboarding status in localStorage
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      user.onboarding = true;
+      user.isOnboarded = true;
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Also save onboarding data to localStorage for profile access
+      localStorage.setItem('onboardingData', JSON.stringify(response.data?.data || cleanData));
+      
       return response.data;
     } catch (error) {
-      console.error('Onboarding API error details:', {
-        status: error.response?.status,
-        message: error.message,
-        url: error.config?.url,
-        data: error.config?.data
-      });
+      console.error('Onboarding API error details:', error.response?.data || error);
       
       throw error.response?.data || { 
         message: 'Onboarding failed. Please try again.' 
@@ -175,10 +193,13 @@ export const authAPI = {
     }
   },
 
-  // Change Password API - NEW endpoint
+  // Change Password API - UPDATED request body
   changePassword: async (passwordData) => {
     try {
-      const response = await api.put('/auth/change-password', passwordData);
+      const response = await api.put('/auth/change-password', {
+        oldPassword: passwordData.oldPassword,
+        newPassword: passwordData.newPassword
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || { 
@@ -187,19 +208,31 @@ export const authAPI = {
     }
   },
 
-  // Update Profile API - NEW endpoint
+  // Update Profile API - UPDATED request body
   updateProfile: async (profileData) => {
     try {
       const response = await api.put('/auth/update-profile', profileData);
+      
+      // Update user in localStorage
+      if (response.data?.data) {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const updatedUser = {
+          ...currentUser,
+          ...response.data.data
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      
       return response.data;
     } catch (error) {
+      console.error('Update profile error:', error.response?.data || error);
       throw error.response?.data || { 
         message: 'Failed to update profile.' 
       };
     }
   },
 
-  // Bills API
+  // Bills API - NO CHANGES
   bills: {
     create: async (billData, type = 'pakka') => {
       try {
@@ -228,7 +261,8 @@ export const authAPI = {
   isAuthenticated: () => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-    return !!(token && user);
+    // Simplified: check if token exists and isn't the old placeholder
+    return !!(token && user && token.length > 30); 
   },
 
   // Get current user
@@ -242,7 +276,7 @@ export const authAPI = {
     return localStorage.getItem('token');
   },
 
-  // TEST ENDPOINT
+  // TEST ENDPOINT - NO CHANGES
   testConnection: async () => {
     try {
       const response = await api.get('/auth/test');
@@ -257,26 +291,57 @@ export const authAPI = {
     }
   },
 
-  // NEW: Test onboarding endpoint specifically
+  // NEW: Get user profile from backend - FIXED endpoint path
+  getUserProfile: async () => {
+    try {
+      console.log('Fetching user profile from endpoint:', '/user/profile');
+      const response = await api.get('/user/profile');
+      
+      console.log('User profile response:', response.data);
+      
+      // Store updated user data
+      if (response.data?.data) {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const updatedUser = {
+          ...currentUser,
+          ...response.data.data,
+          // Ensure backward compatibility
+          _id: response.data.data.id || currentUser._id,
+          onboarding: response.data.data.isOnboarded || currentUser.onboarding
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Get user profile error:', {
+        status: error.response?.status,
+        message: error.message,
+        data: error.response?.data
+      });
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch user profile',
+        status: error.response?.status
+      };
+    }
+  },
+
+  // Test onboarding endpoint
   testOnboardingEndpoint: async () => {
     try {
       console.log('Testing onboarding endpoint...');
       
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const token = localStorage.getItem('token');
-      
-      console.log('Current user ID:', user._id);
-      console.log('Current token:', token);
-      
-      // Try a simple POST to see if endpoint exists
-      const testData = {
+      const response = await api.post('/user/onboarding', {
         companyName: 'Test Company',
         companyEmail: 'test@test.com',
         GST: 'TEST123',
-        userId: user._id
-      };
-      
-      const response = await api.post('/user/onboarding', testData);
+        accountNumber: '1234567890',
+        IFSC: 'TEST0001234',
+        bankName: 'Test Bank',
+        branchName: 'Test Branch'
+      });
       return response.data;
     } catch (error) {
       console.error('Onboarding endpoint test failed:', {

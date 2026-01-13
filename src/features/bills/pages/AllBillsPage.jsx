@@ -1,8 +1,9 @@
-// src/features/bills/pages/AllBillsPage.jsx
 import React, { useState, useEffect } from 'react';
 import BillList from '../components/BillList';
 import billAPI from '../api';
 import { useNavigate } from 'react-router-dom';
+import { useProfile } from '../../profile/context/ProfileContext';
+import { useAuth } from '../../auth/context/AuthContext';
 
 const AllBillsPage = () => {
   const [bills, setBills] = useState([]);
@@ -12,6 +13,10 @@ const AllBillsPage = () => {
   const [selectedBill, setSelectedBill] = useState(null);
   const [showBillModal, setShowBillModal] = useState(false);
   const navigate = useNavigate();
+  
+  // Get profile data
+  const { profile, loading: profileLoading } = useProfile();
+  const { user } = useAuth();
 
   const fetchBills = async () => {
     try {
@@ -164,6 +169,9 @@ const AllBillsPage = () => {
     const grandTotal = bill.totalAmount || 0;
     const gstPercentage = bill.gstPercentage || 0;
     
+    // Get user's full name
+    const userName = `${profile.personal.firstName || ''} ${profile.personal.lastName || ''}`.trim() || user?.name || 'User';
+    
     printWindow.document.write(`
       <html>
         <head>
@@ -178,32 +186,51 @@ const AllBillsPage = () => {
             .totals { float: right; margin-top: 20px; }
             .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; }
             .company-header { text-align: right; }
+            .signature-section { margin-top: 40px; display: flex; justify-content: space-between; }
+            .signature-box { text-align: center; }
+            .signature-line { width: 200px; border-top: 1px solid #000; margin: 10px auto; }
+            .company-stamp { text-align: center; margin-top: 20px; }
+            .stamp-img { max-width: 150px; max-height: 150px; }
+            .invoice-title { text-align: center; margin-bottom: 30px; }
+            .invoice-title h1 { color: #1e40af; font-size: 28px; }
+            .bank-details { background-color: #f8fafc; padding: 15px; border-radius: 5px; margin-top: 30px; }
+            .bank-details h4 { margin-top: 0; }
           </style>
         </head>
         <body>
           <div class="invoice-header">
             <div>
-              <h1>TAX INVOICE</h1>
-              <p>Invoice #: ${bill.invoiceNumber || `INV-${bill.id}`}</p>
-              <p>Date: ${new Date(bill.date || bill.createdAt).toLocaleDateString()}</p>
+              <div class="company-details">
+                <h2>${profile.company.companyName || 'Your Company Name'}</h2>
+                <p>${profile.company.companyAddress || 'Company Address'}</p>
+                <p>Email: ${profile.company.companyEmail || profile.personal.email || 'Email not set'}</p>
+                <p>Phone: ${profile.company.companyPhone || 'Phone not set'}</p>
+                <p>GST: ${profile.company.GST || 'GST not set'}</p>
+              </div>
             </div>
             <div class="company-header">
-              <h2>Your Company</h2>
-              <p>Business Address</p>
-              <p>GST: YOUR-GST-NUMBER</p>
+              <div class="invoice-title">
+                <h1>TAX INVOICE</h1>
+              </div>
+              <div>
+                <p><strong>Invoice #:</strong> ${bill.invoiceNumber || `INV-${bill.id}`}</p>
+                <p><strong>Date:</strong> ${new Date(bill.date || bill.createdAt).toLocaleDateString()}</p>
+              </div>
             </div>
           </div>
           
           <div class="client-details">
             <h3>Bill To:</h3>
-            <p><strong>${bill.buyer?.clientName || 'N/A'}</strong><br>
-            ${bill.buyer?.clientAddress || ''}<br>
-            GST: ${bill.buyer?.clientGst || 'N/A'}</p>
+            <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px;">
+              <p><strong>${bill.buyer?.clientName || 'Client Name'}</strong><br>
+              ${bill.buyer?.clientAddress || 'Address not provided'}<br>
+              ${bill.buyer?.clientGst ? `GST: ${bill.buyer.clientGst}` : ''}</p>
+            </div>
           </div>
           
           <table>
             <thead>
-              <tr>
+              <tr style="background-color: #1e40af; color: white;">
                 <th>#</th>
                 <th>Description</th>
                 <th>Rate (₹)</th>
@@ -225,15 +252,50 @@ const AllBillsPage = () => {
           </table>
           
           <div class="totals">
-            <p>Subtotal: ₹${subtotal.toFixed(2)}</p>
-            <p>GST (${gstPercentage}%): ₹${gstAmount.toFixed(2)}</p>
-            <p>Discount: ₹${discount.toFixed(2)}</p>
-            <p><strong>Grand Total: ₹${grandTotal.toFixed(2)}</strong></p>
+            <p><strong>Subtotal:</strong> ₹${subtotal.toFixed(2)}</p>
+            <p><strong>GST (${gstPercentage}%):</strong> ₹${gstAmount.toFixed(2)}</p>
+            ${discount > 0 ? `<p><strong>Discount:</strong> -₹${discount.toFixed(2)}</p>` : ''}
+            <p style="font-size: 18px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
+              <strong>Grand Total:</strong> ₹${grandTotal.toFixed(2)}
+            </p>
           </div>
           
+          ${profile.bank.bankName && profile.bank.accountNumber ? `
+            <div class="bank-details">
+              <h4>Bank Details:</h4>
+              <p><strong>Bank Name:</strong> ${profile.bank.bankName}</p>
+              <p><strong>Account Number:</strong> ${profile.bank.accountNumber}</p>
+              <p><strong>IFSC Code:</strong> ${profile.bank.IFSC}</p>
+              <p><strong>Branch:</strong> ${profile.bank.branchName}</p>
+            </div>
+          ` : ''}
+          
+          <div class="signature-section">
+            <div class="signature-box">
+              <p>For ${profile.company.companyName || 'Your Company'}</p>
+              <div class="signature-line"></div>
+              <p>Authorized Signatory</p>
+            </div>
+            <div class="signature-box">
+              <p>Received By</p>
+              <div class="signature-line"></div>
+              <p>Client Signature</p>
+            </div>
+          </div>
+          
+          ${profile.company.companyStamp ? `
+            <div class="company-stamp">
+              <p>Company Stamp:</p>
+              <img src="${profile.company.companyStamp}" alt="Company Stamp" class="stamp-img">
+            </div>
+          ` : ''}
+          
           <div class="footer">
-            <p>Payment Terms: Net 30 days</p>
-            <p>Thank you for your business!</p>
+            <p><strong>Payment Terms:</strong> Net 30 days</p>
+            <p><strong>Notes:</strong> ${profile.company.companyDescription || 'Thank you for your business!'}</p>
+            <p style="margin-top: 20px; font-style: italic; color: #666;">
+              This is a computer generated invoice. No signature required.
+            </p>
           </div>
         </body>
       </html>
@@ -243,12 +305,33 @@ const AllBillsPage = () => {
     printWindow.print();
   };
 
+  // Helper function to get company initials for logo
+  const getCompanyInitials = () => {
+    if (!profile.company.companyName) return 'C';
+    return profile.company.companyName
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Get user's full name
+  const getUserFullName = () => {
+    return `${profile.personal.firstName || ''} ${profile.personal.lastName || ''}`.trim() || user?.name || 'User';
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">All Bills</h1>
           <p className="text-gray-600 mt-1">View and manage all your bills</p>
+          {profile.company.companyName && (
+            <p className="text-sm text-blue-600 mt-1">
+              Company: {profile.company.companyName}
+            </p>
+          )}
         </div>
         <div className="flex space-x-3">
           <button
@@ -327,9 +410,9 @@ const AllBillsPage = () => {
                   </div>
                   <div className="text-right">
                     <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                      <span className="text-2xl font-bold text-blue-600">C</span>
+                      <span className="text-2xl font-bold text-blue-600">{getCompanyInitials()}</span>
                     </div>
-                    <div className="text-lg font-bold text-gray-800">Your Company</div>
+                    <div className="text-lg font-bold text-gray-800">{profile.company.companyName || 'Your Company'}</div>
                   </div>
                 </div>
 
@@ -338,9 +421,17 @@ const AllBillsPage = () => {
                   <div>
                     <h3 className="font-semibold text-gray-700 mb-2">From:</h3>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="font-medium text-gray-800">Your Company Name</div>
-                      <div className="text-sm text-gray-600 mt-1">Company Address</div>
-                      <div className="text-sm text-gray-600 mt-1">GST: YOUR-GST-NUMBER</div>
+                      <div className="font-medium text-gray-800">{profile.company.companyName}</div>
+                      <div className="text-sm text-gray-600 mt-1">{profile.company.companyAddress}</div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Email: {profile.company.companyEmail || profile.personal.email}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Phone: {profile.company.companyPhone}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        GST: {profile.company.GST}
+                      </div>
                     </div>
                   </div>
                   
@@ -348,7 +439,7 @@ const AllBillsPage = () => {
                     <h3 className="font-semibold text-gray-700 mb-2">Bill To:</h3>
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="font-medium text-gray-800">
-                        {selectedBill.buyer?.clientName || 'Client Name'}
+                        {selectedBill.buyer?.clientName}
                       </div>
                       {selectedBill.buyer?.clientAddress && (
                         <div className="text-sm text-gray-600 mt-1">
@@ -368,12 +459,12 @@ const AllBillsPage = () => {
                 <div className="mb-8">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-gray-100">
-                        <th className="border border-gray-300 px-4 py-2 text-left text-gray-700 font-medium">#</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left text-gray-700 font-medium">Description</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left text-gray-700 font-medium">Rate (₹)</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left text-gray-700 font-medium">Qty</th>
-                        <th className="border border-gray-300 px-4 py-2 text-left text-gray-700 font-medium">Amount (₹)</th>
+                      <tr className="bg-blue-600 text-white">
+                        <th className="border border-gray-300 px-4 py-2 text-left">#</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Rate (₹)</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Qty</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Amount (₹)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -401,16 +492,72 @@ const AllBillsPage = () => {
                       <span className="text-gray-600">GST ({selectedBill.gstPercentage || 0}%):</span>
                       <span className="font-medium">₹{selectedBill.gstAmount?.toFixed(2) || '0.00'}</span>
                     </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600">Discount:</span>
-                      <span className="font-medium text-red-600">-₹{selectedBill.discount?.toFixed(2) || '0.00'}</span>
-                    </div>
+                    {selectedBill.discount > 0 && (
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">Discount:</span>
+                        <span className="font-medium text-red-600">-₹{selectedBill.discount?.toFixed(2) || '0.00'}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between py-2 border-t border-gray-300 mt-2 pt-2">
                       <span className="text-lg font-bold text-gray-800">Grand Total:</span>
                       <span className="text-lg font-bold text-gray-800">₹{selectedBill.totalAmount?.toFixed(2) || '0.00'}</span>
                     </div>
                   </div>
                 </div>
+
+                {/* Bank Details Section */}
+                {profile.bank.bankName && profile.bank.accountNumber && (
+                  <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-700 mb-2">Bank Details:</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Bank Name:</span>
+                        <span className="font-medium ml-2">{profile.bank.bankName}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Account Number:</span>
+                        <span className="font-medium ml-2">{profile.bank.accountNumber}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">IFSC Code:</span>
+                        <span className="font-medium ml-2">{profile.bank.IFSC}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Branch:</span>
+                        <span className="font-medium ml-2">{profile.bank.branchName}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Signature Section */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex justify-between">
+                    <div className="text-center">
+                      <p className="font-medium text-gray-700">For {profile.company.companyName || 'Your Company'}</p>
+                      <div className="w-48 border-t border-gray-400 mt-4 mb-2 mx-auto"></div>
+                      <p className="text-sm text-gray-600">Authorized Signatory</p>
+                      <p className="text-sm text-gray-500">({getUserFullName()})</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-gray-700">Received By</p>
+                      <div className="w-48 border-t border-gray-400 mt-4 mb-2 mx-auto"></div>
+                      <p className="text-sm text-gray-600">Client Signature</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company Stamp if available */}
+                {profile.company.companyStamp && (
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-gray-600 mb-2">Company Stamp:</p>
+                    <img 
+                      src={profile.company.companyStamp} 
+                      alt="Company Stamp" 
+                      className="h-24 w-24 object-contain mx-auto"
+                    />
+                  </div>
+                )}
 
                 {/* Footer Notes */}
                 <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-600">
@@ -421,11 +568,31 @@ const AllBillsPage = () => {
                     </div>
                     <div>
                       <div className="font-medium mb-1">Notes:</div>
-                      <div>Thank you for your business!</div>
+                      <div>{profile.company.companyDescription || 'Thank you for your business!'}</div>
                     </div>
+                  </div>
+                  <div className="mt-4 text-xs text-gray-500 italic">
+                    This is a computer generated invoice. No signature required.
                   </div>
                 </div>
               </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowBillModal(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => handleDownloadBill(selectedBill)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download/Print
+              </button>
             </div>
           </div>
         </div>

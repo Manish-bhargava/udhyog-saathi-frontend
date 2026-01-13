@@ -17,24 +17,27 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const { signup, loading, error: apiError } = useSignup();
   
- // Initialize form state with all required fields for signup
+  // Initialize form state with all required fields for signup
   const { formState, errors, handleChange, validateForm } = useAuthForm({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
-  }, false); // Pass false for isLogin (or omit since default is false)
+  }, false);
 
   const [localError, setLocalError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     // Clear any previous errors on mount
     setLocalError('');
+    setSuccessMessage('');
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError('');
+    setSuccessMessage('');
     
     // Validate form
     if (!validateForm()) {
@@ -57,8 +60,13 @@ const SignupPage = () => {
     const result = await signup(userData);
     
     if (result.success) {
-      // Use window.location to ensure complete page reload and state reset
-      window.location.href = '/dashboard';
+      // Show success message and redirect to login
+      setSuccessMessage(result.message || 'Signup successful! Please login to continue.');
+      
+      // Clear form
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } else {
       setLocalError(result.error || 'Signup failed');
     }
@@ -77,6 +85,12 @@ const SignupPage = () => {
           <Heading>Create your account</Heading>
           <Subheading>Start your free trial today</Subheading>
         </div>
+
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
+            {successMessage}
+          </div>
+        )}
 
         {(apiError || localError) && (
           <ErrorMessage message={apiError || localError} />

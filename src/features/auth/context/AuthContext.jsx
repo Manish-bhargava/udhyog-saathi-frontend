@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Error initializing auth:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('onboardingData');
       setUser(null);
     } finally {
       setLoading(false);
@@ -56,10 +57,10 @@ export const AuthProvider = ({ children }) => {
       console.log('AuthContext.login API response:', {
         status: response.status,
         hasData: !!response.data,
-        hasToken: !!response.token
+        message: response.message
       });
       
-      if (response?.data || response?.status === 'success' || response?.status === 200) {
+      if (response?.status === 200 || response?.message?.includes('successfully')) {
         // Get fresh user data from localStorage (set by authAPI.login)
         const userData = authAPI.getCurrentUser();
         
@@ -71,14 +72,14 @@ export const AuthProvider = ({ children }) => {
         console.log('Setting user state with:', userData);
         setUser(userData);
         
-        // Double-check token is stored
+        // Double-check token is stored (placeholder token)
         const token = localStorage.getItem('token');
         if (!token) {
           console.error('Token not found in localStorage after login');
           throw new Error('Authentication token missing');
         }
         
-        console.log('Login successful, token stored:', token.substring(0, 20) + '...');
+        console.log('Login successful, user stored:', userData);
         
         return { success: true, data: userData };
       }
@@ -98,10 +99,14 @@ export const AuthProvider = ({ children }) => {
   const signup = async (userData) => {
     try {
       const response = await authAPI.signup(userData);
-      if (response?.data || response?.status === 'success') {
-        const userData = authAPI.getCurrentUser();
-        setUser(userData);
-        return { success: true, data: response.data || response };
+      if (response?.status === 200 || response?.message?.includes('successfully')) {
+        // Signup successful but user needs to login
+        // Return success but don't set user state (no token yet)
+        return { 
+          success: true, 
+          message: response.message || 'Signup successful. Please login.',
+          data: response.data 
+        };
       }
       return { success: false, error: response?.message || 'Signup failed' };
     } catch (error) {
@@ -126,10 +131,11 @@ export const AuthProvider = ({ children }) => {
       // Clear all localStorage data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('onboardingData');
       
       // Clear any auth-related data
       const authKeys = Object.keys(localStorage).filter(key => 
-        key.includes('auth') || key.includes('token') || key.includes('user')
+        key.includes('auth') || key.includes('token') || key.includes('user') || key.includes('onboarding')
       );
       authKeys.forEach(key => localStorage.removeItem(key));
       

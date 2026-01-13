@@ -19,7 +19,11 @@ export const useSignup = () => {
       const result = await authSignup(userData);
       
       if (result.success) {
-        return { success: true, data: result.data };
+        return { 
+          success: true, 
+          data: result.data,
+          message: result.message 
+        };
       } else {
         throw new Error(result.error || 'Signup failed');
       }
