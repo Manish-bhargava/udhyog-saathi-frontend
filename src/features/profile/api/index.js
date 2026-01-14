@@ -3,30 +3,17 @@ import { authAPI } from '../../auth/api/index.js';
 export const profileAPI = {
   async getProfile() {
     try {
-      console.log('Fetching profile data from backend...');
-      
-      // Use the authAPI's axios instance to ensure proper token handling
       const response = await authAPI.getUserProfile();
       
       if (response.success && response.data) {
         const userData = response.data;
         
-        console.log('User profile from backend:', userData);
-        
-        // Get onboarding data from localStorage or fallback
-        let onboardingData = {};
-        try {
-          onboardingData = JSON.parse(localStorage.getItem('onboardingData') || '{}');
-        } catch (error) {
-          console.log('No onboarding data in localStorage');
-        }
-        
-        // Extract name parts
+        // Handle name splitting
         const nameParts = userData.name?.split(' ') || [];
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
         
-        // Structure the data
+        // Format the data for the Profile Form
         const profileData = {
           personal: {
             firstName: firstName,
@@ -34,110 +21,32 @@ export const profileAPI = {
             email: userData.email || ''
           },
           company: {
-            companyName: onboardingData.company?.companyName || '',
-            GST: onboardingData.company?.GST || '',
-            companyAddress: onboardingData.company?.companyAddress || '',
-            companyPhone: onboardingData.company?.companyPhone || '',
-            companyEmail: onboardingData.company?.companyEmail || '',
-            companyDescription: onboardingData.company?.companyDescription || '',
-            companyStamp: onboardingData.company?.companyStamp || '',
-            companySignature: onboardingData.company?.companySignature || '',
-            companyLogo: onboardingData.company?.companyLogo || ''
+            companyName: userData.company?.companyName || '',
+            GST: userData.company?.GST || '',
+            companyAddress: userData.company?.companyAddress || '',
+            companyPhone: userData.company?.companyPhone || '',
+            companyEmail: userData.company?.companyEmail || '',
+            companyDescription: userData.company?.companyDescription || '',
+            companyLogo: userData.company?.companyLogo || '',
+            companyStamp: userData.company?.companyStamp || '',
+            companySignature: userData.company?.companySignature || ''
           },
           bank: {
-            bankName: onboardingData.BankDetails?.bankName || '',
-            accountNumber: onboardingData.BankDetails?.accountNumber || '',
-            IFSC: onboardingData.BankDetails?.IFSC || '',
-            branchName: onboardingData.BankDetails?.branchName || ''
+            // Mapping backend 'bankDetails' to form 'bank' object
+            bankName: userData.bankDetails?.bankName || userData.BankDetails?.bankName || '',
+            accountNumber: userData.bankDetails?.accountNumber || userData.BankDetails?.accountNumber || '',
+            IFSC: userData.bankDetails?.IFSC || userData.BankDetails?.IFSC || '',
+            branchName: userData.bankDetails?.branchName || userData.BankDetails?.branchName || ''
           },
-          onboarding: userData.isOnboarded || false,
-          isCompanyLocked: userData.isOnboarded || false
+          onboarding: userData.isOnboarded || false
         };
         
-        console.log('Profile data compiled:', profileData);
-        
-        return {
-          success: true,
-          data: profileData
-        };
-      } else if (response.message) {
-        // Handle the case where getUserProfile returns an error structure
-        console.error('Failed to fetch profile:', response.message);
-        throw new Error(response.message);
-      } else {
-        // This shouldn't happen but handle it
-        throw new Error('Failed to fetch profile');
+        return { success: true, data: profileData };
       }
-      
+      throw new Error('No data returned');
     } catch (error) {
-      console.error('Get profile error:', error);
-      
-      // Fallback to localStorage if backend fails
-      try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const onboardingData = JSON.parse(localStorage.getItem('onboardingData') || '{}');
-        
-        const nameParts = user.name?.split(' ') || [];
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        
-        return {
-          success: true,
-          data: {
-            personal: { 
-              firstName: firstName, 
-              lastName: lastName, 
-              email: user.email || '' 
-            },
-            company: { 
-              companyName: onboardingData.companyName || '', 
-              GST: onboardingData.GST || '', 
-              companyAddress: onboardingData.companyAddress || '', 
-              companyPhone: onboardingData.companyPhone || '', 
-              companyEmail: onboardingData.companyEmail || '',
-              companyDescription: onboardingData.companyDescription || '',
-              companyStamp: onboardingData.companyStamp || '',
-              companySignature: onboardingData.companySignature || '',
-              companyLogo: onboardingData.companyLogo || ''
-            },
-            bank: { 
-              bankName: onboardingData.bankName || '', 
-              accountNumber: onboardingData.accountNumber || '', 
-              IFSC: onboardingData.IFSC || '', 
-              branchName: onboardingData.branchName || '' 
-            },
-            onboarding: user.onboarding || false,
-            isCompanyLocked: user.onboarding || false
-          }
-        };
-      } catch (localError) {
-        // Return default structure
-        return {
-          success: true,
-          data: {
-            personal: { firstName: '', lastName: '', email: '' },
-            company: { 
-              companyName: '', 
-              GST: '', 
-              companyAddress: '', 
-              companyPhone: '', 
-              companyEmail: '',
-              companyDescription: '',
-              companyStamp: '',
-              companySignature: '',
-              companyLogo: ''
-            },
-            bank: { 
-              bankName: '', 
-              accountNumber: '', 
-              IFSC: '', 
-              branchName: '' 
-            },
-            onboarding: false,
-            isCompanyLocked: false
-          }
-        };
-      }
+      console.error('Profile cleaning error:', error);
+      return { success: false, data: { personal: {}, company: {}, bank: {} } };
     }
   },
 
@@ -145,7 +54,6 @@ export const profileAPI = {
     try {
       console.log('Company data received for onboarding:', data);
       
-      // Format data according to backend API
       const formattedData = {
         companyName: data.companyName || '',
         companyEmail: data.companyEmail || '',
@@ -162,32 +70,7 @@ export const profileAPI = {
         branchName: data.branchName || ''
       };
 
-      console.log('Formatted data for onboarding:', formattedData);
-      
-      // Call the backend onboarding endpoint using authAPI
       const response = await authAPI.onboarding(formattedData);
-      
-      // Save to localStorage for backup
-      localStorage.setItem('onboardingData', JSON.stringify({
-        ...formattedData,
-        company: {
-          companyName: formattedData.companyName,
-          companyEmail: formattedData.companyEmail,
-          companyAddress: formattedData.companyAddress,
-          companyPhone: formattedData.companyPhone,
-          companyLogo: formattedData.companyLogo,
-          companyDescription: formattedData.companyDescription,
-          GST: formattedData.GST,
-          companyStamp: formattedData.companyStamp,
-          companySignature: formattedData.companySignature
-        },
-        BankDetails: {
-          accountNumber: formattedData.accountNumber,
-          IFSC: formattedData.IFSC,
-          bankName: formattedData.bankName,
-          branchName: formattedData.branchName
-        }
-      }));
       
       console.log('Onboarding API Response:', response);
       
@@ -200,55 +83,10 @@ export const profileAPI = {
       
     } catch (error) {
       console.error('Update company error:', error);
-      
-      // Even if backend fails, save to localStorage for offline use
-      const formattedData = {
-        companyName: data.companyName || '',
-        companyEmail: data.companyEmail || '',
-        companyAddress: data.companyAddress || '',
-        companyPhone: data.companyPhone || '',
-        companyLogo: data.companyLogo || '',
-        companyDescription: data.companyDescription || '',
-        GST: data.GST || '',
-        companyStamp: data.companyStamp || '',
-        companySignature: data.companySignature || '',
-        accountNumber: data.accountNumber || '',
-        IFSC: data.IFSC || '',
-        bankName: data.bankName || '',
-        branchName: data.branchName || ''
-      };
-      
-      localStorage.setItem('onboardingData', JSON.stringify({
-        ...formattedData,
-        company: {
-          companyName: formattedData.companyName,
-          companyEmail: formattedData.companyEmail,
-          companyAddress: formattedData.companyAddress,
-          companyPhone: formattedData.companyPhone,
-          companyLogo: formattedData.companyLogo,
-          companyDescription: formattedData.companyDescription,
-          GST: formattedData.GST,
-          companyStamp: formattedData.companyStamp,
-          companySignature: formattedData.companySignature
-        },
-        BankDetails: {
-          accountNumber: formattedData.accountNumber,
-          IFSC: formattedData.IFSC,
-          bankName: formattedData.bankName,
-          branchName: formattedData.branchName
-        }
-      }));
-      
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      user.onboarding = true;
-      user.isOnboarded = true;
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      return {
-        success: true,
-        message: 'Company details saved locally',
-        data: formattedData,
-        onboardingCompleted: true
+      throw {
+        success: false,
+        message: error.response?.data?.message || 'Failed to save company details',
+        error: error
       };
     }
   },
@@ -262,24 +100,12 @@ export const profileAPI = {
       
       console.log('Updating personal info with:', formattedData);
       
-      // Use authAPI to ensure proper authorization
       const response = await authAPI.updateProfile(formattedData);
-      
-      console.log('Update personal info response:', response);
-      
-      // Update user in localStorage
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const updatedUser = {
-        ...currentUser,
-        ...formattedData,
-        ...response?.data // Include any additional data from response
-      };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
       
       return {
         success: true,
         message: response?.message || 'Profile updated successfully',
-        data: updatedUser
+        data: response?.data
       };
     } catch (error) {
       console.error('Update personal info error:', error);
@@ -298,7 +124,6 @@ export const profileAPI = {
         newPassword: data.new_password
       };
       
-      // Use authAPI to ensure proper authorization
       const response = await authAPI.changePassword(formattedData);
       
       if (response?.success) {
@@ -329,6 +154,6 @@ export const profileAPI = {
   },
 
   clearCompanyData() {
-    return { success: true, message: 'Company data cleared' };
+    return { success: true, message: 'Data cleared' };
   }
 };

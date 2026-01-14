@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // 1. Added useEffect
 import { useProfileForm } from '../../hooks/useProfileForm';
 import { useProfile } from '../../context/ProfileContext';
 
 const CompanySection = () => {
   const { profile, isCompanyLocked } = useProfile();
+  
   const {
     formData,
     errors,
@@ -12,24 +13,46 @@ const CompanySection = () => {
     handleChange,
     handleBlur,
     handleSubmit,
-    setFormData
+    setFormData // Ensure this is returned by your hook
   } = useProfileForm('company', {
-    companyName: profile.company.companyName || '',
-    GST: profile.company.GST || '',
-    companyAddress: profile.company.companyAddress || '',
-    companyPhone: profile.company.companyPhone || '',
-    companyEmail: profile.company.companyEmail || '',
-    companyDescription: profile.company.companyDescription || '',
-    companyStamp: profile.company.companyStamp || '',
-    companySignature: profile.company.companySignature || '',
-    bankName: profile.bank.bankName || '',
-    accountNumber: profile.bank.accountNumber || '',
-    IFSC: profile.bank.IFSC || '',
-    branchName: profile.bank.branchName || ''
+    companyName: profile.company?.companyName || '',
+    GST: profile.company?.GST || '',
+    companyAddress: profile.company?.companyAddress || '',
+    companyPhone: profile.company?.companyPhone || '',
+    companyEmail: profile.company?.companyEmail || '',
+    companyDescription: profile.company?.companyDescription || '',
+    companyStamp: profile.company?.companyStamp || '',
+    companySignature: profile.company?.companySignature || '',
+    bankName: profile.bank?.bankName || '',
+    accountNumber: profile.bank?.accountNumber || '',
+    IFSC: profile.bank?.IFSC || '',
+    branchName: profile.bank?.branchName || ''
   });
-  
-  const [stampPreview, setStampPreview] = useState(profile.company.companyStamp || '');
-  const [signaturePreview, setSignaturePreview] = useState(profile.company.companySignature || '');
+
+  const [stampPreview, setStampPreview] = useState(profile.company?.companyStamp || '');
+  const [signaturePreview, setSignaturePreview] = useState(profile.company?.companySignature || '');
+
+  // 2. ADD THIS EFFECT: This ensures form data updates when context profile updates
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        companyName: profile.company?.companyName || '',
+        GST: profile.company?.GST || '',
+        companyAddress: profile.company?.companyAddress || '',
+        companyPhone: profile.company?.companyPhone || '',
+        companyEmail: profile.company?.companyEmail || '',
+        companyDescription: profile.company?.companyDescription || '',
+        companyStamp: profile.company?.companyStamp || '',
+        companySignature: profile.company?.companySignature || '',
+        bankName: profile.bank?.bankName || '',
+        accountNumber: profile.bank?.accountNumber || '',
+        IFSC: profile.bank?.IFSC || '',
+        branchName: profile.bank?.branchName || ''
+      });
+      setStampPreview(profile.company?.companyStamp || '');
+      setSignaturePreview(profile.company?.companySignature || '');
+    }
+  }, [profile, setFormData]);
   const stampInputRef = useRef(null);
   const signatureInputRef = useRef(null);
   

@@ -1,6 +1,6 @@
 // src/features/bills/types/index.js
 export const BILL_TYPES = {
-  PACCHA: 'paccha',
+  PAKKA: 'pakka',
   KACHA: 'kacha',
   ALL: 'all'
 };
@@ -20,11 +20,25 @@ export const INITIAL_BUYER = {
   clientGst: ''
 };
 
+export const INITIAL_KACHA_BUYER = {
+  clientName: '',
+  clientAddress: ''
+  // No GST field for Kacha Bills
+};
+
 export const INITIAL_BILL_DATA = {
   buyer: INITIAL_BUYER,
   products: [INITIAL_PRODUCT],
   gstPercentage: 18,
   discount: 0
+};
+
+// NEW: Initial data for Kacha Bills
+export const INITIAL_KACHA_BILL_DATA = {
+  buyer: INITIAL_KACHA_BUYER,
+  products: [INITIAL_PRODUCT],
+  discount: 0,
+  // No GST fields for Kacha Bills
 };
 
 export const INITIAL_COMPANY_DETAILS = {

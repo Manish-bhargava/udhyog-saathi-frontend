@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { profileAPI } from '../api';
 import { useAuth } from '../../auth/context/AuthContext';
+import { useNotifications } from '../../dashboard/context/NotificationContext';
 
 const ProfileContext = createContext();
 
 export const useProfile = () => useContext(ProfileContext);
 
 export const ProfileProvider = ({ children }) => {
+  const { addNotification } = useNotifications();
   const [profile, setProfile] = useState({
     personal: { firstName: '', lastName: '', email: '' },
     company: { 
@@ -135,9 +137,10 @@ export const ProfileProvider = ({ children }) => {
       if (result.success) {
         setMessage({ type: 'success', text: result.message });
         
-        // Refresh profile data after successful update
-        await fetchProfile(true); // Force refresh
+        // TRIGGER GLOBAL NOTIFICATION
+        addNotification(`Profile Updated: Your ${section} details were saved.`, 'success');
         
+        await fetchProfile(true); 
         return result;
       } else {
         setMessage({ type: 'error', text: result.message });

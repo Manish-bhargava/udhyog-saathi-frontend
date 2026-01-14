@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isNewUser, isOnboarded } = useAuth();
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -31,6 +31,9 @@ const PrivateRoute = ({ children }) => {
     // Redirect to login with return url
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
+  // For authenticated users, check if they need to complete onboarding
+  // This is handled within DashboardLayout with the QuickTour component
 
   return children;
 };

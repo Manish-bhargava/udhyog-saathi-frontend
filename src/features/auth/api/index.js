@@ -163,33 +163,27 @@ export const authAPI = {
   // Onboarding API - UPDATED for new response structure
   onboarding: async (onboardingData) => {
     try {
-      console.log('Sending onboarding data to endpoint:', '/user/onboarding');
-      
-      // Remove userId - backend gets it from token/context
       const { userId, ...cleanData } = onboardingData;
-      
-      console.log('Data being sent:', cleanData);
-      
       const response = await api.post('/user/onboarding', cleanData);
       
-      console.log('Onboarding response:', response.data);
-      
-      // Update user onboarding status in localStorage
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      user.onboarding = true;
-      user.isOnboarded = true;
-      localStorage.setItem('user', JSON.stringify(user));
       
-      // Also save onboarding data to localStorage for profile access
+      // Update local user state
+      const updatedUser = {
+        ...user,
+        isOnboarded: true,
+        onboarding: true,
+        // Store the returned company/bank data if the backend returns it here
+        company: response.data?.data?.company || response.data?.data || null,
+        BankDetails: response.data?.data?.BankDetails || null
+      };
+      
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       localStorage.setItem('onboardingData', JSON.stringify(response.data?.data || cleanData));
       
       return response.data;
     } catch (error) {
-      console.error('Onboarding API error details:', error.response?.data || error);
-      
-      throw error.response?.data || { 
-        message: 'Onboarding failed. Please try again.' 
-      };
+      throw error.response?.data || { message: 'Onboarding failed.' };
     }
   },
 
@@ -294,36 +288,32 @@ export const authAPI = {
   // NEW: Get user profile from backend - FIXED endpoint path
   getUserProfile: async () => {
     try {
-      console.log('Fetching user profile from endpoint:', '/user/profile');
+      console.log('Fetching full user profile from /user/profile...');
       const response = await api.get('/user/profile');
       
-      console.log('User profile response:', response.data);
-      
-      // Store updated user data
-      if (response.data?.data) {
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (response.data?.success && response.data?.data) {
+        const backendData = response.data.data;
+        
+        // Structure the user object to match your app's expectations
         const updatedUser = {
-          ...currentUser,
-          ...response.data.data,
-          // Ensure backward compatibility
-          _id: response.data.data.id || currentUser._id,
-          onboarding: response.data.data.isOnboarded || currentUser.onboarding
+          ...backendData,
+          _id: backendData.id || backendData._id, // Support both id formats
+          isOnboarded: backendData.isOnboarded || false,
+          // Map backend 'bankDetails' to frontend 'BankDetails' if necessary
+          BankDetails: backendData.bankDetails || {} 
         };
+
+        // Save to localStorage so other parts of the app (like Sidebar) can see it
         localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log('Profile successfully synced from database.');
       }
       
       return response.data;
     } catch (error) {
-      console.error('Get user profile error:', {
-        status: error.response?.status,
-        message: error.message,
-        data: error.response?.data
-      });
-      
+      console.error('Get user profile error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch user profile',
-        status: error.response?.status
+        message: error.response?.data?.message || 'Failed to fetch user profile'
       };
     }
   },

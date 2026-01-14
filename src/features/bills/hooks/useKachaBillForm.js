@@ -1,12 +1,11 @@
-// src/features/bills/hooks/useBillForm.js
+// src/features/bills/hooks/useKachaBillForm.js
 import { useState, useCallback, useEffect } from 'react';
 import { usePermissions } from '../../auth/hooks/usePermissions';
 
-export const useBillForm = (initialData) => {
+export const useKachaBillForm = (initialData) => {
   const [formData, setFormData] = useState(initialData);
   const [errors, setErrors] = useState({});
   const { canPerformAction } = usePermissions();
-  const { addNotification } = useNotifications();
 
   const validateField = (name, value) => {
     if (!canPerformAction()) {
@@ -16,10 +15,7 @@ export const useBillForm = (initialData) => {
     switch (name) {
       case 'clientName':
         return value.trim() === '' ? 'Client name is required' : '';
-      case 'clientGst':
-        return value && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(value) 
-          ? 'Invalid GST format' 
-          : '';
+      // No GST validation for Kacha Bills
       default:
         return '';
     }
@@ -81,7 +77,7 @@ export const useBillForm = (initialData) => {
     
     const newErrors = {};
     
-    // Validate buyer
+    // Validate buyer (no GST required for Kacha)
     if (!formData.buyer.clientName.trim()) {
       newErrors.clientName = 'Client name is required';
     }
@@ -105,20 +101,15 @@ export const useBillForm = (initialData) => {
 
   const calculateTotals = useCallback(() => {
     const subtotal = formData.products.reduce((sum, product) => sum + (product.rate * product.quantity), 0);
-    const gstAmount = (subtotal * formData.gstPercentage) / 100;
-    
-    // Calculate discount percentage based on subtotal
-    const discountPercentage = subtotal > 0 ? (formData.discount / subtotal) * 100 : 0;
     const discountAmount = formData.discount;
-    const totalAfterDiscount = subtotal - discountAmount;
-    const grandTotal = totalAfterDiscount + gstAmount;
+    const grandTotal = subtotal - discountAmount;
 
     return {
       subtotal,
-      gstAmount,
       discount: discountAmount,
-      discountPercentage,
+      discountPercentage: subtotal > 0 ? (discountAmount / subtotal) * 100 : 0,
       grandTotal
+      // No GST for Kacha Bills
     };
   }, [formData]);
 
