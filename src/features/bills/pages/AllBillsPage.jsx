@@ -20,112 +20,73 @@ const AllBillsPage = () => {
 
   const fetchBills = async () => {
     try {
-      const response = await billAPI.getBillsByType('pakka');
-      if (response.success) {
-        // Transform API response to match our expected format with correct amount fields
-        const transformedBills = response.data?.map(bill => {
-          // Calculate totals from backend data
-          const products = bill.products || [];
-          const subtotal = products.reduce((sum, product) => {
-            const amount = (product.rate || 0) * (product.quantity || 0);
-            return sum + amount;
-          }, 0);
-          
-          const gstAmount = bill.gstAmount || (subtotal * (bill.gstPercentage || 0)) / 100;
-          const discount = bill.discount || 0;
-          const grandTotal = bill.totalAmount || (subtotal + gstAmount - discount);
-          
-          return {
-            id: bill._id,
-            invoiceNumber: bill.invoiceNumber || `INV-${bill._id?.slice(-6)}`,
-            buyer: bill.buyer || { clientName: 'Unknown' },
-            type: bill.type || 'pakka',
-            products: products,
-            gstPercentage: bill.gstPercentage || 0,
-            discount: discount,
-            subtotal: subtotal,
-            gstAmount: gstAmount,
-            totalAmount: grandTotal,
-            status: bill.status || 'draft',
-            createdAt: bill.createdAt,
-            date: bill.date || bill.createdAt
-          };
-        }) || [];
-        setBills(transformedBills);
-      } else {
-        setBills([]); // Empty array if no data
-      }
+      setLoading(true);
+      // Fetch both Pakka and Kacha bills
+      const [pakkaResponse, kachaResponse] = await Promise.all([
+        billAPI.getBillsByType('pakka'),
+        billAPI.getKachaBills()
+      ]);
+
+      // Transform API responses to match our expected format
+      const transformBill = (bill, type) => {
+        // Calculate totals from backend data
+        const products = bill.products || [];
+        const subtotal = products.reduce((sum, product) => {
+          const amount = (product.rate || 0) * (product.quantity || 0);
+          return sum + amount;
+        }, 0);
+        
+        // Different calculation for Pakka vs Kacha
+        let gstAmount = 0;
+        let discount = 0;
+        let grandTotal = 0;
+        
+        if (type === 'pakka') {
+          gstAmount = bill.gstAmount || (subtotal * (bill.gstPercentage || 0)) / 100;
+          discount = bill.discount || 0;
+          grandTotal = bill.totalAmount || bill.grandTotal || (subtotal + gstAmount - discount);
+        } else {
+          // Kacha bills don't have GST
+          discount = bill.discount || 0;
+          grandTotal = bill.totalAmount || bill.grandTotal || (subtotal - discount);
+        }
+        
+        return {
+          id: bill._id,
+          invoiceNumber: bill.invoiceNumber || `INV-${bill._id?.slice(-6)}`,
+          buyer: bill.buyer || { clientName: 'Unknown' },
+          type: type,
+          products: products,
+          gstPercentage: bill.gstPercentage || 0,
+          discount: discount,
+          subtotal: subtotal,
+          gstAmount: gstAmount,
+          totalAmount: grandTotal,
+          status: bill.status || 'draft',
+          createdAt: bill.createdAt,
+          date: bill.date || bill.createdAt
+        };
+      };
+
+      // Combine and transform both types of bills
+      const pakkaBills = pakkaResponse?.data?.map(bill => transformBill(bill, 'pakka')) || [];
+      const kachaBills = kachaResponse?.data?.map(bill => transformBill(bill, 'kacha')) || [];
+      
+      const allBills = [...pakkaBills, ...kachaBills];
+      
+      // Sort by date (newest first)
+      allBills.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      setBills(allBills);
       setError(null);
     } catch (err) {
       console.error('Error fetching bills:', err);
       setError('Failed to load bills. Please try again.');
-      // Set mock data for development/demo with correct amounts
-      setBills(getMockBills());
+      setBills([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  // Mock data for development with correct amounts
-  const getMockBills = () => {
-    return [
-      {
-        id: '1',
-        invoiceNumber: 'INV-001',
-        buyer: { clientName: 'ABC Enterprises', clientGst: '27ABCDE1234F1Z5', clientAddress: '123 Street, City' },
-        type: 'pakka',
-        products: [
-          { name: 'Product A', rate: 1000, quantity: 5, amount: 5000 },
-          { name: 'Product B', rate: 2000, quantity: 3, amount: 6000 }
-        ],
-        gstPercentage: 18,
-        discount: 800,
-        subtotal: 11000,
-        gstAmount: 1980,
-        totalAmount: 12180,
-        status: 'paid',
-        createdAt: '2024-01-15',
-        date: '2024-01-15'
-      },
-      {
-        id: '2',
-        invoiceNumber: 'INV-002',
-        buyer: { clientName: 'XYZ Corporation', clientGst: '29FGHIJ5678K9L0', clientAddress: '456 Avenue, Town' },
-        type: 'pakka',
-        products: [
-          { name: 'Product C', rate: 1500, quantity: 4, amount: 6000 },
-          { name: 'Product D', rate: 2500, quantity: 2, amount: 5000 },
-          { name: 'Product E', rate: 1200, quantity: 3, amount: 3600 }
-        ],
-        gstPercentage: 18,
-        discount: 1460,
-        subtotal: 14600,
-        gstAmount: 2628,
-        totalAmount: 15768,
-        status: 'pending',
-        createdAt: '2024-01-16',
-        date: '2024-01-16'
-      },
-      {
-        id: '3',
-        invoiceNumber: 'INV-003',
-        buyer: { clientName: 'Global Traders', clientGst: '24MNOPQ9012R3S4', clientAddress: '789 Road, Village' },
-        type: 'pakka',
-        products: [
-          { name: 'Product F', rate: 3000, quantity: 3, amount: 9000 },
-          { name: 'Product G', rate: 1800, quantity: 4, amount: 7200 }
-        ],
-        gstPercentage: 18,
-        discount: 1620,
-        subtotal: 16200,
-        gstAmount: 2916,
-        totalAmount: 17496,
-        status: 'paid',
-        createdAt: '2024-01-17',
-        date: '2024-01-17'
-      }
-    ];
   };
 
   useEffect(() => {
@@ -153,6 +114,10 @@ const AllBillsPage = () => {
     navigate('/bills/pakka');
   };
 
+  const handleCreateKachaBill = () => {
+    navigate('/bills/kacha');
+  };
+
   const handleViewBill = (bill) => {
     setSelectedBill(bill);
     setShowBillModal(true);
@@ -172,10 +137,13 @@ const AllBillsPage = () => {
     // Get user's full name
     const userName = `${profile.personal.firstName || ''} ${profile.personal.lastName || ''}`.trim() || user?.name || 'User';
     
+    // Different template for Pakka vs Kacha bills
+    const isKacha = bill.type === 'kacha';
+    
     printWindow.document.write(`
       <html>
         <head>
-          <title>Invoice ${bill.invoiceNumber || `INV-${bill.id}`}</title>
+          <title>${isKacha ? 'Kacha Bill' : 'Invoice'} ${bill.invoiceNumber || `INV-${bill.id}`}</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 40px; }
             .invoice-header { display: flex; justify-content: space-between; margin-bottom: 30px; }
@@ -195,6 +163,14 @@ const AllBillsPage = () => {
             .invoice-title h1 { color: #1e40af; font-size: 28px; }
             .bank-details { background-color: #f8fafc; padding: 15px; border-radius: 5px; margin-top: 30px; }
             .bank-details h4 { margin-top: 0; }
+            .kacha-label { 
+              background-color: #f59e0b; 
+              color: white; 
+              padding: 2px 8px; 
+              border-radius: 4px; 
+              font-size: 12px; 
+              margin-left: 8px;
+            }
           </style>
         </head>
         <body>
@@ -205,15 +181,15 @@ const AllBillsPage = () => {
                 <p>${profile.company.companyAddress || 'Company Address'}</p>
                 <p>Email: ${profile.company.companyEmail || profile.personal.email || 'Email not set'}</p>
                 <p>Phone: ${profile.company.companyPhone || 'Phone not set'}</p>
-                <p>GST: ${profile.company.GST || 'GST not set'}</p>
+                ${!isKacha && profile.company.GST ? `<p>GST: ${profile.company.GST}</p>` : ''}
               </div>
             </div>
             <div class="company-header">
               <div class="invoice-title">
-                <h1>TAX INVOICE</h1>
+                <h1>${isKacha ? 'KACHA BILL <span class="kacha-label">PROFORMA</span>' : 'TAX INVOICE'}</h1>
               </div>
               <div>
-                <p><strong>Invoice #:</strong> ${bill.invoiceNumber || `INV-${bill.id}`}</p>
+                <p><strong>${isKacha ? 'Bill' : 'Invoice'} #:</strong> ${bill.invoiceNumber || `INV-${bill.id}`}</p>
                 <p><strong>Date:</strong> ${new Date(bill.date || bill.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
@@ -224,13 +200,13 @@ const AllBillsPage = () => {
             <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px;">
               <p><strong>${bill.buyer?.clientName || 'Client Name'}</strong><br>
               ${bill.buyer?.clientAddress || 'Address not provided'}<br>
-              ${bill.buyer?.clientGst ? `GST: ${bill.buyer.clientGst}` : ''}</p>
+              ${!isKacha && bill.buyer?.clientGst ? `GST: ${bill.buyer.clientGst}` : ''}</p>
             </div>
           </div>
           
           <table>
             <thead>
-              <tr style="background-color: #1e40af; color: white;">
+              <tr style="background-color: ${isKacha ? '#f59e0b' : '#1e40af'}; color: white;">
                 <th>#</th>
                 <th>Description</th>
                 <th>Rate (₹)</th>
@@ -253,10 +229,10 @@ const AllBillsPage = () => {
           
           <div class="totals">
             <p><strong>Subtotal:</strong> ₹${subtotal.toFixed(2)}</p>
-            <p><strong>GST (${gstPercentage}%):</strong> ₹${gstAmount.toFixed(2)}</p>
+            ${!isKacha && gstPercentage > 0 ? `<p><strong>GST (${gstPercentage}%):</strong> ₹${gstAmount.toFixed(2)}</p>` : ''}
             ${discount > 0 ? `<p><strong>Discount:</strong> -₹${discount.toFixed(2)}</p>` : ''}
             <p style="font-size: 18px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px; margin-top: 10px;">
-              <strong>Grand Total:</strong> ₹${grandTotal.toFixed(2)}
+              <strong>${isKacha ? 'Total Amount' : 'Grand Total'}:</strong> ₹${grandTotal.toFixed(2)}
             </p>
           </div>
           
@@ -292,9 +268,9 @@ const AllBillsPage = () => {
           
           <div class="footer">
             <p><strong>Payment Terms:</strong> Net 30 days</p>
-            <p><strong>Notes:</strong> ${profile.company.companyDescription || 'Thank you for your business!'}</p>
+            <p><strong>Notes:</strong> ${isKacha ? 'This is a Kacha Bill (Proforma Invoice). Not valid for tax purposes.' : (profile.company.companyDescription || 'Thank you for your business!')}</p>
             <p style="margin-top: 20px; font-style: italic; color: #666;">
-              This is a computer generated invoice. No signature required.
+              This is a computer generated ${isKacha ? 'proforma invoice' : 'invoice'}. No signature required.
             </p>
           </div>
         </body>
@@ -307,7 +283,7 @@ const AllBillsPage = () => {
 
   // Helper function to get company initials for logo
   const getCompanyInitials = () => {
-    if (!profile.company.companyName) return 'C';
+    if (!profile?.company?.companyName) return 'C';
     return profile.company.companyName
       .split(' ')
       .map(word => word[0])
@@ -318,8 +294,13 @@ const AllBillsPage = () => {
 
   // Get user's full name
   const getUserFullName = () => {
-    return `${profile.personal.firstName || ''} ${profile.personal.lastName || ''}`.trim() || user?.name || 'User';
+    return `${profile?.personal?.firstName || ''} ${profile?.personal?.lastName || ''}`.trim() || user?.name || 'User';
   };
+
+  // Filter bills by type
+  const pakkaBills = bills.filter(bill => bill.type === 'pakka');
+  const kachaBills = bills.filter(bill => bill.type === 'kacha');
+  const paidBills = bills.filter(bill => bill.status === 'paid');
 
   return (
     <div className="space-y-6">
@@ -327,7 +308,7 @@ const AllBillsPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">All Bills</h1>
           <p className="text-gray-600 mt-1">View and manage all your bills</p>
-          {profile.company.companyName && (
+          {profile?.company?.companyName && (
             <p className="text-sm text-blue-600 mt-1">
               Company: {profile.company.companyName}
             </p>
@@ -349,12 +330,20 @@ const AllBillsPage = () => {
             </svg>
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            onClick={handleCreateNewBill}
-          >
-            Create New Bill
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={handleCreateKachaBill}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              Create Kacha Bill
+            </button>
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={handleCreateNewBill}
+            >
+              Create Pakka Bill
+            </button>
+          </div>
         </div>
       </div>
 
@@ -387,6 +376,13 @@ const AllBillsPage = () => {
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">
                 Bill Preview - {selectedBill.invoiceNumber}
+                <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                  selectedBill.type === 'pakka' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {selectedBill.type === 'pakka' ? 'Pakka' : 'Kacha'}
+                </span>
               </h3>
               <button
                 onClick={() => setShowBillModal(false)}
@@ -402,17 +398,35 @@ const AllBillsPage = () => {
                 {/* Invoice Header */}
                 <div className="flex justify-between items-start mb-8">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-800">TAX INVOICE</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      {selectedBill.type === 'kacha' ? 'KACHA BILL' : 'TAX INVOICE'}
+                      {selectedBill.type === 'kacha' && (
+                        <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                          PROFORMA
+                        </span>
+                      )}
+                    </h2>
                     <div className="mt-2">
                       <div className="text-sm text-gray-600">Invoice #: {selectedBill.invoiceNumber}</div>
                       <div className="text-sm text-gray-600">Date: {new Date(selectedBill.date || selectedBill.createdAt).toLocaleDateString()}</div>
+                      {selectedBill.type === 'kacha' && (
+                        <div className="text-xs text-yellow-600 mt-1">
+                          This is a temporary/proforma invoice
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-                      <span className="text-2xl font-bold text-blue-600">{getCompanyInitials()}</span>
+                    <div className={`w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-2 ${
+                      selectedBill.type === 'kacha' ? 'bg-yellow-100' : 'bg-blue-100'
+                    }`}>
+                      <span className={`text-2xl font-bold ${
+                        selectedBill.type === 'kacha' ? 'text-yellow-600' : 'text-blue-600'
+                      }`}>
+                        {getCompanyInitials()}
+                      </span>
                     </div>
-                    <div className="text-lg font-bold text-gray-800">{profile.company.companyName || 'Your Company'}</div>
+                    <div className="text-lg font-bold text-gray-800">{profile?.company?.companyName || 'Your Company'}</div>
                   </div>
                 </div>
 
@@ -421,17 +435,19 @@ const AllBillsPage = () => {
                   <div>
                     <h3 className="font-semibold text-gray-700 mb-2">From:</h3>
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="font-medium text-gray-800">{profile.company.companyName}</div>
-                      <div className="text-sm text-gray-600 mt-1">{profile.company.companyAddress}</div>
+                      <div className="font-medium text-gray-800">{profile?.company?.companyName || 'Your Company'}</div>
+                      <div className="text-sm text-gray-600 mt-1">{profile?.company?.companyAddress || 'Company Address'}</div>
                       <div className="text-sm text-gray-600 mt-1">
-                        Email: {profile.company.companyEmail || profile.personal.email}
+                        Email: {profile?.company?.companyEmail || profile?.personal?.email || 'Email not set'}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
-                        Phone: {profile.company.companyPhone}
+                        Phone: {profile?.company?.companyPhone || 'Phone not set'}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        GST: {profile.company.GST}
-                      </div>
+                      {selectedBill.type !== 'kacha' && profile?.company?.GST && (
+                        <div className="text-sm text-gray-600 mt-1">
+                          GST: {profile.company.GST}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -446,7 +462,7 @@ const AllBillsPage = () => {
                           {selectedBill.buyer.clientAddress}
                         </div>
                       )}
-                      {selectedBill.buyer?.clientGst && (
+                      {selectedBill.type !== 'kacha' && selectedBill.buyer?.clientGst && (
                         <div className="text-sm text-gray-600 mt-1">
                           GST: {selectedBill.buyer.clientGst}
                         </div>
@@ -459,7 +475,7 @@ const AllBillsPage = () => {
                 <div className="mb-8">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-blue-600 text-white">
+                      <tr className={`${selectedBill.type === 'kacha' ? 'bg-yellow-600' : 'bg-blue-600'} text-white`}>
                         <th className="border border-gray-300 px-4 py-2 text-left">#</th>
                         <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
                         <th className="border border-gray-300 px-4 py-2 text-left">Rate (₹)</th>
@@ -488,10 +504,12 @@ const AllBillsPage = () => {
                       <span className="text-gray-600">Subtotal:</span>
                       <span className="font-medium">₹{selectedBill.subtotal?.toFixed(2) || '0.00'}</span>
                     </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600">GST ({selectedBill.gstPercentage || 0}%):</span>
-                      <span className="font-medium">₹{selectedBill.gstAmount?.toFixed(2) || '0.00'}</span>
-                    </div>
+                    {selectedBill.type !== 'kacha' && selectedBill.gstPercentage > 0 && (
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">GST ({selectedBill.gstPercentage || 0}%):</span>
+                        <span className="font-medium">₹{selectedBill.gstAmount?.toFixed(2) || '0.00'}</span>
+                      </div>
+                    )}
                     {selectedBill.discount > 0 && (
                       <div className="flex justify-between py-2">
                         <span className="text-gray-600">Discount:</span>
@@ -499,14 +517,22 @@ const AllBillsPage = () => {
                       </div>
                     )}
                     <div className="flex justify-between py-2 border-t border-gray-300 mt-2 pt-2">
-                      <span className="text-lg font-bold text-gray-800">Grand Total:</span>
-                      <span className="text-lg font-bold text-gray-800">₹{selectedBill.totalAmount?.toFixed(2) || '0.00'}</span>
+                      <span className={`text-lg font-bold ${
+                        selectedBill.type === 'kacha' ? 'text-yellow-700' : 'text-gray-800'
+                      }`}>
+                        {selectedBill.type === 'kacha' ? 'Total Amount:' : 'Grand Total:'}
+                      </span>
+                      <span className={`text-lg font-bold ${
+                        selectedBill.type === 'kacha' ? 'text-yellow-700' : 'text-gray-800'
+                      }`}>
+                        ₹{selectedBill.totalAmount?.toFixed(2) || '0.00'}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Bank Details Section */}
-                {profile.bank.bankName && profile.bank.accountNumber && (
+                {profile?.bank?.bankName && profile?.bank?.accountNumber && (
                   <div className="mt-6 bg-blue-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-gray-700 mb-2">Bank Details:</h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -534,7 +560,7 @@ const AllBillsPage = () => {
                 <div className="mt-8 pt-6 border-t border-gray-200">
                   <div className="flex justify-between">
                     <div className="text-center">
-                      <p className="font-medium text-gray-700">For {profile.company.companyName || 'Your Company'}</p>
+                      <p className="font-medium text-gray-700">For {profile?.company?.companyName || 'Your Company'}</p>
                       <div className="w-48 border-t border-gray-400 mt-4 mb-2 mx-auto"></div>
                       <p className="text-sm text-gray-600">Authorized Signatory</p>
                       <p className="text-sm text-gray-500">({getUserFullName()})</p>
@@ -548,7 +574,7 @@ const AllBillsPage = () => {
                 </div>
 
                 {/* Company Stamp if available */}
-                {profile.company.companyStamp && (
+                {profile?.company?.companyStamp && (
                   <div className="mt-6 text-center">
                     <p className="text-sm text-gray-600 mb-2">Company Stamp:</p>
                     <img 
@@ -568,11 +594,23 @@ const AllBillsPage = () => {
                     </div>
                     <div>
                       <div className="font-medium mb-1">Notes:</div>
-                      <div>{profile.company.companyDescription || 'Thank you for your business!'}</div>
+                      <div>
+                        {selectedBill.type === 'kacha' 
+                          ? 'This is a Kacha Bill (Proforma Invoice). Not valid for tax purposes.' 
+                          : profile?.company?.companyDescription || 'Thank you for your business!'}
+                      </div>
                     </div>
                   </div>
+                  {selectedBill.type === 'kacha' && (
+                    <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400">
+                      <p className="text-yellow-700 text-xs">
+                        <strong>Important:</strong> This is a temporary invoice. For official tax invoice with GST, 
+                        please convert this to a Pakka Bill.
+                      </p>
+                    </div>
+                  )}
                   <div className="mt-4 text-xs text-gray-500 italic">
-                    This is a computer generated invoice. No signature required.
+                    This is a computer generated {selectedBill.type === 'kacha' ? 'proforma invoice' : 'invoice'}. No signature required.
                   </div>
                 </div>
               </div>
@@ -607,19 +645,19 @@ const AllBillsPage = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="text-sm text-gray-600">Pakka Bills</div>
           <div className="text-2xl font-bold text-green-600">
-            {bills.filter(b => b.type === 'pakka').length}
+            {pakkaBills.length}
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-sm text-gray-600">Total Amount</div>
+          <div className="text-sm text-gray-600">Kacha Bills</div>
+          <div className="text-2xl font-bold text-yellow-600">
+            {kachaBills.length}
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="text-sm text-gray-600">Total Revenue</div>
           <div className="text-2xl font-bold text-blue-600">
             ₹{bills.reduce((sum, bill) => sum + (bill.totalAmount || 0), 0).toLocaleString()}
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-sm text-gray-600">Paid Bills</div>
-          <div className="text-2xl font-bold text-purple-600">
-            {bills.filter(b => b.status === 'paid').length}
           </div>
         </div>
       </div>

@@ -19,7 +19,6 @@ const KachaBillsPageContent = () => {
     companyAddress: '',
     companyPhone: '',
     companyEmail: ''
-    // No GST, Stamp, or Signature for Kacha Bills
   });
   
   const { user } = useAuth();
@@ -45,13 +44,11 @@ const KachaBillsPageContent = () => {
   // Initialize company details based on onboarding status
   useEffect(() => {
     if (isCompanyLocked && profile?.company) {
-      // Use profile company details when onboarding is complete
       setManualCompanyDetails({
         companyName: profile.company.companyName || '',
         companyAddress: profile.company.companyAddress || '',
         companyPhone: profile.company.companyPhone || '',
         companyEmail: profile.company.companyEmail || ''
-        // No GST, Stamp, or Signature for Kacha Bills
       });
     }
   }, [isCompanyLocked, profile]);
@@ -74,20 +71,19 @@ const KachaBillsPageContent = () => {
     setSuccessMessage('');
 
     try {
-      // Calculate discount percentage
-      const subtotal = formData.products.reduce((sum, product) => sum + (product.rate * product.quantity), 0);
-      const discountPercentage = subtotal > 0 ? (formData.discount / subtotal) * 100 : 0;
-
+      // Prepare data in the format expected by the API
       const billData = {
-        buyer: formData.buyer,
+        buyer: {
+          clientName: formData.buyer.clientName,
+          clientAddress: formData.buyer.clientAddress || '',
+          clientGst: formData.buyer.clientGst || ''
+        },
         products: formData.products.map(p => ({
           name: p.name,
           rate: p.rate,
           quantity: p.quantity
         })),
-        discount: discountPercentage,
-        type: 'kacha'
-        // No GST for Kacha Bills
+        discount: formData.discount || 0
       };
 
       const response = await billAPI.createKachaBill(billData);
@@ -322,7 +318,7 @@ const KachaBillsPageContent = () => {
             companyDetails={manualCompanyDetails}
             isCompanyLocked={isCompanyLocked}
             onUpdateCompany={handleUpdateCompany}
-            isKachaBill={true} // New prop to hide GST fields
+            isKachaBill={true}
           />
         </div>
 
@@ -339,7 +335,7 @@ const KachaBillsPageContent = () => {
               formData={formData} 
               totals={totals} 
               companyDetails={manualCompanyDetails}
-              isKachaBill={true} // New prop to customize preview
+              isKachaBill={true}
             />
           </div>
         </div>

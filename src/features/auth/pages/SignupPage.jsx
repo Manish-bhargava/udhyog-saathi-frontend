@@ -12,12 +12,14 @@ import ErrorMessage from '../components/ErrorMessage';
 import Divider from '../components/Divider';
 import SocialLoginButton from '../components/SocialLoginButton';
 import Logo from '../../../components/Logo';
+import { useNotifications } from '../../dashboard/context/NotificationContext'; 
+import MessageAlert from '../../profile/components/Common/MessageAlert';
 
 const SignupPage = () => {
   const navigate = useNavigate();
   const { signup, loading, error: apiError } = useSignup();
+  const { addNotification, notifications, removeNotification } = useNotifications(); // 2. Initialize notification hook
   
-  // Initialize form state with all required fields for signup
   const { formState, errors, handleChange, validateForm } = useAuthForm({
     name: '',
     email: '',
@@ -26,59 +28,50 @@ const SignupPage = () => {
   }, false);
 
   const [localError, setLocalError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-
-  useEffect(() => {
-    // Clear any previous errors on mount
-    setLocalError('');
-    setSuccessMessage('');
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError('');
-    setSuccessMessage('');
-    
-    // Validate form
-    if (!validateForm()) {
-      return;
-    }
-    
-    // Check if passwords match
-    if (formState.password !== formState.confirmPassword) {
-      setLocalError('Passwords do not match');
-      return;
-    }
-    
-    // Prepare data for API - includes name field
-    const userData = {
-      name: formState.name,
-      email: formState.email,
-      password: formState.password
-    };
-    
-    const result = await signup(userData);
-    
-    if (result.success) {
-      // Show success message and redirect to login
-      setSuccessMessage(result.message || 'Signup successful! Please login to continue.');
-      
-      // Clear form
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    } else {
-      setLocalError(result.error || 'Signup failed');
-    }
-  };
+    if (!validateForm()) return;
 
-  const handleSocialLogin = (provider) => {
-    console.log(`Logging in with ${provider}`);
-    // Implement social login logic here
+    const result = await signup(formState);
+
+    if (result.success) {
+      addNotification('Account created successfully!', 'success');
+      
+      const token = localStorage.getItem('token');
+      if (token) {
+          console.log('Signup Signup sighnup signup');
+          // If we have a token, we are "logged in"
+          navigate('/dashboard');
+      } else {
+          // If no token, we MUST go to login to get one
+          addNotification('Account created! Please log in to continue.', 'info');
+          navigate('/login');
+      }
+    } else {
+      const msg = result.error;
+      setLocalError(msg);
+
+      // Specific Redirect: "User already exists" -> Login
+      if (msg === 'User already exists') {
+        addNotification('You already have an account. Redirecting to Login...', 'warning');
+        setTimeout(() => navigate('/login'), 3000);
+      }
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      {/* 4. Add Global Alerts */}
+      {notifications.map(note => (
+        <MessageAlert 
+          key={note.id} 
+          message={note} 
+          onClose={() => removeNotification(note.id)} 
+        />
+      ))}
+
       <AuthCard>
         <div className="text-center mb-8">
           <Logo className="mx-auto h-12 w-auto" />
@@ -86,14 +79,11 @@ const SignupPage = () => {
           <Subheading>Start your free trial today</Subheading>
         </div>
 
-        {successMessage && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
-            {successMessage}
-          </div>
-        )}
-
+        {/* 5. FIXED: Use children for ErrorMessage */}
         {(apiError || localError) && (
-          <ErrorMessage message={apiError || localError} />
+          <ErrorMessage type={localError.toLowerCase().includes('already exist') ? 'warning' : 'error'}>
+            {apiError || localError}
+          </ErrorMessage>
         )}
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">

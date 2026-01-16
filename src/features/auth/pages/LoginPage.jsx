@@ -12,59 +12,53 @@ import ErrorMessage from '../components/ErrorMessage';
 import Divider from '../components/Divider';
 import SocialLoginButton from '../components/SocialLoginButton';
 import Logo from '../../../components/Logo';
+import { useNotifications } from '../../dashboard/context/NotificationContext';
+import MessageAlert from '../../profile/components/Common/MessageAlert';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login, loading, error: apiError } = useLogin();
   
-  // Initialize form state - NO name field for login
+  // Initialize notification context
+  const { addNotification, notifications, removeNotification } = useNotifications();
+
   const { formState, errors, handleChange, validateForm } = useAuthForm({
     email: '',
     password: ''
-  }, true); // Pass true for isLogin
-
+  }, true);
 
   const [localError, setLocalError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted'); // Debug log
     setLocalError('');
-    
-    // Validate form
-    console.log('Form state before validation:', formState); // Debug log
-    if (!validateForm()) {
-      console.log('Validation failed:', errors); // Debug log
-      return;
-    }
-    
-    // Prepare data for API - only email and password (no name)
-    const credentials = {
-      email: formState.email,
-      password: formState.password
-    };
-    
-    console.log('Attempting login with:', credentials); // Debug log
-    
-    const result = await login(credentials);
-    console.log('Login result:', result); // Debug log
-    
+    if (!validateForm()) return;
+
+    const result = await login(formState);
+
     if (result.success) {
-      console.log('Login successful, redirecting to dashboard'); // Debug log
+      addNotification('Login successful!', 'success');
       navigate('/dashboard');
     } else {
-      console.log('Login failed:', result.error); // Debug log
-      setLocalError(result.error || 'Login failed');
-    }
-  };
+      // This comes from the 'throw' in index.js via AuthContext
+      const msg = result.error; 
+      setLocalError(msg);
 
-  const handleSocialLogin = (provider) => {
-    console.log(`Logging in with ${provider}`);
-    // Implement social login logic here
+      // Specific Redirect: "User does not exist" -> Signup
+      if (msg === 'User does not exist') {
+        addNotification('No account found. Redirecting to Signup...', 'error');
+        setTimeout(() => navigate('/signup'), 3000);
+      }
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative">
+    {/* 1. Global Toasts */}
+    {notifications.map(note => (
+      <MessageAlert key={note.id} message={note} onClose={() => removeNotification(note.id)} />
+    ))}
+
       <AuthCard>
         <div className="text-center mb-8">
           <Logo className="mx-auto h-12 w-auto" />
@@ -72,8 +66,11 @@ const LoginPage = () => {
           <Subheading>Sign in to your account</Subheading>
         </div>
 
+        {/* 4. Corrected ErrorMessage implementation using children */}
         {(apiError || localError) && (
-          <ErrorMessage message={apiError || localError} />
+          <ErrorMessage type="error">
+            {localError || apiError}
+          </ErrorMessage>
         )}
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">

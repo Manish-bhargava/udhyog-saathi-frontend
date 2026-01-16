@@ -98,6 +98,16 @@ export const useKachaBillForm = (initialData) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData, canPerformAction]);
+  
+  // Add this method to the useKachaBillForm hook if not already present
+  const updateDiscount = useCallback((value) => {
+    if (!canPerformAction()) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      discount: value
+    }));
+  }, [canPerformAction]);
 
   const calculateTotals = useCallback(() => {
     const subtotal = formData.products.reduce((sum, product) => sum + (product.rate * product.quantity), 0);

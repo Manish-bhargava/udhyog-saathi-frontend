@@ -109,14 +109,12 @@ export const AuthProvider = ({ children }) => {
       }
       
       console.error('Login API response indicates failure:', response);
-      return { success: false, error: response?.message || 'Login failed' };
+      return { success: true, data: userData };
       
     } catch (error) {
       console.error('AuthContext login error:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || error.message || 'Login failed. Please try again.' 
-      };
+      const errorMessage = error.message || 'Login failed';
+      return { success: false, error: errorMessage };
     }
   };
 

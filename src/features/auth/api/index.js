@@ -70,34 +70,20 @@ export const authAPI = {
   // Signup API
   signup: async (userData) => {
     try {
-      const response = await api.post('/auth/signUp', {
-        name: userData.name,
-        email: userData.email,
-        password: userData.password
-      });
-      
-      // Store user and token if provided in signup response
-      if (response.data?.data) {
-        const { password, ...userWithoutPassword } = response.data.data;
-        const token = response.data.token || response.data.data.token;
-        
-        const userDataToStore = {
-          ...userWithoutPassword,
-          isOnboarded: false
-        };
-        
-        localStorage.setItem('user', JSON.stringify(userDataToStore));
-        if (token) {
-            localStorage.setItem('token', token);
-            console.log('Signup successful, token stored.');
-        }
+      const response = await api.post('/auth/signUp', userData);
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.data));
       }
-      
       return response.data;
     } catch (error) {
-      throw error.response?.data || { 
-        message: 'Signup failed. Please try again.' 
-      };
+      const status = error.response?.status;
+      // Map status codes if backend message is generic
+      let errorMsg = error.response?.data?.message || error.response?.data?.error || 'Signup failed';
+      
+      if (status === 409) errorMsg = 'User already exists';
+      
+      throw { message: errorMsg, status };
     }
   },
 
@@ -105,36 +91,25 @@ export const authAPI = {
   login: async (credentials) => {
     try {
       const response = await api.post('/auth/login', {
-        name: credentials.name || '', 
         email: credentials.email,
         password: credentials.password
       });
       
       if (response.data?.data) {
-        const { password, ...userWithoutPassword } = response.data.data;
-        // Extract real token from response (adjust path based on your backend structure)
-        const token = response.data.token || response.data.data.token;
-        
-        const userDataToStore = {
-          ...userWithoutPassword,
-          isOnboarded: userWithoutPassword.onboarding || userWithoutPassword.isOnboarded || false
-        };
-        
-        localStorage.setItem('user', JSON.stringify(userDataToStore));
-        
-        if (token) {
-            localStorage.setItem('token', token);
-            console.log('Login successful, real token stored.');
-        } else {
-            console.warn('Login successful but no token found in response.');
-        }
+        localStorage.setItem('user', JSON.stringify(response.data.data));
+        localStorage.setItem('token', response.data.token);
       }
-      
       return response.data;
     } catch (error) {
-      throw error.response?.data || { 
-        message: 'Login failed. Please check your credentials.' 
-      };
+      const status = error.response?.status;
+      let errorMsg = error.response?.data?.message || error.response?.data?.error || 'Login failed';
+
+      // FRONTEND LOGIC: Override generic messages based on status code
+      if (status === 404) errorMsg = 'User does not exist';
+      if (status === 401) errorMsg = 'Password is incorrect';
+      if (status === 403) errorMsg = 'Email is incorrect';
+
+      throw { message: errorMsg, status };
     }
   },
 
