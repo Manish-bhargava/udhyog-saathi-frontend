@@ -123,18 +123,18 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.signup(userData);
       if (response?.status === 200 || response?.message?.includes('successfully')) {
         // Set user as NEW (just signed up)
-        setIsNewUser(true);
+        if (response.token && response.data) {
+          setUser(response.data); // Update state immediately
+          setIsNewUser(true);
+          setIsOnboarded(false);
+        }
+
         localStorage.setItem('isNewUser', 'true');
-        
-        // New users are not onboarded yet
-        setIsOnboarded(false);
         localStorage.setItem('isOnboarded', 'false');
         
-        // Signup successful but user needs to login
-        // Return success but don't set user state (no token yet)
         return { 
           success: true, 
-          message: response.message || 'Signup successful. Please login.',
+          message: response.message || 'Signup successful.',
           data: response.data 
         };
       }

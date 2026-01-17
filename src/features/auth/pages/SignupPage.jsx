@@ -39,14 +39,9 @@ const SignupPage = () => {
     if (result.success) {
       addNotification('Account created successfully!', 'success');
       
-      const token = localStorage.getItem('token');
-      if (token) {
-          console.log('Signup Signup sighnup signup');
-          // If we have a token, we are "logged in"
+      if (result.data) {
           navigate('/dashboard');
       } else {
-          // If no token, we MUST go to login to get one
-          addNotification('Account created! Please log in to continue.', 'info');
           navigate('/login');
       }
     } else {

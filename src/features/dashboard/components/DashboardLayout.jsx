@@ -10,7 +10,7 @@ import { NotificationProvider } from '../context/NotificationContext';
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('/dashboard');
-  const { user, logout, isNewUser } = useAuth();
+  const { user, logout, isNewUser, isOnboarded } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -109,7 +109,7 @@ const DashboardLayout = () => {
           pt-16
         `}>
           <div className="p-4 md:p-6">
-            {!user.isOnboarded && <OnboardingBanner />}
+            {!isOnboarded && <OnboardingBanner />}
             <Outlet />
           </div>
         </main>

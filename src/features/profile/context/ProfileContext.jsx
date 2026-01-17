@@ -28,8 +28,7 @@ export const ProfileProvider = ({ children }) => {
       IFSC: '', 
       branchName: '' 
     },
-    onboarding: false,
-    isCompanyLocked: false
+    onboarding: false
   });
   
   const [loading, setLoading] = useState(true);
@@ -40,14 +39,12 @@ export const ProfileProvider = ({ children }) => {
   const clearMessage = () => setMessage(null);
 
   const fetchProfile = useCallback(async (forceRefresh = false) => {
-    // Don't fetch if not authenticated
     if (!isAuthenticated()) {
       console.log('Not authenticated, skipping profile fetch');
       setLoading(false);
       return;
     }
 
-    // Only fetch once unless forced
     if (hasFetched && !forceRefresh) {
       console.log('Profile already fetched, skipping');
       setLoading(false);
@@ -65,14 +62,12 @@ export const ProfileProvider = ({ children }) => {
         setHasFetched(true);
       } else {
         console.error('Failed to fetch profile:', result);
-        // Don't show error message for initial fetch to prevent UI disruption
         if (hasFetched) {
           setMessage({ type: 'error', text: result.message || 'Failed to load profile' });
         }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      // Don't show error message for initial fetch
       if (hasFetched) {
         setMessage({ type: 'error', text: error.message || 'Failed to load profile' });
       }
@@ -82,12 +77,10 @@ export const ProfileProvider = ({ children }) => {
   }, [hasFetched, isAuthenticated]);
 
   useEffect(() => {
-    // Only fetch profile when auth is initialized and user is authenticated
     if (isAuthenticated() && !hasFetched) {
       console.log('Auth is ready, fetching profile...');
       fetchProfile();
     } else if (!isAuthenticated()) {
-      // Clear profile if user logs out
       setProfile({
         personal: { firstName: '', lastName: '', email: '' },
         company: { 
@@ -107,8 +100,7 @@ export const ProfileProvider = ({ children }) => {
           IFSC: '', 
           branchName: '' 
         },
-        onboarding: false,
-        isCompanyLocked: false
+        onboarding: false
       });
       setHasFetched(false);
       setLoading(false);
@@ -135,13 +127,38 @@ export const ProfileProvider = ({ children }) => {
       }
 
       if (result.success) {
-        setMessage({ type: 'success', text: result.message });
+        // Set appropriate success message
+        let successMessage = result.message;
+        if (section === 'company') {
+          // Check if it's onboarding completion (first time saving company email)
+          const isOnboarding = !profile.company?.companyEmail && data.companyEmail;
+          if (isOnboarding) {
+            successMessage = 'Onboarding completed successfully!';
+            // Update profile to mark as onboarded
+            setProfile(prev => ({
+              ...prev,
+              company: { ...prev.company, ...data },
+              bank: {
+                ...prev.bank,
+                bankName: data.bankName || prev.bank.bankName,
+                accountNumber: data.accountNumber || prev.bank.accountNumber,
+                IFSC: data.IFSC || prev.bank.IFSC,
+                branchName: data.branchName || prev.bank.branchName
+              }
+            }));
+          } else {
+            successMessage = 'Company details updated successfully!';
+          }
+        }
+        
+        setMessage({ type: 'success', text: successMessage });
         
         // TRIGGER GLOBAL NOTIFICATION
-        addNotification(`Profile Updated: Your ${section} details were saved.`, 'success');
+        addNotification(successMessage, 'success');
         
+        // Refresh profile data from server
         await fetchProfile(true); 
-        return result;
+        return { ...result, successMessage };
       } else {
         setMessage({ type: 'error', text: result.message });
         return result;
@@ -163,7 +180,7 @@ export const ProfileProvider = ({ children }) => {
     fetchProfile,
     updateProfile,
     clearMessage,
-    isCompanyLocked: profile.onboarding || false
+    isCompanyLocked: false // Always false to allow editing all fields except email
   };
 
   return (

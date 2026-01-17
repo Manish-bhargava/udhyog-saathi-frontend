@@ -52,9 +52,8 @@ export const profileAPI = {
 
   async updateCompanyDetails(data) {
     try {
-      console.log('Company data received for onboarding:', data);
-      
       const formattedData = {
+        // Ensure these match the backend destructuring names exactly
         companyName: data.companyName || '',
         companyEmail: data.companyEmail || '',
         companyAddress: data.companyAddress || '',
@@ -72,22 +71,17 @@ export const profileAPI = {
 
       const response = await authAPI.onboarding(formattedData);
       
-      console.log('Onboarding API Response:', response);
-      
-      return {
-        success: true,
-        message: response?.message || 'Onboarding Completed Successfully',
-        data: response?.data || formattedData,
-        onboardingCompleted: true
-      };
-      
+      // Crucial: Update the LOCAL user state so the UI reflects the change
+      const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({
+        ...localUser,
+        company: response.data?.company || localUser.company,
+        BankDetails: response.data?.BankDetails || localUser.BankDetails
+      }));
+
+      return { success: true, data: response.data };
     } catch (error) {
-      console.error('Update company error:', error);
-      throw {
-        success: false,
-        message: error.response?.data?.message || 'Failed to save company details',
-        error: error
-      };
+      throw error;
     }
   },
 

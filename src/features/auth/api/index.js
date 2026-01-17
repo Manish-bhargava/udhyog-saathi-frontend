@@ -20,6 +20,7 @@ api.interceptors.request.use(
     // Debug logging
     console.log('Request interceptor - User ID:', user._id);
     console.log('Request interceptor - Token present:', !!token);
+    console.log("THIS IS FOR ME", token);
     
     // Add Authorization header if token exists
     if (token) {
@@ -73,6 +74,7 @@ export const authAPI = {
       const response = await api.post('/auth/signUp', userData);
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
+        console.log("THIS IS FOR ME", response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.data));
       }
       return response.data;
