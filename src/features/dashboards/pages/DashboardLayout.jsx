@@ -461,7 +461,7 @@ const DashboardLayout = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/bill', label: 'Bills', icon: '📄' },
+    { path: '/bills/all', label: 'Bills', icon: '📄' },
     { path: '/ai-assistant', label: 'AI Assistant', icon: '🤖' },
     { path: '/reports', label: 'Reports', icon: '📈' },
     { path: '/settings', label: 'Settings', icon: '⚙️' },

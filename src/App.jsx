@@ -188,11 +188,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-// --- CONTEXT PROVIDERS ---
-import { AuthProvider } from './features/auth/context/AuthContext';
-import { ProfileProvider } from './features/profile/context/ProfileContext';
-import { NotificationProvider } from './features/dashboard/context/NotificationContext';
-
 // --- CORE FEATURE IMPORTS ---
 import { LandingPage } from './features/landing';
 import LoginPage from './features/authentication/pages/LoginPage';
@@ -204,6 +199,10 @@ import DashboardPage from './features/dashboards/pages/DashboardPage';
 import ProfilePage from './features/profiles/pages/ProfilePage';
 
 import ChatInterface from './features/aiAssistant/ChatInterface';
+
+import AllBillsPage from './features/bills/pages/AllBillsPage';
+import PakkaBillsPage from './features/bills/pages/PakkaBillsPage';
+import KachaBillsPage from './features/bills/pages/KachaBillsPage';
 
 function App() {
   const [isAuth, setIsAuth] = useState(!!localStorage.getItem('token'));
@@ -220,9 +219,7 @@ function App() {
   }, []);
 
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <ProfileProvider>
+
           <Routes>
             <Route path='/' element={<LandingPage />} />
             <Route path='/login' element={<LoginPage />} />
@@ -246,7 +243,12 @@ function App() {
                 path='/profile' 
                 element={isAuth ? <ProfilePage /> : <Navigate to="/login" replace />} 
               />
-              
+              {/* Standardized Bill Routes */}
+              <Route path="bills">
+                <Route path="all" element={<AllBillsPage />} />
+                <Route path="pakka" element={<PakkaBillsPage />} />
+                <Route path="kacha" element={<KachaBillsPage />} />
+              </Route>
               {/* AI ASSISTANT */}
               <Route path='/ai-assistant' element={isAuth ? <ChatInterface /> : <Navigate to="/login" replace />} />
               
@@ -256,9 +258,6 @@ function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </ProfileProvider>
-      </AuthProvider>
-    </NotificationProvider>
   );
 }
 
