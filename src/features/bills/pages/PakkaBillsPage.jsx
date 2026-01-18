@@ -85,8 +85,8 @@ const PakkaBillsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Page Header */}
-        <div className="mb-8">
+       
+        {/* <div className="mb-8">
           <div className="flex items-center mb-4">
             <div className="p-3 bg-blue-50 rounded-xl mr-4">
               <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +113,7 @@ const PakkaBillsPage = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
