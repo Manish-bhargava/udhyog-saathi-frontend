@@ -237,7 +237,7 @@ const PakkaBillsPageContent = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-[calc(100vh-140px)] space-y-4">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Create Pakka Bill</h1>
