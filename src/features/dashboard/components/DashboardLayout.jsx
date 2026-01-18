@@ -11,6 +11,7 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('/dashboard');
   const { user, logout, isNewUser, isOnboarded } = useAuth();
+  console.log("THIS IS  ME", isOnboarded);
   const location = useLocation();
   const navigate = useNavigate();
 
