@@ -69,6 +69,7 @@ import TourPage from './features/onboarding/pages/TourPage';
 import DashboardLayout from './features/dashboards/pages/DashboardLayout';
 import DashboardPage from './features/dashboards/pages/DashboardPage';
 import ProfilePage from './features/profiles/pages/ProfilePage';
+import ChatInterface from './features/aiAssistant/ChatInterface'  
 
 /**
  * Main Application Component (v2 Stable Architecture)
@@ -140,6 +141,7 @@ function App() {
         
         {/* Placeholder Routes for Future Implementation */}
         <Route path='/ai-assistant' element={<div className="p-8 text-gray-500 font-medium">AI Assistant - Coming Soon</div>} />
+        {/* <Route path='/ai-assistant' element={<ChatInterface/>} /> */}
         <Route path='/reports' element={<div className="p-8 text-gray-500 font-medium">Business Reports - Coming Soon</div>} />
         <Route path='/settings' element={<div className="p-8 text-gray-500 font-medium">Account Settings - Coming Soon</div>} />
       </Route>
