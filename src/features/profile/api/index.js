@@ -1,172 +1,87 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000,
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+import { authAPI } from '../../auth/api/index.js';
 
 export const profileAPI = {
   async getProfile() {
     try {
-      // Get user from localStorage first
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const response = await authAPI.getUserProfile();
       
-      // Try to fetch actual profile data from the backend
-      try {
-        // First check if we have onboarding data stored locally
-        const onboardingData = localStorage.getItem('onboardingData');
+      if (response.success && response.data) {
+        const userData = response.data;
         
-        if (onboardingData) {
-          const parsedData = JSON.parse(onboardingData);
-          console.log('Found onboarding data in localStorage:', parsedData);
-          
-          return {
-            success: true,
-            data: {
-              personal: {
-                firstName: user.name?.split(' ')[0] || '',
-                lastName: user.name?.split(' ')[1] || '',
-                email: user.email || ''
-              },
-              company: { 
-                companyName: parsedData.companyName || '', 
-                GST: parsedData.GST || '', 
-                companyAddress: parsedData.companyAddress || '', 
-                companyPhone: parsedData.companyPhone || '', 
-                companyEmail: parsedData.companyEmail || '',
-                companyDescription: parsedData.companyDescription || '',
-                companyStamp: parsedData.companyStamp || '',
-                companySignature: parsedData.companySignature || ''
-              },
-              bank: { 
-                bankName: parsedData.bankName || '', 
-                accountNumber: parsedData.accountNumber || '', 
-                IFSC: parsedData.IFSC || '', 
-                branchName: parsedData.branchName || '' 
-              }
-            }
-          };
-        }
-      } catch (error) {
-        console.error('Error parsing onboarding data:', error);
-      }
-      
-      // Return default structure if no data found
-      return {
-        success: true,
-        data: {
+        // Handle name splitting
+        const nameParts = userData.name?.split(' ') || [];
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        // Format the data for the Profile Form
+        const profileData = {
           personal: {
-            firstName: user.name?.split(' ')[0] || '',
-            lastName: user.name?.split(' ')[1] || '',
-            email: user.email || ''
+            firstName: firstName,
+            lastName: lastName,
+            email: userData.email || ''
           },
-          company: { 
-            companyName: '', 
-            GST: '', 
-            companyAddress: '', 
-            companyPhone: '', 
-            companyEmail: '',
-            companyDescription: '',
-            companyStamp: '',
-            companySignature: ''
+          company: {
+            companyName: userData.company?.companyName || '',
+            GST: userData.company?.GST || '',
+            companyAddress: userData.company?.companyAddress || '',
+            companyPhone: userData.company?.companyPhone || '',
+            companyEmail: userData.company?.companyEmail || '',
+            companyDescription: userData.company?.companyDescription || '',
+            companyLogo: userData.company?.companyLogo || '',
+            companyStamp: userData.company?.companyStamp || '',
+            companySignature: userData.company?.companySignature || ''
           },
-          bank: { 
-            bankName: '', 
-            accountNumber: '', 
-            IFSC: '', 
-            branchName: '' 
-          }
-        }
-      };
+          bank: {
+            // Mapping backend 'bankDetails' to form 'bank' object
+            bankName: userData.bankDetails?.bankName || userData.BankDetails?.bankName || '',
+            accountNumber: userData.bankDetails?.accountNumber || userData.BankDetails?.accountNumber || '',
+            IFSC: userData.bankDetails?.IFSC || userData.BankDetails?.IFSC || '',
+            branchName: userData.bankDetails?.branchName || userData.BankDetails?.branchName || ''
+          },
+          onboarding: userData.isOnboarded || false
+        };
+        
+        return { success: true, data: profileData };
+      }
+      throw new Error('No data returned');
     } catch (error) {
-      console.error('Get profile error:', error);
-      return {
-        success: true,
-        data: {
-          personal: { firstName: '', lastName: '', email: '' },
-          company: { 
-            companyName: '', 
-            GST: '', 
-            companyAddress: '', 
-            companyPhone: '', 
-            companyEmail: '',
-            companyDescription: '',
-            companyStamp: '',
-            companySignature: ''
-          },
-          bank: { 
-            bankName: '', 
-            accountNumber: '', 
-            IFSC: '', 
-            branchName: '' 
-          }
-        }
-      };
+      console.error('Profile cleaning error:', error);
+      return { success: false, data: { personal: {}, company: {}, bank: {} } };
     }
   },
 
   async updateCompanyDetails(data) {
     try {
-      console.log('Company data received:', data);
-      
       const formattedData = {
+        // Ensure these match the backend destructuring names exactly
         companyName: data.companyName || '',
-        companyEmail: data.companyEmail || data.email || '',
-        companyAddress: data.companyAddress || 
-          `${data.address || ''}, ${data.city || ''}, ${data.state || ''} - ${data.pincode || ''}`.trim(),
-        companyPhone: data.companyPhone || data.phone || '',
+        companyEmail: data.companyEmail || '',
+        companyAddress: data.companyAddress || '',
+        companyPhone: data.companyPhone || '',
+        companyLogo: data.companyLogo || '',
         companyDescription: data.companyDescription || '',
-        GST: data.GST || data.gstNumber || '',
+        GST: data.GST || '',
         companyStamp: data.companyStamp || '',
         companySignature: data.companySignature || '',
         accountNumber: data.accountNumber || '',
-        IFSC: data.IFSC || data.ifscCode || '',
+        IFSC: data.IFSC || '',
         bankName: data.bankName || '',
         branchName: data.branchName || ''
       };
 
-      console.log('Formatted data for API:', formattedData);
+      const response = await authAPI.onboarding(formattedData);
       
-      // Save to localStorage for immediate access
-      localStorage.setItem('onboardingData', JSON.stringify(formattedData));
-      
-      const response = await api.post('/user/onboarding', formattedData);
-      
-      console.log('API Response:', response);
-      
-      return {
-        success: true,
-        message: response.data?.message || 'Company details saved successfully',
-        data: response.data?.data || formattedData,
-        onboardingCompleted: true
-      };
-      
+      // Crucial: Update the LOCAL user state so the UI reflects the change
+      const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({
+        ...localUser,
+        company: response.data?.company || localUser.company,
+        BankDetails: response.data?.BankDetails || localUser.BankDetails
+      }));
+
+      return { success: true, data: response.data };
     } catch (error) {
-      console.error('Update company error:', error);
-      
-      throw {
-        success: false,
-        message: error.response?.data?.message || 'Failed to save company details',
-        error: error
-      };
+      throw error;
     }
   },
 
@@ -179,22 +94,12 @@ export const profileAPI = {
       
       console.log('Updating personal info with:', formattedData);
       
-      const response = await api.put('/auth/update-profile', formattedData);
-      
-      console.log('Update personal info response:', response);
-      
-      // Update user in localStorage
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const updatedUser = {
-        ...currentUser,
-        ...formattedData
-      };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      const response = await authAPI.updateProfile(formattedData);
       
       return {
         success: true,
-        message: response.data?.message || 'Personal information updated successfully',
-        data: updatedUser
+        message: response?.message || 'Profile updated successfully',
+        data: response?.data
       };
     } catch (error) {
       console.error('Update personal info error:', error);
@@ -208,33 +113,23 @@ export const profileAPI = {
 
   async changePassword(data) {
     try {
-      console.log('Changing password with data:', {
-        current_password: data.current_password,
-        new_password: data.new_password,
-        confirm_password: data.confirm_password
-      });
-      
       const formattedData = {
         oldPassword: data.current_password,
         newPassword: data.new_password
       };
       
-      console.log('Sending to API with formatted data:', formattedData);
+      const response = await authAPI.changePassword(formattedData);
       
-      const response = await api.put('/auth/change-password', formattedData);
-      
-      console.log('Change password response:', response);
-      
-      if (response.data?.success) {
+      if (response?.success) {
         return {
           success: true,
-          message: response.data?.message || 'Password changed successfully',
-          data: response.data
+          message: response?.message || 'Password changed successfully',
+          data: response
         };
       } else {
         throw {
           success: false,
-          message: response.data?.message || 'Failed to change password'
+          message: response?.message || 'Failed to change password'
         };
       }
       
@@ -253,6 +148,6 @@ export const profileAPI = {
   },
 
   clearCompanyData() {
-    return { success: true, message: 'Company data cleared' };
+    return { success: true, message: 'Data cleared' };
   }
 };

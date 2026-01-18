@@ -1,7 +1,7 @@
 // src/features/bills/components/BillPreview.jsx
 import React from 'react';
 
-const BillPreview = ({ formData, totals, companyDetails }) => {
+const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) => {
   const hasCompanyLogo = companyDetails.companyStamp || companyDetails.companySignature;
 
   return (
@@ -9,10 +9,24 @@ const BillPreview = ({ formData, totals, companyDetails }) => {
       {/* Invoice Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">TAX INVOICE</h2>
+          <h2 className="text-2xl font-bold text-gray-800">
+            {isKachaBill ? 'KACHA BILL' : 'TAX INVOICE'}
+            {isKachaBill && (
+              <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                PROFORMA
+              </span>
+            )}
+          </h2>
           <div className="mt-2">
-            <div className="text-sm text-gray-600">Invoice #: INV-{Date.now().toString().slice(-6)}</div>
+            <div className="text-sm text-gray-600">
+              {isKachaBill ? 'Bill' : 'Invoice'} #: {isKachaBill ? 'KACHA-' : 'INV-'}{Date.now().toString().slice(-6)}
+            </div>
             <div className="text-sm text-gray-600">Date: {new Date().toLocaleDateString()}</div>
+            {isKachaBill && (
+              <div className="text-xs text-yellow-600 mt-1">
+                This is a temporary/proforma invoice
+              </div>
+            )}
           </div>
         </div>
         <div className="text-right">
@@ -38,8 +52,12 @@ const BillPreview = ({ formData, totals, companyDetails }) => {
               )}
             </div>
           ) : (
-            <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-              <span className="text-2xl font-bold text-blue-600">C</span>
+            <div className={`w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-2 ${
+              isKachaBill ? 'bg-yellow-100' : 'bg-blue-100'
+            }`}>
+              <span className={`text-2xl font-bold ${isKachaBill ? 'text-yellow-600' : 'text-blue-600'}`}>
+                C
+              </span>
             </div>
           )}
           <div className="text-lg font-bold text-gray-800">{companyDetails.companyName || 'Company Name'}</div>
@@ -55,7 +73,8 @@ const BillPreview = ({ formData, totals, companyDetails }) => {
             <div className="text-sm text-gray-600 mt-1">
               {companyDetails.companyAddress || 'Company Address'}
             </div>
-            {companyDetails.GST && (
+            {/* Hide GST for Kacha Bills */}
+            {!isKachaBill && companyDetails.GST && (
               <div className="text-sm text-gray-600 mt-1">
                 GST: {companyDetails.GST}
               </div>
@@ -84,7 +103,8 @@ const BillPreview = ({ formData, totals, companyDetails }) => {
                 {formData.buyer.clientAddress}
               </div>
             )}
-            {formData.buyer.clientGst && (
+            {/* Hide GST for Kacha Bills */}
+            {!isKachaBill && formData.buyer.clientGst && (
               <div className="text-sm text-gray-600 mt-1">
                 GST: {formData.buyer.clientGst}
               </div>
@@ -97,7 +117,7 @@ const BillPreview = ({ formData, totals, companyDetails }) => {
       <div className="mb-8">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className={`${isKachaBill ? 'bg-yellow-100' : 'bg-gray-100'}`}>
               <th className="border border-gray-300 px-4 py-2 text-left text-gray-700 font-medium">#</th>
               <th className="border border-gray-300 px-4 py-2 text-left text-gray-700 font-medium">Description</th>
               <th className="border border-gray-300 px-4 py-2 text-left text-gray-700 font-medium">Rate (₹)</th>
@@ -119,29 +139,42 @@ const BillPreview = ({ formData, totals, companyDetails }) => {
         </table>
       </div>
 
-      {/* Totals */}
+      {/* Totals - Different for Kacha Bills */}
       <div className="flex justify-end">
         <div className="w-64">
           <div className="flex justify-between py-2">
             <span className="text-gray-600">Subtotal:</span>
             <span className="font-medium">₹{totals.subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between py-2">
-            <span className="text-gray-600">GST ({formData.gstPercentage}%):</span>
-            <span className="font-medium">₹{totals.gstAmount.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-gray-600">Discount ({totals.discountPercentage.toFixed(2)}%):</span>
-            <span className="font-medium text-red-600">-₹{totals.discount.toFixed(2)}</span>
-          </div>
+          
+          {/* GST only for Pakka Bills */}
+          {!isKachaBill && formData.gstPercentage > 0 && (
+            <div className="flex justify-between py-2">
+              <span className="text-gray-600">GST ({formData.gstPercentage}%):</span>
+              <span className="font-medium">₹{totals.gstAmount?.toFixed(2) || '0.00'}</span>
+            </div>
+          )}
+          
+          {/* Discount */}
+          {totals.discount > 0 && (
+            <div className="flex justify-between py-2">
+              <span className="text-gray-600">Discount ({totals.discountPercentage.toFixed(2)}%):</span>
+              <span className="font-medium text-red-600">-₹{totals.discount.toFixed(2)}</span>
+            </div>
+          )}
+          
           <div className="flex justify-between py-2 border-t border-gray-300 mt-2 pt-2">
-            <span className="text-lg font-bold text-gray-800">Grand Total:</span>
-            <span className="text-lg font-bold text-gray-800">₹{totals.grandTotal.toFixed(2)}</span>
+            <span className={`${isKachaBill ? 'text-yellow-700' : 'text-gray-800'} text-lg font-bold`}>
+              {isKachaBill ? 'Total Amount:' : 'Grand Total:'}
+            </span>
+            <span className={`${isKachaBill ? 'text-yellow-700' : 'text-gray-800'} text-lg font-bold`}>
+              ₹{totals.grandTotal.toFixed(2)}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Footer Notes */}
+      {/* Footer Notes - Different for Kacha Bills */}
       <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-600">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -150,9 +183,21 @@ const BillPreview = ({ formData, totals, companyDetails }) => {
           </div>
           <div>
             <div className="font-medium mb-1">Notes:</div>
-            <div>Thank you for your business!</div>
+            <div>
+              {isKachaBill 
+                ? 'This is a Kacha Bill (Proforma Invoice). Not valid for tax purposes.' 
+                : 'Thank you for your business!'}
+            </div>
           </div>
         </div>
+        {isKachaBill && (
+          <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400">
+            <p className="text-yellow-700 text-xs">
+              <strong>Important:</strong> This is a temporary invoice. For official tax invoice with GST, 
+              please convert this to a Pakka Bill.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

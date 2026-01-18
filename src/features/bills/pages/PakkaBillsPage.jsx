@@ -8,6 +8,7 @@ import { INITIAL_BILL_DATA } from '../types';
 import { ProfileProvider, useProfile } from '../../profile/context/ProfileContext';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../auth/hooks/usePermissions';
 
 const PakkaBillsPageContent = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,6 +26,7 @@ const PakkaBillsPageContent = () => {
   
   const { user } = useAuth();
   const { profile, isCompanyLocked } = useProfile();
+  const { canPerformAction, getButtonProps } = usePermissions();
   const navigate = useNavigate();
 
   const {
@@ -59,6 +61,12 @@ const PakkaBillsPageContent = () => {
   }, [isCompanyLocked, profile]);
 
   const handleSaveBill = async () => {
+    if (!canPerformAction()) {
+      setErrorMessage('Please complete your onboarding to save bills');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
     if (!validateForm()) {
       setErrorMessage('Please fix the errors in the form');
       setTimeout(() => setErrorMessage(''), 3000);
@@ -210,6 +218,24 @@ const PakkaBillsPageContent = () => {
     setManualCompanyDetails(prev => ({ ...prev, ...data }));
   };
 
+  const handleSaveBillWithPermission = () => {
+    if (!canPerformAction()) {
+      setErrorMessage('Please complete your onboarding to save bills');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+    handleSaveBill();
+  };
+
+  const handleDownloadBillWithPermission = () => {
+    if (!canPerformAction()) {
+      setErrorMessage('Please complete your onboarding to download bills');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+    handleDownloadBill();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -233,8 +259,12 @@ const PakkaBillsPageContent = () => {
             Reset Form
           </button>
           <button
-            onClick={handleDownloadBill}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            {...getButtonProps(handleDownloadBillWithPermission, {
+              className: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors",
+              onDisabledClick: () => {
+                // This will be triggered when onboarding is not complete
+              }
+            })}
           >
             Download Bill
           </button>
@@ -318,13 +348,14 @@ const PakkaBillsPageContent = () => {
             Clear All
           </button>
           <button
-            onClick={handleSaveBill}
-            disabled={isSubmitting}
-            className={`px-6 py-3 rounded-lg transition-colors ${
-              isSubmitting
-                ? 'bg-blue-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            } text-white`}
+            {...getButtonProps(handleSaveBillWithPermission, {
+              className: `px-6 py-3 rounded-lg transition-colors ${
+                isSubmitting
+                  ? 'bg-blue-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              } text-white`,
+              disabled: isSubmitting
+            })}
           >
             {isSubmitting ? (
               <span className="flex items-center">

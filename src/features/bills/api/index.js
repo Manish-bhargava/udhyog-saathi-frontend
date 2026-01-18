@@ -50,6 +50,54 @@ const billAPI = {
       console.error('Error searching bills:', error);
       throw error;
     }
+  },
+
+  // Create Kacha Bill - REAL IMPLEMENTATION
+  createKachaBill: async (billData) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/bill/create/kaccha`, billData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating kacha bill:', error);
+      throw error;
+    }
+  },
+
+  // Get Kacha Bills - REAL IMPLEMENTATION
+  getKachaBills: async (page = 1, limit = 20) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/bill/all`, {
+        params: { type: 'kaccha', page, limit },
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching kacha bills:', error);
+      throw error;
+    }
+  },
+
+  // Search Kacha Bills
+  searchKachaBills: async (searchTerm) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/bill/search`, {
+        params: { q: searchTerm, type: 'kaccha' },
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error searching kacha bills:', error);
+      throw error;
+    }
   }
 };
 

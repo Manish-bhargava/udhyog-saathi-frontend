@@ -16,30 +16,26 @@ const ProfilePageContent = () => {
     fetchProfile();
   }, [fetchProfile]);
   
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => {
-        clearMessage();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message, clearMessage]);
-  
+  // Note: Removed the local setTimeout here because we added 
+  // an auto-close timer inside the MessageAlert.jsx file.
+
   const renderSection = () => {
     switch (activeSection) {
-      case 'company':
-        return <CompanySection />;
-      case 'personal':
-        return <PersonalSection />;
-      case 'password':
-        return <PasswordSection />;
-      default:
-        return <CompanySection />;
+      case 'company': return <CompanySection />;
+      case 'personal': return <PersonalSection />;
+      case 'password': return <PasswordSection />;
+      default: return <CompanySection />;
     }
   };
   
   return (
-    <>
+    <div className="relative min-h-screen">
+      {/* 1. Global Message Alert - Placed here for "Toast" behavior */}
+      <MessageAlert 
+        message={message} 
+        onClose={clearMessage} 
+      />
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -55,16 +51,7 @@ const ProfilePageContent = () => {
         </div>
       </div>
       
-      {/* Message Alert */}
-      {message && (
-        <div className="mb-6">
-          <MessageAlert 
-            type={message.type} 
-            message={message.text}
-            onClose={clearMessage}
-          />
-        </div>
-      )}
+      {/* 2. Removed the old message block from here to prevent duplicate alerts */}
       
       {/* Progress Section */}
       <div className="mb-8">
@@ -73,7 +60,7 @@ const ProfilePageContent = () => {
       
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-        {/* Left Column - Profile Card & Quick Actions */}
+        {/* Left Column */}
         <div className="lg:col-span-1">
           <div className="sticky top-24">
             <ProfileCard 
@@ -83,7 +70,7 @@ const ProfilePageContent = () => {
           </div>
         </div>
         
-        {/* Right Column - Forms */}
+        {/* Right Column */}
         <div className="lg:col-span-3">
           <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
             <div className="max-w-3xl mx-auto">
@@ -92,15 +79,17 @@ const ProfilePageContent = () => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
 // Wrap with Provider
-const ProfilePage = () => (
-  <ProfileProvider>
-    <ProfilePageContent />
-  </ProfileProvider>
-);
+const ProfilePage = () => {
+  return (
+    <ProfileProvider>
+      <ProfilePageContent />
+    </ProfileProvider>
+  );
+};
 
 export default ProfilePage;

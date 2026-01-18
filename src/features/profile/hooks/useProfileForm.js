@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useProfile } from './useProfile';
 
 export const useProfileForm = (section, initialValues) => {
-  const { updateProfile } = useProfile();
+  const { updateProfile, setMessage } = useProfile();
   const [formData, setFormData] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -83,19 +83,24 @@ export const useProfileForm = (section, initialValues) => {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setIsLoading(false);
-      console.log('Form validation errors:', newErrors);
+      
+      // NEW: Show red error alert for validation failure
+      setMessage({ 
+        type: 'error', 
+        text: 'Validation Failed: Please check the required fields.' 
+      });
+      
       return { success: false, error: 'Please fill all required fields correctly' };
     }
     
     try {
-      console.log('Calling updateProfile API for section:', section);
       const result = await updateProfile(section, dataToValidate);
-      console.log('updateProfile result:', result);
+      // Success is already handled inside updateProfile in ProfileContext.jsx
       setIsLoading(false);
       return result;
     } catch (error) {
-      console.error('Form submission error:', error);
       setIsLoading(false);
+      // Error is already handled inside updateProfile in ProfileContext.jsx
       return { success: false, error: 'Submission failed' };
     }
   };

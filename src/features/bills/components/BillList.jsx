@@ -1,9 +1,11 @@
 // src/features/bills/components/BillList.jsx
 import React, { useState } from 'react';
+import { usePermissions } from '../../auth/hooks/usePermissions';
 
-const BillList = ({ bills, loading }) => {
+const BillList = ({ bills, loading, onViewBill, onDownloadBill }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const { canPerformAction, getButtonProps } = usePermissions();
 
   const filteredBills = bills.filter(bill => {
     const matchesSearch = 
@@ -22,6 +24,22 @@ const BillList = ({ bills, loading }) => {
       </div>
     );
   }
+
+  const handleDownloadWithPermission = (bill) => {
+    if (!canPerformAction()) {
+      alert('Please complete your onboarding to download bills');
+      return;
+    }
+    onDownloadBill(bill);
+  };
+
+  const handleViewWithPermission = (bill) => {
+    if (!canPerformAction()) {
+      alert('Please complete your onboarding to view bill details');
+      return;
+    }
+    onViewBill(bill);
+  };
 
   return (
     <div className="space-y-4">
@@ -125,7 +143,7 @@ const BillList = ({ bills, loading }) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        ₹{bill.totalAmount?.toFixed(2) || '0.00'}
+                        ₹{bill.totalAmount?.toFixed(2) || bill.grandTotal?.toFixed(2) || '0.00'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -140,10 +158,26 @@ const BillList = ({ bills, loading }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-3">
+                      <button 
+                        onClick={() => handleViewWithPermission(bill)}
+                        {...getButtonProps(() => handleViewWithPermission(bill), {
+                          className: "text-blue-600 hover:text-blue-900 mr-3",
+                          onDisabledClick: () => {
+                            // This will be triggered when onboarding is not complete
+                          }
+                        })}
+                      >
                         View
                       </button>
-                      <button className="text-gray-600 hover:text-gray-900">
+                      <button 
+                        onClick={() => handleDownloadWithPermission(bill)}
+                        {...getButtonProps(() => handleDownloadWithPermission(bill), {
+                          className: "text-gray-600 hover:text-gray-900",
+                          onDisabledClick: () => {
+                            // This will be triggered when onboarding is not complete
+                          }
+                        })}
+                      >
                         Download
                       </button>
                     </td>

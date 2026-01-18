@@ -8,8 +8,26 @@ const DashboardPage = () => {
   const {
     user,
     stats,
-    quickActions
+    quickActions,
+    loading,
+    error
   } = useDashboard();
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-500 font-medium">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 text-blue-600 underline"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -22,7 +40,7 @@ const DashboardPage = () => {
                 Welcome to UdhyogSaathi, {user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}!
               </h2>
               <p className="text-blue-100">
-                Your business dashboard is getting ready. Here's a sneak peek of what's coming.
+                {loading ? 'Fetching your latest business data...' : "Your business dashboard is ready. Here's your current overview."}
               </p>
             </div>
             <button className="mt-4 md:mt-0 px-6 py-3 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-colors">
@@ -105,7 +123,7 @@ const DashboardPage = () => {
             </div>
           </div>
           
-          {/* Recent Activity Placeholder */}
+          {/* Quick Tips */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="font-bold text-gray-900 mb-4">Quick Tips</h3>
             <div className="space-y-3">
@@ -146,7 +164,7 @@ const DashboardPage = () => {
           {user?.email || 'user@example.com'}
         </p>
         <p className="mt-2">
-          This is a preview version. Full features will be available soon.
+          Real-time data enabled. Manage your business with ease.
         </p>
       </div>
     </>
