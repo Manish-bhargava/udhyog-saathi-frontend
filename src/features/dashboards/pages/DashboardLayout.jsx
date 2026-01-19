@@ -496,7 +496,7 @@ const DashboardLayout = () => {
                 <span className="text-xl font-bold">U</span>
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-bold tracking-tight uppercase">Udhyog</h2>
+                <h2 className="text-l font-bold tracking-tight uppercase">Udhyog Saathi</h2>
                 <p className="text-slate-400 text-xs mt-0.5">Business Suite</p>
               </div>
             </div>
