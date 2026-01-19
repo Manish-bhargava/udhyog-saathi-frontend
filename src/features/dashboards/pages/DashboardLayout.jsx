@@ -461,10 +461,10 @@ const DashboardLayout = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/bills/all', label: 'Bills', icon: '📄' },
+    { path: '/bills/template', label: 'Bills', icon: '📄' },
     { path: '/ai-assistant', label: 'AI Assistant', icon: '🤖' },
     { path: '/reports', label: 'Reports', icon: '📈' },
-    { path: '/settings', label: 'Settings', icon: '⚙️' },
+    { path: '/billing', label: 'Billing', icon: '₹' },
   ];
 
   const handleLogout = () => {
@@ -474,7 +474,7 @@ const DashboardLayout = () => {
 
   const getPageTitle = () => {
     if (location.pathname === '/profile') return 'Profile';
-    const item = navItems.find(i => location.pathname.startsWith(i.path.split('/all')[0]));
+    const item = navItems.find(i => location.pathname.startsWith(i.path.split('/template')[0]));
     return item?.label || 'Dashboard';
   };
 
@@ -512,7 +512,7 @@ const DashboardLayout = () => {
                   }}
                   className={`
                     w-full flex items-center px-4 py-3.5 space-x-3 rounded-xl transition-all duration-200
-                    ${location.pathname.startsWith(item.path.split('/all')[0]) 
+                    ${location.pathname.startsWith(item.path.split('/template')[0]) 
                       ? 'bg-blue-600/20 text-blue-100 border border-blue-500/30 shadow-sm' 
                       : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
                     }
@@ -524,19 +524,24 @@ const DashboardLayout = () => {
                 
                 {item.label === 'Bills' && billsMenuOpen && (
                   <div className="ml-10 mt-2 space-y-1.5">
-                    {['Kacha', 'Pakka', 'All'].map(sub => (
-                      <button 
-                        key={sub}
-                        onClick={() => navigate(`/bills/${sub.toLowerCase()}`)}
-                        className={`w-full text-left px-4 py-2.5 text-sm transition-all rounded-lg ${
-                          location.pathname === `/bills/${sub.toLowerCase()}` 
-                            ? 'text-white font-semibold bg-slate-700/50' 
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
-                        }`}
-                      >
-                        • {sub} Bills
-                      </button>
-                    ))}
+                    {['Kacha', 'Pakka', 'Template'].map(sub => {
+                      const label =
+                        sub === 'Template' ? 'Bill Templates' : `${sub} Bills`;
+
+                      return (
+                        <button 
+                          key={sub}
+                          onClick={() => navigate(`/bills/${sub.toLowerCase()}`)}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-all rounded-lg ${
+                            location.pathname === `/bills/${sub.toLowerCase()}` 
+                              ? 'text-white font-semibold bg-slate-700/50' 
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
+                          }`}
+                        >
+                          • {label}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

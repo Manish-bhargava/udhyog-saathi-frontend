@@ -279,6 +279,7 @@ const ProfilePage = () => {
           const d = res.data;
           const updatedUser = { ...user, name: d.name, email: d.email, onboarding: d.isOnboarded };
           localStorage.setItem('user', JSON.stringify(updatedUser));
+          console.log("Fetched Profile Data:", d);
           setUser(updatedUser);
           
           setCompanyData({

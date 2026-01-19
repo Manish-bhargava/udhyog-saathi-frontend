@@ -1,3 +1,204 @@
+// import React from 'react';
+
+// const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) => {
+//   const formatCurrency = (amount) => {
+//     return `₹${amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+//   };
+
+//   const formattedDate = new Date().toLocaleDateString('en-IN', { 
+//     day: 'numeric', 
+//     month: 'long', 
+//     year: 'numeric' 
+//   });
+
+//   const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
+
+//   return (
+//     <div className="bg-white w-full shadow-2xl rounded-lg flex flex-col p-8 print:shadow-none print:p-0">
+      
+//       {/* INVOICE HEADER AREA */}
+//       <div className="flex justify-between items-start mb-10">
+//         <div>
+//           <h1 className={`text-4xl font-bold tracking-tight mb-6 ${isKachaBill ? 'text-amber-600' : 'text-slate-800'}`}>
+//             {isKachaBill ? 'Proforma Invoice' : 'Invoice'}
+//           </h1>
+//           <div className="flex gap-12">
+//             <div>
+//               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Invoice Number</p>
+//               <p className="text-slate-800 font-medium">{invoiceNumber}</p>
+//             </div>
+//             <div>
+//               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Issue</p>
+//               <p className="text-slate-800 font-medium">{formattedDate}</p>
+//             </div>
+//           </div>
+//         </div>
+        
+//         <div className="text-right">
+//           {companyDetails.companyLogo ? (
+//             <img 
+//               src={companyDetails.companyLogo} 
+//               alt="Logo" 
+//               className="h-16 w-auto object-contain ml-auto mb-2" 
+//             />
+//           ) : (
+//             // Only show the fallback circle if a company name exists to provide an initial
+//             companyDetails.companyName && (
+//               <div className={`w-16 h-16 rounded-xl flex items-center justify-center ml-auto mb-2 ${isKachaBill ? 'bg-amber-50' : 'bg-slate-50'}`}>
+//                 <span className={`text-2xl font-bold ${isKachaBill ? 'text-amber-600' : 'text-slate-600'}`}>
+//                   {companyDetails.companyName?.charAt(0)}
+//                 </span>
+//               </div>
+//             )
+//           )}
+//         </div>
+//       </div>
+
+//       {/* ADDRESS COLUMNS */}
+//       <div className="flex flex-col md:flex-row gap-12 mb-10">
+//         {/* Billed To */}
+//         <div className="flex-1">
+//           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Billed To</h3>
+//           <p className="font-bold text-slate-800 text-lg">{formData.buyer.clientName}</p>
+          
+//           <p className="text-slate-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
+//             {formData.buyer.clientAddress}
+//           </p>
+
+//           {!isKachaBill && formData.buyer.clientGst && (
+//             <p className="text-slate-500 text-sm mt-2">GSTIN: {formData.buyer.clientGst}</p>
+//           )}
+//         </div>
+
+//         {/* From (Seller) */}
+//         <div className="flex-1">
+//           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">From</h3>
+//           <p className="font-bold text-slate-800 text-lg">
+//             {companyDetails.companyName}
+//           </p>
+//           <p className="text-slate-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
+//             {companyDetails.companyAddress}
+//           </p>
+//           {companyDetails.companyEmail && (
+//             <p className="text-slate-500 text-sm mt-1">{companyDetails.companyEmail}</p>
+//           )}
+//           {companyDetails.GST && !isKachaBill && (
+//             <p className="text-slate-500 text-sm mt-1">GST: {companyDetails.GST}</p>
+//           )}
+//         </div>
+//       </div>
+
+//       {/* PRODUCT TABLE */}
+//       <div className="flex-1">
+//         <table className="w-full mb-8">
+//           <thead>
+//             <tr className="border-b-2 border-slate-100">
+//               <th className="text-left py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
+//               <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Unit Cost</th>
+//               <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Qty</th>
+//               <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+//             </tr>
+//           </thead>
+//           <tbody className="divide-y divide-slate-50">
+//             {formData.products.map((p, i) => (
+//               <tr key={i}>
+//                 <td className="py-4 text-sm font-medium text-slate-700">{p.name}</td>
+//                 <td className="py-4 text-sm text-right text-slate-500">{formatCurrency(p.rate)}</td>
+//                 <td className="py-4 text-sm text-right text-slate-500">{p.quantity}</td>
+//                 <td className="py-4 text-sm text-right font-bold text-slate-700">{formatCurrency(p.rate * p.quantity)}</td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+
+//       {/* TOTALS SECTION */}
+//       <div className="flex justify-end border-t border-slate-100 pt-6">
+//         <div className="w-full max-w-xs space-y-3">
+//           <div className="flex justify-between text-sm text-slate-600">
+//             <span>Subtotal</span>
+//             <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
+//           </div>
+          
+//           {totals.discount > 0 && (
+//             <div className="flex justify-between text-sm text-slate-600">
+//               <span>Discount</span>
+//               <span className="text-red-500">- {formatCurrency(totals.discount)}</span>
+//             </div>
+//           )}
+
+//           {!isKachaBill && formData.gstPercentage > 0 && (
+//             <>
+//               <div className="flex justify-between text-sm text-slate-600">
+//                 <span>Tax Rate</span>
+//                 <span>{formData.gstPercentage}%</span>
+//               </div>
+//               <div className="flex justify-between text-sm text-slate-600">
+//                 <span>Tax Amount</span>
+//                 <span>+ {formatCurrency(totals.gstAmount || 0)}</span>
+//               </div>
+//             </>
+//           )}
+          
+//           <div className={`flex justify-between text-xl font-bold border-t border-slate-200 pt-4 mt-2 ${isKachaBill ? 'text-amber-700' : 'text-slate-800'}`}>
+//             <span>{isKachaBill ? 'Total Amount' : 'Invoice Total'}</span>
+//             <span>{formatCurrency(totals.grandTotal)}</span>
+//           </div>
+//         </div>
+//       </div>
+      
+//       {/* FOOTER: BANK DETAILS & NOTES */}
+//       <div className="mt-12 pt-6 border-t border-slate-100">
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+//           {/* Bank Details - Only visible if bankName exists */}
+//           {companyDetails.bankName && !isKachaBill && (
+//             <div className="text-xs text-slate-500">
+//               <p className="font-bold mb-2 uppercase tracking-wider text-slate-400">Bank Details</p>
+//               <div className="grid grid-cols-2 max-w-sm gap-y-1">
+//                 <span>Bank Name:</span>
+//                 <span className="font-medium text-slate-700">{companyDetails.bankName}</span>
+                
+//                 {companyDetails.accountNumber && (
+//                   <>
+//                     <span>Account No:</span>
+//                     <span className="font-medium text-slate-700">{companyDetails.accountNumber}</span>
+//                   </>
+//                 )}
+                
+//                 {companyDetails.IFSC && (
+//                   <>
+//                     <span>IFSC Code:</span>
+//                     <span className="font-medium text-slate-700">{companyDetails.IFSC}</span>
+//                   </>
+//                 )}
+//               </div>
+//             </div>
+//           )}
+
+//           {/* Notes */}
+//           <div className="text-xs text-slate-500">
+//             <p className="font-bold mb-2 uppercase tracking-wider text-slate-400">Notes & Terms</p>
+//             <p className="text-slate-600 italic whitespace-pre-wrap">
+//                 {formData.notes || (isKachaBill 
+//                   ? 'This is a proforma invoice (Kacha Bill). Not valid for tax purposes.' 
+//                   : 'Thank you for your business!')}
+//             </p>
+//           </div>
+//         </div>
+//         {isKachaBill && (
+//           <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-2">
+//             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+//             <p className="text-xs text-amber-800 font-medium">
+//               Important: This is a temporary invoice. Convert to Pakka Bill for official use.
+//             </p>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default BillPreview;
 
 
 
@@ -5,168 +206,150 @@ import React from 'react';
 
 const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) => {
   const formatCurrency = (amount) => {
-    return `₹${amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    return `₹${(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   };
 
+  const formattedDate = new Date().toLocaleDateString('en-IN', { 
+    day: 'numeric', month: 'long', year: 'numeric' 
+  });
+
+  const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
+
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 min-h-[700px] flex flex-col">
-      {/* Invoice Header */}
-      <div className="flex justify-between items-start pb-8 border-b border-gray-200 mb-8">
-        <div>
-          <div className={`text-3xl font-bold mb-2 ${isKachaBill ? 'text-amber-600' : 'text-blue-600'}`}>
-            {isKachaBill ? 'PROFORMA INVOICE' : 'TAX INVOICE'}
-          </div>
-          <div className="space-y-1">
-            <div className="text-sm text-gray-500">
-              Invoice #: <span className="font-medium text-gray-700">INV-{Date.now().toString().slice(-8)}</span>
+    <div className="bg-white w-full shadow-2xl rounded-lg flex flex-col p-6 md:p-10 print:shadow-none print:p-0 overflow-hidden">
+      
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-10 border-b pb-8 border-slate-100">
+        <div className="min-w-0 flex-1">
+          <h1 className={`text-4xl font-bold tracking-tight mb-6 break-words ${isKachaBill ? 'text-amber-600' : 'text-slate-800'}`}>
+            {isKachaBill ? 'Proforma Invoice' : 'Invoice'}
+          </h1>
+          <div className="flex flex-wrap gap-8">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Invoice Number</p>
+              <p className="text-slate-800 font-semibold break-all">{invoiceNumber}</p>
             </div>
-            <div className="text-sm text-gray-500">
-              Date: <span className="font-medium text-gray-700">{new Date().toLocaleDateString('en-IN', { 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric' 
-              })}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="text-right">
-          <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-3 mx-auto ${
-            isKachaBill ? 'bg-amber-50' : 'bg-blue-50'
-          }`}>
-            <span className={`text-2xl font-bold ${isKachaBill ? 'text-amber-600' : 'text-blue-600'}`}>
-              {companyDetails.companyName?.charAt(0) || 'C'}
-            </span>
-          </div>
-          <div className="text-lg font-bold text-gray-900">{companyDetails.companyName || 'Your Company'}</div>
-          {companyDetails.GST && !isKachaBill && (
-            <div className="text-sm text-gray-600 mt-1">GST: {companyDetails.GST}</div>
-          )}
-        </div>
-      </div>
-
-      {/* Company & Buyer Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-        <div>
-          <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">From</h4>
-          <div className="bg-gray-50 p-5 rounded-xl">
-            <div className="font-semibold text-gray-900 text-lg mb-2">{companyDetails.companyName || 'Your Company Name'}</div>
-            <div className="text-gray-600 text-sm mb-1">{companyDetails.companyAddress || 'Company Address, City, State'}</div>
-            {companyDetails.companyEmail && (
-              <div className="text-gray-600 text-sm mb-1">Email: {companyDetails.companyEmail}</div>
-            )}
-            {companyDetails.companyPhone && (
-              <div className="text-gray-600 text-sm">Phone: {companyDetails.companyPhone}</div>
-            )}
-          </div>
-        </div>
-        
-        <div>
-          <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Bill To</h4>
-          <div className="bg-gray-50 p-5 rounded-xl">
-            <div className="font-semibold text-gray-900 text-lg mb-2">{formData.buyer.clientName || 'Client Name'}</div>
-            <div className="text-gray-600 text-sm mb-1">{formData.buyer.clientAddress || 'Client Address'}</div>
-            {!isKachaBill && formData.buyer.clientGst && (
-              <div className="text-gray-600 text-sm">GST: {formData.buyer.clientGst}</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Products Table */}
-      <div className="flex-1 mb-8">
-        <div className="rounded-xl overflow-hidden border border-gray-200">
-          <table className="w-full">
-            <thead className={`${isKachaBill ? 'bg-amber-50' : 'bg-blue-50'} border-b border-gray-200`}>
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">#</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rate</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Qty</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {formData.products.map((p, i) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm text-gray-600">{i + 1}</td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{p.name || `Item ${i + 1}`}</div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{formatCurrency(p.rate)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">x{p.quantity}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatCurrency(p.rate * p.quantity)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Totals Section */}
-      <div className="border-t border-gray-200 pt-8">
-        <div className="max-w-md ml-auto space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Subtotal</span>
-            <span className="font-medium text-gray-900">{formatCurrency(totals.subtotal)}</span>
-          </div>
-          
-          {!isKachaBill && formData.gstPercentage > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">GST ({formData.gstPercentage}%)</span>
-              <span className="font-medium text-gray-900">{formatCurrency(totals.gstAmount || 0)}</span>
-            </div>
-          )}
-          
-          {totals.discount > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Discount</span>
-              <span className="font-medium text-red-600">-{formatCurrency(totals.discount)}</span>
-            </div>
-          )}
-          
-          <div className="border-t border-gray-300 pt-4 mt-4">
-            <div className="flex justify-between items-center">
-              <span className={`text-xl font-bold ${isKachaBill ? 'text-amber-700' : 'text-blue-700'}`}>
-                {isKachaBill ? 'Total Amount' : 'Grand Total'}
-              </span>
-              <span className={`text-2xl font-bold ${isKachaBill ? 'text-amber-700' : 'text-blue-700'}`}>
-                {formatCurrency(totals.grandTotal)}
-              </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date of Issue</p>
+              <p className="text-slate-800 font-semibold">{formattedDate}</p>
             </div>
           </div>
         </div>
         
-        {/* Invoice Notes */}
-        <div className="mt-10 pt-6 border-t border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h5 className="text-sm font-semibold text-gray-700 mb-2">Payment Terms</h5>
-              <p className="text-sm text-gray-600">Net 30 days from invoice date</p>
-            </div>
-            <div>
-              <h5 className="text-sm font-semibold text-gray-700 mb-2">Notes</h5>
-              <p className="text-sm text-gray-600">
-                {isKachaBill 
-                  ? 'This is a proforma invoice (Kacha Bill). Not valid for tax purposes.' 
-                  : 'Thank you for your business!'}
-              </p>
-            </div>
-          </div>
-          
-          {isKachaBill && (
-            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-              <div className="flex items-start">
-                <svg className="w-5 h-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.768 0L3.338 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <p className="text-sm text-amber-800">
-                  <span className="font-semibold">Important:</span> This is a temporary invoice. Convert to Pakka Bill for GST-compliant tax invoice.
-                </p>
+        <div className="flex-shrink-0 self-center md:self-start">
+          {companyDetails.companyLogo ? (
+            <img src={companyDetails.companyLogo} alt="Logo" className="max-h-20 w-auto object-contain" />
+          ) : (
+            companyDetails.companyName && (
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isKachaBill ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
+                <span className="text-2xl font-black">{companyDetails.companyName?.charAt(0)}</span>
               </div>
-            </div>
+            )
           )}
         </div>
+      </div>
+
+      {/* ADDRESSES */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
+        <div className="min-w-0">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Billed To</h3>
+          <p className="font-bold text-slate-800 text-xl break-words leading-tight mb-2">
+            {formData.buyer.clientName}
+          </p>
+          <p className="text-slate-500 text-sm whitespace-pre-wrap break-words leading-relaxed">
+            {formData.buyer.clientAddress}
+          </p>
+          {!isKachaBill && formData.buyer.clientGst && (
+            <p className="text-slate-600 text-xs mt-3 font-medium bg-slate-50 inline-block px-2 py-1 rounded">
+              GSTIN: {formData.buyer.clientGst}
+            </p>
+          )}
+        </div>
+
+        <div className="min-w-0 md:text-right">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 md:ml-auto">From</h3>
+          <p className="font-bold text-slate-800 text-xl break-words leading-tight mb-2">
+            {companyDetails.companyName}
+          </p>
+          <p className="text-slate-500 text-sm whitespace-pre-wrap break-words leading-relaxed">
+            {companyDetails.companyAddress}
+          </p>
+          {companyDetails.GST && !isKachaBill && (
+             <p className="text-slate-600 text-xs mt-3 font-medium bg-slate-50 inline-block px-2 py-1 rounded">
+              GST: {companyDetails.GST}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <div className="flex-1 overflow-x-auto">
+        <table className="w-full mb-8 border-collapse">
+          <thead>
+            <tr className="border-b-2 border-slate-100">
+              <th className="text-left py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-1/2">Description</th>
+              <th className="text-right py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rate</th>
+              <th className="text-right py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-16">Qty</th>
+              <th className="text-right py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {formData.products.map((p, i) => (
+              <tr key={i} className="group">
+                <td className="py-5 pr-4 text-sm font-semibold text-slate-700 break-words max-w-[200px]">
+                  {p.name || 'Untitled Product/Service'}
+                </td>
+                <td className="py-5 text-sm text-right text-slate-500 tabular-nums">
+                  {formatCurrency(p.rate)}
+                </td>
+                <td className="py-5 text-sm text-right text-slate-500 tabular-nums">
+                  {p.quantity}
+                </td>
+                <td className="py-5 text-sm text-right font-bold text-slate-800 tabular-nums">
+                  {formatCurrency(p.rate * p.quantity)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* TOTALS */}
+      <div className="flex flex-col items-end pt-6 border-t border-slate-100">
+        <div className="w-full max-w-xs space-y-3">
+          <div className="flex justify-between text-sm text-slate-500">
+            <span>Subtotal</span>
+            <span className="font-semibold text-slate-700">{formatCurrency(totals.subtotal)}</span>
+          </div>
+          {/* ... other total rows ... */}
+          <div className={`flex justify-between text-2xl font-black pt-4 border-t-2 mt-2 ${isKachaBill ? 'text-amber-600 border-amber-50' : 'text-slate-900 border-slate-900'}`}>
+            <span className="mr-4">Total</span>
+            <span className="break-all">{formatCurrency(totals.grandTotal)}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* FOOTER */}
+      <div className="mt-16 pt-8 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Notes & Terms</p>
+          <p className="text-sm text-slate-600 italic whitespace-pre-wrap break-words leading-relaxed">
+            {formData.notes || (isKachaBill ? 'Proforma only.' : 'Thank you!')}
+          </p>
+        </div>
+        {companyDetails.bankName && !isKachaBill && (
+          <div className="min-w-0 bg-slate-50 p-4 rounded-xl">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Bank Transfer Details</p>
+            <div className="grid grid-cols-2 gap-y-1 text-xs">
+              <span className="text-slate-500">Bank:</span>
+              <span className="font-bold text-slate-700 break-words">{companyDetails.bankName}</span>
+              <span className="text-slate-500">Account:</span>
+              <span className="font-bold text-slate-700 break-all">{companyDetails.accountNumber}</span>
+              <span className="text-slate-500">IFSC:</span>
+              <span className="font-bold text-slate-700 break-all">{companyDetails.IFSC}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

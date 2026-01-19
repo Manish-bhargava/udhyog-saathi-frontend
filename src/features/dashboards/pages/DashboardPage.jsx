@@ -14,12 +14,14 @@ import {
   Download,
   ArrowUpRight
 } from 'lucide-react';
+import { profileAPI } from '../../profiles/api';
 
 export default function UdhyogDashboard() {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all'); 
   const [viewMode, setViewMode] = useState('table');   
+  const [profileData, setProfileData] = useState(null);
   
   // Modal State
   const [selectedBill, setSelectedBill] = useState(null);
@@ -27,41 +29,43 @@ export default function UdhyogDashboard() {
 
   // --- 1. API FETCHING ---
   useEffect(() => {
-    const fetchBills = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token'); 
         if (!token) return;
 
-        // Fetching all bills
-        const response = await fetch('http://localhost:3000/api/v1/bill/all', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            }
-        });
+        // Fetch Bills and Profile in parallel
+        const [billRes, profileRes] = await Promise.all([
+          fetch('http://localhost:3000/api/v1/bill/all', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          profileAPI.getProfile() // Using your existing profile API helper
+        ]);
 
-        const result = await response.json();
-
-        if (result.success) {
-          let data = result.data || [];
-          // Client-side filtering
+        const billResult = await billRes.json();
+        
+        if (billResult.success) {
+          let data = billResult.data || [];
           if (filterType !== 'all') {
             data = data.filter(bill => bill.billType === filterType);
           }
           setBills(data);
         }
+
+        if (profileRes.success) {
+          setProfileData(profileRes.data);
+        }
       } catch (error) {
-        console.error("Error fetching bills:", error);
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBills();
+    fetchData();
   }, [filterType]);
-
+  console.log("Bills Data:", bills);
   // --- 2. STATS & ANALYTICS CALCULATION ---
   const stats = useMemo(() => {
     const totalRev = bills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
@@ -146,7 +150,7 @@ export default function UdhyogDashboard() {
           <p className="text-slate-500 mt-1">Overview of your business performance.</p>
         </div>
         <button 
-            onClick={() => window.location.href = '/create/pakka'}
+            onClick={() => window.location.href = '/bills/pakka'}
             className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-lg transition active:scale-95"
         >
           <FileText size={18} /> New Bill
@@ -331,187 +335,192 @@ export default function UdhyogDashboard() {
         </div>
       )}
 
-      {/* --- INVOICE VIEW MODAL (Responsive & Clean) --- */}
-      {isModalOpen && selectedBill && (
-        // Overlay: Fixed to screen, centers content
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm print:p-0 print:bg-white print:block">
-          
-          {/* Container: Max Height 90vh, Flex Col for scrolling, Hidden scrollbar on print */}
-          <div className="bg-white w-full max-w-3xl shadow-2xl rounded-lg flex flex-col max-h-[90vh] print:shadow-none print:w-full print:max-w-none print:max-h-none print:h-auto">
-            
-            {/* 1. FIXED HEADER (Controls) - Hidden on print */}
-            <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 rounded-t-lg shrink-0 print:hidden">
-                <h2 className="font-bold text-slate-700">Invoice Preview</h2>
-                <div className="flex gap-2">
-                    <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-100">
-                        <Printer size={16} /> Print
-                    </button>
-                    <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-red-100 text-slate-400 hover:text-red-600 rounded transition">
-                        <X size={20} />
-                    </button>
-                </div>
-            </div>
 
-            {/* 2. SCROLLABLE BODY */}
-            <div className="overflow-y-auto p-8 print:p-0 print:overflow-visible">
+      {/* --- INVOICE VIEW MODAL (Updated for Profile Data) --- */}
+      {isModalOpen && selectedBill && (() => {
+        const isKachaBill = selectedBill.billType === 'kaccha' || !selectedBill.taxAmount;
+
+        const formatCurrency = (amount) => {
+          return `₹${Number(amount)?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+        };
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm print:p-0 print:bg-white print:block">
+            <div className="bg-white w-full max-w-3xl shadow-2xl rounded-lg flex flex-col max-h-[90vh] print:shadow-none print:w-full print:max-w-none print:max-h-none print:h-auto overflow-hidden">
               
-              {/* INVOICE HEADER AREA */}
-              <div className="flex justify-between items-start mb-8">
-                 <div>
-                    <h1 className="text-4xl font-bold text-slate-800 tracking-tight mb-6">Invoice</h1>
-                    <div className="flex gap-12">
-                        <div>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Invoice Number</p>
-                            <p className="text-slate-800 font-medium">{formatInvoiceId(selectedBill.invoiceNumber)}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Issue</p>
-                            <p className="text-slate-800 font-medium">{formatDate(selectedBill.invoiceDate)}</p>
-                        </div>
-                    </div>
-                 </div>
-                 
-                 {/* CONDITIONAL LOGO */}
-                 <div className="text-right">
-                    {selectedBill.sellerDetails?.companyLogo ? (
-                        <img 
-                            src={selectedBill.sellerDetails.companyLogo} 
-                            alt="Logo" 
-                            className="h-16 w-auto object-contain ml-auto mb-2" 
-                        />
-                    ) : (
-                        // Placeholder only if needed, or empty div to maintain spacing
-                        <div className="h-4"></div> 
-                    )}
-                 </div>
+              {/* FIXED HEADER */}
+              <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 shrink-0 print:hidden">
+                  <h2 className="font-bold text-slate-700">Invoice Preview</h2>
+                  <div className="flex gap-2">
+                      <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-100">
+                          <Printer size={16} /> Print
+                      </button>
+                      <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-red-100 text-slate-400 hover:text-red-600 rounded transition">
+                          <X size={20} />
+                      </button>
+                  </div>
               </div>
 
-              {/* ADDRESS COLUMNS */}
-              <div className="flex flex-col md:flex-row gap-12 mb-8">
-                {/* Billed To */}
-                <div className="flex-1">
+              {/* SCROLLABLE BODY */}
+              <div className="overflow-y-auto p-8 print:p-0 print:overflow-visible bg-white">
+                
+                {/* INVOICE HEADER AREA */}
+                <div className="flex justify-between items-start mb-10">
+                  <div>
+                    <h1 className={`text-4xl font-bold tracking-tight mb-6 ${isKachaBill ? 'text-amber-600' : 'text-slate-800'}`}>
+                      {isKachaBill ? 'Proforma Invoice' : 'Invoice'}
+                    </h1>
+                    <div className="flex gap-12">
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Invoice Number</p>
+                        <p className="text-slate-800 font-medium">{formatInvoiceId(selectedBill.invoiceNumber)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Issue</p>
+                        <p className="text-slate-800 font-medium">{formatDate(selectedBill.invoiceDate || selectedBill.createdAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* SELLER LOGO (From Profile) */}
+                  <div className="text-right">
+                    {profileData?.company?.companyLogo ? (
+                      <img 
+                        src={profileData.company.companyLogo} 
+                        alt="Logo" 
+                        className="h-16 w-auto object-contain ml-auto mb-2" 
+                      />
+                    ) : (
+                      profileData?.company?.companyName && (
+                        <div className={`w-16 h-16 rounded-xl flex items-center justify-center ml-auto mb-2 ${isKachaBill ? 'bg-amber-50' : 'bg-slate-50'}`}>
+                          <span className={`text-2xl font-bold ${isKachaBill ? 'text-amber-600' : 'text-slate-600'}`}>
+                            {profileData.company.companyName.charAt(0)}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                {/* ADDRESS COLUMNS */}
+                <div className="flex flex-col md:flex-row gap-12 mb-10">
+                  {/* Billed To (From Bill Data) */}
+                  <div className="flex-1">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Billed To</h3>
                     <p className="font-bold text-slate-800 text-lg">{selectedBill.buyer?.clientName}</p>
-                    
-                    {selectedBill.buyer?.clientAddress && (
-                         <p className="text-slate-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
-                            {selectedBill.buyer.clientAddress}
-                        </p>
+                    <p className="text-slate-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
+                      {selectedBill.buyer?.clientAddress}
+                    </p>
+                    {!isKachaBill && selectedBill.buyer?.clientGst && (
+                      <p className="text-slate-500 text-sm mt-2">GSTIN: {selectedBill.buyer.clientGst}</p>
                     )}
+                  </div>
 
-                    {selectedBill.buyer?.clientGst && (
-                        <p className="text-slate-500 text-sm mt-2">GSTIN: {selectedBill.buyer.clientGst}</p>
-                    )}
-                </div>
-
-                {/* From (Seller) */}
-                <div className="flex-1">
+                  {/* From Seller (From Profile Data) */}
+                  <div className="flex-1">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">From</h3>
                     <p className="font-bold text-slate-800 text-lg">
-                        {selectedBill.sellerDetails?.companyName || "Your Company"}
+                      {profileData?.company?.companyName || "Your Company"}
                     </p>
-                    {selectedBill.sellerDetails?.companyAddress && (
-                        <p className="text-slate-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
-                            {selectedBill.sellerDetails.companyAddress}
-                        </p>
+                    <p className="text-slate-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
+                      {profileData?.company?.companyAddress}
+                    </p>
+                    {profileData?.company?.companyEmail && (
+                      <p className="text-slate-500 text-sm mt-1">{profileData.company.companyEmail}</p>
                     )}
-                     {selectedBill.sellerDetails?.companyEmail && (
-                        <p className="text-slate-500 text-sm mt-1">
-                            {selectedBill.sellerDetails.companyEmail}
-                        </p>
+                    {profileData?.company?.GST && !isKachaBill && (
+                      <p className="text-slate-500 text-sm mt-1">GST: {profileData.company.GST}</p>
                     )}
+                  </div>
                 </div>
-              </div>
 
-              {/* PRODUCT TABLE */}
-              <table className="w-full mb-8">
-                <thead>
-                    <tr className="border-b-2 border-slate-100">
+                {/* PRODUCT TABLE & TOTALS (Omitted for brevity, but mapped correctly below) */}
+                <div className="flex-1">
+                  <table className="w-full mb-8">
+                    <thead>
+                      <tr className="border-b-2 border-slate-100">
                         <th className="text-left py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
                         <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Unit Cost</th>
                         <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Qty</th>
                         <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                    {selectedBill.products?.map((item, idx) => (
-                        <tr key={idx}>
-                            <td className="py-4 text-sm font-medium text-slate-700">{item.name}</td>
-                            <td className="py-4 text-sm text-right text-slate-500">₹{item.rate}</td>
-                            <td className="py-4 text-sm text-right text-slate-500">{item.quantity}</td>
-                            <td className="py-4 text-sm text-right font-bold text-slate-700">₹{item.amount}</td>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {selectedBill.products?.map((p, i) => (
+                        <tr key={i}>
+                          <td className="py-4 text-sm font-medium text-slate-700">{p.name}</td>
+                          <td className="py-4 text-sm text-right text-slate-500">{formatCurrency(p.rate)}</td>
+                          <td className="py-4 text-sm text-right text-slate-500">{p.quantity}</td>
+                          <td className="py-4 text-sm text-right font-bold text-slate-700">{formatCurrency(p.amount || (p.rate * p.quantity))}</td>
                         </tr>
-                    ))}
-                </tbody>
-              </table>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* TOTALS SECTION */}
-              <div className="flex justify-end border-t border-slate-100 pt-6">
-                <div className="w-full max-w-xs space-y-3">
+                {/* TOTALS */}
+                <div className="flex justify-end border-t border-slate-100 pt-6">
+                  <div className="w-full max-w-xs space-y-3">
                     <div className="flex justify-between text-sm text-slate-600">
-                        <span>Subtotal</span>
-                        <span className="font-medium">₹{selectedBill.subTotal}</span>
+                      <span>Subtotal</span>
+                      <span className="font-medium">{formatCurrency(selectedBill.subTotal)}</span>
                     </div>
-                    
-                    {/* Only show discount if > 0 */}
                     {selectedBill.discount > 0 && (
-                        <div className="flex justify-between text-sm text-slate-600">
-                            <span>Discount</span>
-                            <span className="text-red-500">- ₹{selectedBill.discount}</span>
-                        </div>
+                      <div className="flex justify-between text-sm text-slate-600">
+                        <span>Discount</span>
+                        <span className="text-red-500">- {formatCurrency(selectedBill.discount)}</span>
+                      </div>
                     )}
-
-                    {/* Only show Tax if > 0 */}
-                    {selectedBill.taxAmount > 0 && (
-                        <>
-                             <div className="flex justify-between text-sm text-slate-600">
-                                <span>Tax Rate</span>
-                                <span>{selectedBill.gstPercentage}%</span>
-                            </div>
-                            <div className="flex justify-between text-sm text-slate-600">
-                                <span>Tax Amount</span>
-                                <span>+ ₹{selectedBill.taxAmount}</span>
-                            </div>
-                        </>
+                    {!isKachaBill && selectedBill.taxAmount > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm text-slate-600">
+                          <span>Tax Rate</span>
+                          <span>{selectedBill.gstPercentage}%</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-slate-600">
+                          <span>Tax Amount</span>
+                          <span>+ {formatCurrency(selectedBill.taxAmount)}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className={`flex justify-between text-xl font-bold border-t border-slate-200 pt-4 mt-2 ${isKachaBill ? 'text-amber-700' : 'text-slate-800'}`}>
+                      <span>{isKachaBill ? 'Total Amount' : 'Invoice Total'}</span>
+                      <span>{formatCurrency(selectedBill.grandTotal)}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* FOOTER (From Profile Data) */}
+                <div className="mt-12 pt-6 border-t border-slate-100">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Updated condition: Check for bank details AND ensure it is NOT a kacha bill */}
+                    {profileData?.bankDetails?.bankName && !isKachaBill && (
+                      <div className="text-xs text-slate-500">
+                        <p className="font-bold mb-2 uppercase tracking-wider text-slate-400">Bank Details</p>
+                        <div className="grid grid-cols-2 max-w-sm gap-y-1">
+                          <span>Bank Name:</span>
+                          <span className="font-medium text-slate-700">{profileData.bankDetails.bankName}</span>
+                          <span>Account No:</span>
+                          <span className="font-medium text-slate-700">{profileData.bankDetails.accountNumber}</span>
+                          <span>IFSC Code:</span>
+                          <span className="font-medium text-slate-700">{profileData.bankDetails.IFSC}</span>
+                        </div>
+                      </div>
                     )}
                     
-                    <div className="flex justify-between text-xl font-bold text-slate-800 border-t border-slate-200 pt-4 mt-2">
-                        <span>Invoice Total</span>
-                        <span>₹{selectedBill.grandTotal}</span>
+                    <div className="text-xs text-slate-500">
+                      <p className="font-bold mb-2 uppercase tracking-wider text-slate-400">Notes & Terms</p>
+                      <p className="text-slate-600 italic whitespace-pre-wrap">
+                          {selectedBill.notes || (isKachaBill ? 'Proforma invoice.' : 'Thank you!')}
+                      </p>
                     </div>
+                  </div>
                 </div>
               </div>
-              
-              {/* CONDITIONAL FOOTER: BANK DETAILS */}
-              {/* Only render if Bank Name exists */}
-              {selectedBill.sellerDetails?.bankName && (
-                  <div className="mt-12 pt-6 border-t border-slate-100 text-xs text-slate-500">
-                      <p className="font-bold mb-2 uppercase tracking-wider text-slate-400">Bank Details</p>
-                      <div className="grid grid-cols-2 max-w-sm gap-y-1">
-                          <span>Bank Name:</span>
-                          <span className="font-medium text-slate-700">{selectedBill.sellerDetails.bankName}</span>
-                          
-                          {selectedBill.sellerDetails.accountNumber && (
-                              <>
-                                <span>Account No:</span>
-                                <span className="font-medium text-slate-700">{selectedBill.sellerDetails.accountNumber}</span>
-                              </>
-                          )}
-                          
-                          {selectedBill.sellerDetails.IFSC && (
-                              <>
-                                <span>IFSC Code:</span>
-                                <span className="font-medium text-slate-700">{selectedBill.sellerDetails.IFSC}</span>
-                              </>
-                          )}
-                      </div>
-                  </div>
-              )}
-
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
