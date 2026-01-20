@@ -507,6 +507,39 @@ export default function UdhyogDashboard() {
                         </div>
                       </div>
                     )}
+                    {/* NEW: SIGNATURE & STAMP SECTION */}
+                    <div className="flex flex-col items-center md:items-end justify-end">
+                      <div className="relative flex flex-col items-center min-w-[150px]">
+                        {/* Stamp (usually behind or next to signature) */}
+                        {profileData.company.companyStamp && (
+                          <img 
+                            src={profileData.company.companyStamp} 
+                            alt="Company Stamp" 
+                            className="absolute -top-12 opacity-70 w-24 h-24 object-contain pointer-events-none" 
+                          />
+                        )}
+                        
+                        {/* Signature */}
+                        {profileData.company.companySignature ? (
+                          <img 
+                            src={profileData.company.companySignature} 
+                            alt="Authorized Signature" 
+                            className="h-16 w-auto object-contain z-10" 
+                          />
+                        ) : (
+                          <div className="h-16"></div> // Spacer if no signature
+                        )}
+                        
+                        <div className="mt-2 border-t border-slate-300 w-full pt-2 text-center">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Authorized Signatory
+                          </p>
+                          <p className="text-xs font-bold text-slate-800">
+                            For {profileData.company.companyName}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                     
                     <div className="text-xs text-slate-500">
                       <p className="font-bold mb-2 uppercase tracking-wider text-slate-400">Notes & Terms</p>

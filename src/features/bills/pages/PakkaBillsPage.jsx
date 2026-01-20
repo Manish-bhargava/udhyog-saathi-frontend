@@ -125,6 +125,7 @@ const PakkaBillsPage = () => {
   const resetLayout = () => {
     setFormWidth(60);
   };
+  console.log(businessData);
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 md:p-4">
@@ -332,7 +333,9 @@ const PakkaBillsPage = () => {
                     GST: businessData?.company?.GST,
                     bankName: businessData?.bankDetails?.bankName,
                     accountNumber: businessData?.bankDetails?.accountNumber,
-                    IFSC: businessData?.bankDetails?.IFSC
+                    IFSC: businessData?.bankDetails?.IFSC,
+                    companySignature: businessData?.company?.companySignature,
+                    companyStamp: businessData?.company?.companyStamp,
                   }} 
                 />
                 
@@ -407,7 +410,9 @@ const PakkaBillsPage = () => {
                     GST: businessData?.company?.GST,
                     bankName: businessData?.bankDetails?.bankName,
                     accountNumber: businessData?.bankDetails?.accountNumber,
-                    IFSC: businessData?.bankDetails?.IFSC
+                    IFSC: businessData?.bankDetails?.IFSC,
+                    companySignature: businessData?.company?.companySignature,
+                    companyStamp: businessData?.company?.companyStamp,
                   }} 
                 />
                 

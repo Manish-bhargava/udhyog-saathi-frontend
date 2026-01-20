@@ -1,207 +1,3 @@
-// import React from 'react';
-
-// const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) => {
-//   const formatCurrency = (amount) => {
-//     return `₹${amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-//   };
-
-//   const formattedDate = new Date().toLocaleDateString('en-IN', { 
-//     day: 'numeric', 
-//     month: 'long', 
-//     year: 'numeric' 
-//   });
-
-//   const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
-
-//   return (
-//     <div className="bg-white w-full shadow-2xl rounded-lg flex flex-col p-8 print:shadow-none print:p-0">
-      
-//       {/* INVOICE HEADER AREA */}
-//       <div className="flex justify-between items-start mb-10">
-//         <div>
-//           <h1 className={`text-4xl font-bold tracking-tight mb-6 ${isKachaBill ? 'text-amber-600' : 'text-slate-800'}`}>
-//             {isKachaBill ? 'Proforma Invoice' : 'Invoice'}
-//           </h1>
-//           <div className="flex gap-12">
-//             <div>
-//               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Invoice Number</p>
-//               <p className="text-slate-800 font-medium">{invoiceNumber}</p>
-//             </div>
-//             <div>
-//               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date of Issue</p>
-//               <p className="text-slate-800 font-medium">{formattedDate}</p>
-//             </div>
-//           </div>
-//         </div>
-        
-//         <div className="text-right">
-//           {companyDetails.companyLogo ? (
-//             <img 
-//               src={companyDetails.companyLogo} 
-//               alt="Logo" 
-//               className="h-16 w-auto object-contain ml-auto mb-2" 
-//             />
-//           ) : (
-//             // Only show the fallback circle if a company name exists to provide an initial
-//             companyDetails.companyName && (
-//               <div className={`w-16 h-16 rounded-xl flex items-center justify-center ml-auto mb-2 ${isKachaBill ? 'bg-amber-50' : 'bg-slate-50'}`}>
-//                 <span className={`text-2xl font-bold ${isKachaBill ? 'text-amber-600' : 'text-slate-600'}`}>
-//                   {companyDetails.companyName?.charAt(0)}
-//                 </span>
-//               </div>
-//             )
-//           )}
-//         </div>
-//       </div>
-
-//       {/* ADDRESS COLUMNS */}
-//       <div className="flex flex-col md:flex-row gap-12 mb-10">
-//         {/* Billed To */}
-//         <div className="flex-1">
-//           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Billed To</h3>
-//           <p className="font-bold text-slate-800 text-lg">{formData.buyer.clientName}</p>
-          
-//           <p className="text-slate-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
-//             {formData.buyer.clientAddress}
-//           </p>
-
-//           {!isKachaBill && formData.buyer.clientGst && (
-//             <p className="text-slate-500 text-sm mt-2">GSTIN: {formData.buyer.clientGst}</p>
-//           )}
-//         </div>
-
-//         {/* From (Seller) */}
-//         <div className="flex-1">
-//           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">From</h3>
-//           <p className="font-bold text-slate-800 text-lg">
-//             {companyDetails.companyName}
-//           </p>
-//           <p className="text-slate-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
-//             {companyDetails.companyAddress}
-//           </p>
-//           {companyDetails.companyEmail && (
-//             <p className="text-slate-500 text-sm mt-1">{companyDetails.companyEmail}</p>
-//           )}
-//           {companyDetails.GST && !isKachaBill && (
-//             <p className="text-slate-500 text-sm mt-1">GST: {companyDetails.GST}</p>
-//           )}
-//         </div>
-//       </div>
-
-//       {/* PRODUCT TABLE */}
-//       <div className="flex-1">
-//         <table className="w-full mb-8">
-//           <thead>
-//             <tr className="border-b-2 border-slate-100">
-//               <th className="text-left py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
-//               <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Unit Cost</th>
-//               <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Qty</th>
-//               <th className="text-right py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-//             </tr>
-//           </thead>
-//           <tbody className="divide-y divide-slate-50">
-//             {formData.products.map((p, i) => (
-//               <tr key={i}>
-//                 <td className="py-4 text-sm font-medium text-slate-700">{p.name}</td>
-//                 <td className="py-4 text-sm text-right text-slate-500">{formatCurrency(p.rate)}</td>
-//                 <td className="py-4 text-sm text-right text-slate-500">{p.quantity}</td>
-//                 <td className="py-4 text-sm text-right font-bold text-slate-700">{formatCurrency(p.rate * p.quantity)}</td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-
-//       {/* TOTALS SECTION */}
-//       <div className="flex justify-end border-t border-slate-100 pt-6">
-//         <div className="w-full max-w-xs space-y-3">
-//           <div className="flex justify-between text-sm text-slate-600">
-//             <span>Subtotal</span>
-//             <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
-//           </div>
-          
-//           {totals.discount > 0 && (
-//             <div className="flex justify-between text-sm text-slate-600">
-//               <span>Discount</span>
-//               <span className="text-red-500">- {formatCurrency(totals.discount)}</span>
-//             </div>
-//           )}
-
-//           {!isKachaBill && formData.gstPercentage > 0 && (
-//             <>
-//               <div className="flex justify-between text-sm text-slate-600">
-//                 <span>Tax Rate</span>
-//                 <span>{formData.gstPercentage}%</span>
-//               </div>
-//               <div className="flex justify-between text-sm text-slate-600">
-//                 <span>Tax Amount</span>
-//                 <span>+ {formatCurrency(totals.gstAmount || 0)}</span>
-//               </div>
-//             </>
-//           )}
-          
-//           <div className={`flex justify-between text-xl font-bold border-t border-slate-200 pt-4 mt-2 ${isKachaBill ? 'text-amber-700' : 'text-slate-800'}`}>
-//             <span>{isKachaBill ? 'Total Amount' : 'Invoice Total'}</span>
-//             <span>{formatCurrency(totals.grandTotal)}</span>
-//           </div>
-//         </div>
-//       </div>
-      
-//       {/* FOOTER: BANK DETAILS & NOTES */}
-//       <div className="mt-12 pt-6 border-t border-slate-100">
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-//           {/* Bank Details - Only visible if bankName exists */}
-//           {companyDetails.bankName && !isKachaBill && (
-//             <div className="text-xs text-slate-500">
-//               <p className="font-bold mb-2 uppercase tracking-wider text-slate-400">Bank Details</p>
-//               <div className="grid grid-cols-2 max-w-sm gap-y-1">
-//                 <span>Bank Name:</span>
-//                 <span className="font-medium text-slate-700">{companyDetails.bankName}</span>
-                
-//                 {companyDetails.accountNumber && (
-//                   <>
-//                     <span>Account No:</span>
-//                     <span className="font-medium text-slate-700">{companyDetails.accountNumber}</span>
-//                   </>
-//                 )}
-                
-//                 {companyDetails.IFSC && (
-//                   <>
-//                     <span>IFSC Code:</span>
-//                     <span className="font-medium text-slate-700">{companyDetails.IFSC}</span>
-//                   </>
-//                 )}
-//               </div>
-//             </div>
-//           )}
-
-//           {/* Notes */}
-//           <div className="text-xs text-slate-500">
-//             <p className="font-bold mb-2 uppercase tracking-wider text-slate-400">Notes & Terms</p>
-//             <p className="text-slate-600 italic whitespace-pre-wrap">
-//                 {formData.notes || (isKachaBill 
-//                   ? 'This is a proforma invoice (Kacha Bill). Not valid for tax purposes.' 
-//                   : 'Thank you for your business!')}
-//             </p>
-//           </div>
-//         </div>
-//         {isKachaBill && (
-//           <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-2">
-//             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-//             <p className="text-xs text-amber-800 font-medium">
-//               Important: This is a temporary invoice. Convert to Pakka Bill for official use.
-//             </p>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default BillPreview;
-
-
-
 import React from 'react';
 
 const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) => {
@@ -329,30 +125,65 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
         </div>
       </div>
       
-      {/* FOOTER */}
       <div className="mt-16 pt-8 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-10">
         <div className="min-w-0">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Notes & Terms</p>
           <p className="text-sm text-slate-600 italic whitespace-pre-wrap break-words leading-relaxed">
             {formData.notes || (isKachaBill ? 'Proforma only.' : 'Thank you!')}
           </p>
+          
+          {/* Bank details moved here or kept in its own conditional block */}
+          {companyDetails.bankName && !isKachaBill && (
+            <div className="mt-6 min-w-0 bg-slate-50 p-4 rounded-xl">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Bank Transfer Details</p>
+              <div className="grid grid-cols-2 gap-y-1 text-xs">
+                <span className="text-slate-500">Bank:</span>
+                <span className="font-bold text-slate-700 break-words">{companyDetails.bankName}</span>
+                <span className="text-slate-500">Account:</span>
+                <span className="font-bold text-slate-700 break-all">{companyDetails.accountNumber}</span>
+                <span className="text-slate-500">IFSC:</span>
+                <span className="font-bold text-slate-700 break-all">{companyDetails.IFSC}</span>
+              </div>
+            </div>
+          )}
         </div>
-        {companyDetails.bankName && !isKachaBill && (
-          <div className="min-w-0 bg-slate-50 p-4 rounded-xl">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Bank Transfer Details</p>
-            <div className="grid grid-cols-2 gap-y-1 text-xs">
-              <span className="text-slate-500">Bank:</span>
-              <span className="font-bold text-slate-700 break-words">{companyDetails.bankName}</span>
-              <span className="text-slate-500">Account:</span>
-              <span className="font-bold text-slate-700 break-all">{companyDetails.accountNumber}</span>
-              <span className="text-slate-500">IFSC:</span>
-              <span className="font-bold text-slate-700 break-all">{companyDetails.IFSC}</span>
+
+        {/* NEW: SIGNATURE & STAMP SECTION */}
+        <div className="flex flex-col items-center md:items-end justify-end">
+          <div className="relative flex flex-col items-center min-w-[150px]">
+            {/* Stamp (usually behind or next to signature) */}
+            {companyDetails.companyStamp && (
+              <img 
+                src={companyDetails.companyStamp} 
+                alt="Company Stamp" 
+                className="absolute -top-12 opacity-70 w-24 h-24 object-contain pointer-events-none" 
+              />
+            )}
+            
+            {/* Signature */}
+            {companyDetails.companySignature ? (
+              <img 
+                src={companyDetails.companySignature} 
+                alt="Authorized Signature" 
+                className="h-16 w-auto object-contain z-10" 
+              />
+            ) : (
+              <div className="h-16"></div> // Spacer if no signature
+            )}
+            
+            <div className="mt-2 border-t border-slate-300 w-full pt-2 text-center">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Authorized Signatory
+              </p>
+              <p className="text-xs font-bold text-slate-800">
+                For {companyDetails.companyName}
+              </p>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
-};
+}
 
 export default BillPreview;
