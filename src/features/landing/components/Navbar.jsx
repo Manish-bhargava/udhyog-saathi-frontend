@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import Logo from './Logo';
-import { useScroll } from '../hooks/useScroll';
 
 const Navbar = ({ 
   navItems = [],
@@ -8,19 +6,31 @@ const Navbar = ({
   onCtaClick = () => {}
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { scrolled } = useScroll(20);
+  const [scrolled, setScrolled] = useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-2' : 'bg-transparent py-4'}`}>
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${
+      scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3 cursor-pointer" onClick={onLogoClick}>
-            <Logo />
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-black text-lg">US</span>
+            </div>
             <div className="flex flex-col">
               <span className="font-bold text-gray-900 text-xl tracking-tight leading-none">
                 UDHYOG<span className="text-blue-600">SAATHI</span>
               </span>
-              <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mt-0.5">
+              <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">
                 Business Partner
               </span>
             </div>
@@ -38,9 +48,9 @@ const Navbar = ({
             ))}
             <button 
               onClick={onCtaClick}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-2.5 rounded-full shadow-lg shadow-blue-600/20 transition-transform transform hover:-translate-y-0.5"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-3 rounded-xl shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-0.5"
             >
-              Start Free Trial
+              Get Started Free
             </button>
           </div>
 
@@ -64,7 +74,7 @@ const Navbar = ({
                 item.onClick();
                 setIsMenuOpen(false);
               }}
-              className="block w-full text-left font-medium text-gray-700 hover:text-blue-600 transition-colors"
+              className="block w-full text-left font-medium text-gray-700 hover:text-blue-600 transition-colors py-2"
             >
               {item.label}
             </button>
@@ -73,7 +83,7 @@ const Navbar = ({
             onClick={onCtaClick}
             className="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors"
           >
-            Get Started
+            Start Free Trial
           </button>
         </div>
       )}

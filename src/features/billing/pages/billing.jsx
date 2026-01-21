@@ -1,0 +1,252 @@
+import React, { useState } from "react";
+import { Check, Zap, Crown, Building } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+// Helper to load Razorpay Script dynamically
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
+const PLANS = [
+  {
+    id: "starter",
+    name: "Starter",
+    price: "₹1",
+    period: "/month",
+    description: "Perfect for individuals and hobbyists.",
+    icon: Zap,
+    color: "bg-blue-50 text-blue-600",
+    features: ["5 AI Content Generations", "Connect 1 Account", "Basic Support"],
+    recommended: false,
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: "₹199",
+    period: "/month",
+    description: "For professional creators & businesses.",
+    icon: Crown,
+    color: "bg-purple-50 text-purple-600",
+    features: ["50 AI Generations", "Connect 5 Accounts", "Priority Support", "Advanced Analytics"],
+    recommended: true,
+  },
+  {
+    id: "business",
+    name: "Business",
+    price: "₹1,999",
+    period: "/month",
+    description: "For agencies and large teams.",
+    icon: Building,
+    color: "bg-orange-50 text-orange-600",
+    features: ["Unlimited Generations", "Unlimited Accounts", "24/7 Dedicated Support"],
+    recommended: false,
+  },
+];
+
+const Pricing = () => {
+  const [loadingId, setLoadingId] = useState(null);
+  const navigate = useNavigate();
+
+  const handleSubscribe = async (plan) => {
+    setLoadingId(plan.id);
+    const token = localStorage.getItem("token");
+    const userString = localStorage.getItem("user");
+
+    if (!userString) {
+      alert("Please login first!");
+      setLoadingId(null);
+      return;
+    }
+    const user = JSON.parse(userString);
+
+    try {
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        alert("Razorpay SDK failed to load.");
+        setLoadingId(null);
+        return;
+      }
+
+      const orderRes = await fetch("http://localhost:3000/api/v1/user/payment/create-order", {
+        method: "POST",
+        credentials: "include", 
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+            planName: plan.id, 
+            amount: parseInt(plan.price.replace("₹", "").replace(",", ""))
+        }), 
+      });
+
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) throw new Error(orderData.message || "Order Creation Failed");
+
+      const options = {
+        key: orderData.keyId, 
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Aura AI",
+        description: `Subscription for ${plan.name}`,
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            const verifyRes = await fetch("http://localhost:3000/api/v1/user/payment/verify", {
+              method: "POST",
+              credentials: "include",
+              headers: { 
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                userId: user.id || user._id,
+                planName: plan.id
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              alert("PAYMENT SUCCESSFUL! 🎉 Plan Activated.");
+              navigate("/homepage"); 
+            } else {
+              alert("Payment verification failed.");
+            }
+          } catch (err) {
+            console.error(err);
+            alert("Backend verification error");
+          }
+        },
+        prefill: {
+          name: user.email,
+          email: user.email,
+        },
+        theme: { color: "#4F46E5" },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
+    } catch (error) {
+      console.error("Payment Error:", error);
+      alert(error.message);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FDFDFD] px-4 font-sans text-slate-900">
+      
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto mb-8 md:mb-16">
+        <h2 className="text-indigo-600 font-bold uppercase text-xs md:text-sm tracking-widest mb-3">
+          Pricing Plans
+        </h2>
+        <h1 className="text-2xl md:text-3xl lg:text-5xl font-extrabold text-slate-900 mb-4 md:mb-6 tracking-tight">
+          Ready to scale your content?
+        </h1>
+        <p className="text-sm md:text-m text-slate-500 leading-relaxed">
+          Simple pricing. No hidden fees. <br className="hidden md:block"/>
+          Choose the plan that works best for your creative journey.
+        </p>
+      </div>
+
+      {/* Pricing Cards Grid */}
+      <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 relative z-10">
+        {PLANS.map((plan) => (
+          <div 
+            key={plan.id}
+            className={`relative bg-white rounded-2xl md:rounded-3xl border flex flex-col transition-all duration-300 hover:-translate-y-1 md:hover:-translate-y-2
+              ${plan.recommended 
+                ? "border-indigo-200 shadow-[0_10px_30px_rgba(79,70,229,0.15)] md:shadow-[0_20px_50px_rgba(79,70,229,0.15)] md:scale-105 z-20 ring-1 ring-indigo-500/20" 
+                : "border-slate-100 shadow-sm hover:shadow-md"
+              }`}
+          >
+            {plan.recommended && (
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-600 text-white text-[8px] md:text-[10px] font-black px-3 py-1 md:px-4 md:py-1.5 rounded-full uppercase tracking-widest shadow-lg">
+                Most Popular
+              </div>
+            )}
+
+            <div className="p-4 md:p-6 lg:p-8 flex-1">
+              {/* Icon */}
+              <div className={`w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6 ${plan.color}`}>
+                <plan.icon className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />
+              </div>
+              
+              <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
+              <p className="text-slate-500 text-xs md:text-sm mb-6 md:mb-8 leading-relaxed">{plan.description}</p>
+
+              {/* Price */}
+              <div className="flex items-baseline gap-1 mb-6 md:mb-8">
+                <span className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter">{plan.price}</span>
+                <span className="text-slate-400 font-medium text-base md:text-lg">{plan.period}</span>
+              </div>
+
+              {/* Features List */}
+              <div className="w-full h-px bg-slate-100 mb-6 md:mb-8" />
+              <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3 text-slate-600 text-xs md:text-sm font-medium">
+                    <div className="flex-shrink-0 w-4 h-4 md:w-5 md:h-5 bg-green-50 rounded-full flex items-center justify-center">
+                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-green-600" />
+                    </div>
+                    <span className="text-xs md:text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Action Button */}
+            <div className="p-4 md:p-6 lg:p-8 pt-0 mt-auto">
+              <button
+                onClick={() => handleSubscribe(plan)}
+                disabled={loadingId !== null}
+                className={`w-full py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-xs md:text-sm transition-all duration-300 flex items-center justify-center
+                  ${plan.recommended 
+                    ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg md:shadow-xl shadow-indigo-200" 
+                    : "bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200"
+                  }
+                  ${loadingId === plan.id ? "opacity-75 cursor-not-allowed" : ""}
+                `}
+              >
+                {loadingId === plan.id ? (
+                    <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Processing...
+                    </span>
+                ) : (
+                  <>
+                    <span className="md:hidden">Get {plan.name}</span>
+                    <span className="hidden md:inline">Get Started with {plan.name}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {/* Background Decorative Element */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-50/50 rounded-full blur-[80px] md:blur-[120px]" />
+        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-blue-50/50 rounded-full blur-[80px] md:blur-[120px]" />
+      </div>
+
+      {/* Mobile spacing */}
+      <div className="h-10 md:h-0"></div>
+    </div>
+  );
+};
+
+export default Pricing;

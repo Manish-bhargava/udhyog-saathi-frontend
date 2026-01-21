@@ -1,5 +1,4 @@
 import React from 'react';
-import Logo from './Logo';
 
 const Footer = () => {
   return (
@@ -7,19 +6,22 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center space-x-3 mb-6 md:mb-0">
-            <Logo size="small" />
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">US</span>
+            </div>
             <span className="font-bold text-xl tracking-tight">
-              UDHYOG<span className="text-blue-500">SAATHI</span>
+              UDHYOG<span className="text-blue-400">SAATHI</span>
             </span>
           </div>
-          <div className="flex space-x-8 text-sm text-gray-400">
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
-            <a href="#" className="hover:text-white transition-colors">Support</a>
+          <div className="flex space-x-6 text-sm text-gray-400">
+            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-white transition-colors">Contact Support</a>
+            <a href="#" className="hover:text-white transition-colors">Pricing</a>
           </div>
         </div>
-        <div className="mt-8 text-center text-xs text-gray-600">
-          &copy; {new Date().getFullYear()} UdhyogSaathi Technologies. Made in India.
+        <div className="mt-8 text-center text-sm text-gray-500">
+          © {new Date().getFullYear()} UdhyogSaathi Technologies. Made with ❤️ in India.
         </div>
       </div>
     </footer>

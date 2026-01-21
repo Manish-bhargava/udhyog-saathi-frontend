@@ -16,7 +16,7 @@ API.interceptors.request.use((config) => {
 // 3. Export the profile methods
 export const profileAPI = {
   getProfile: async () => {
-    const response = await API.get('/user/profile'); // Now 'API' is defined
+    const response = await API.get('/user/profile');
     return response.data;
   },
 
