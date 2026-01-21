@@ -148,73 +148,73 @@ const Pricing = () => {
     <div className="min-h-screen bg-[#FDFDFD] px-4 font-sans text-slate-900">
       
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-16">
-        <h2 className="text-indigo-600 font-bold uppercase text-sm tracking-widest mb-3">
+      <div className="text-center max-w-2xl mx-auto mb-8 md:mb-16">
+        <h2 className="text-indigo-600 font-bold uppercase text-xs md:text-sm tracking-widest mb-3">
           Pricing Plans
         </h2>
-        <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
+        <h1 className="text-2xl md:text-3xl lg:text-5xl font-extrabold text-slate-900 mb-4 md:mb-6 tracking-tight">
           Ready to scale your content?
         </h1>
-        <p className="text-m text-slate-500 leading-relaxed">
+        <p className="text-sm md:text-m text-slate-500 leading-relaxed">
           Simple pricing. No hidden fees. <br className="hidden md:block"/>
           Choose the plan that works best for your creative journey.
         </p>
       </div>
 
       {/* Pricing Cards Grid */}
-      <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-8 relative z-10">
+      <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 relative z-10">
         {PLANS.map((plan) => (
           <div 
             key={plan.id}
-            className={`relative bg-white rounded-3xl border flex flex-col transition-all duration-300 hover:-translate-y-2
+            className={`relative bg-white rounded-2xl md:rounded-3xl border flex flex-col transition-all duration-300 hover:-translate-y-1 md:hover:-translate-y-2
               ${plan.recommended 
-                ? "border-indigo-200 shadow-[0_20px_50px_rgba(79,70,229,0.15)] scale-105 z-20 ring-1 ring-indigo-500/20" 
+                ? "border-indigo-200 shadow-[0_10px_30px_rgba(79,70,229,0.15)] md:shadow-[0_20px_50px_rgba(79,70,229,0.15)] md:scale-105 z-20 ring-1 ring-indigo-500/20" 
                 : "border-slate-100 shadow-sm hover:shadow-md"
               }`}
           >
             {plan.recommended && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-600 text-white text-[8px] md:text-[10px] font-black px-3 py-1 md:px-4 md:py-1.5 rounded-full uppercase tracking-widest shadow-lg">
                 Most Popular
               </div>
             )}
 
-            <div className="p-8 flex-1">
+            <div className="p-4 md:p-6 lg:p-8 flex-1">
               {/* Icon */}
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${plan.color}`}>
-                <plan.icon className="w-7 h-7" />
+              <div className={`w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6 ${plan.color}`}>
+                <plan.icon className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />
               </div>
               
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
-              <p className="text-slate-500 text-sm mb-8 leading-relaxed">{plan.description}</p>
+              <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
+              <p className="text-slate-500 text-xs md:text-sm mb-6 md:mb-8 leading-relaxed">{plan.description}</p>
 
               {/* Price */}
-              <div className="flex items-baseline gap-1 mb-8">
-                <span className="text-5xl font-black text-slate-900 tracking-tighter">{plan.price}</span>
-                <span className="text-slate-400 font-medium text-lg">{plan.period}</span>
+              <div className="flex items-baseline gap-1 mb-6 md:mb-8">
+                <span className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter">{plan.price}</span>
+                <span className="text-slate-400 font-medium text-base md:text-lg">{plan.period}</span>
               </div>
 
               {/* Features List */}
-              <div className="w-full h-px bg-slate-100 mb-8" />
-              <ul className="space-y-4 mb-8">
+              <div className="w-full h-px bg-slate-100 mb-6 md:mb-8" />
+              <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8">
                 {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-slate-600 text-sm font-medium">
-                    <div className="flex-shrink-0 w-5 h-5 bg-green-50 rounded-full flex items-center justify-center">
-                        <Check className="w-3.5 h-3.5 text-green-600" />
+                  <li key={i} className="flex items-center gap-3 text-slate-600 text-xs md:text-sm font-medium">
+                    <div className="flex-shrink-0 w-4 h-4 md:w-5 md:h-5 bg-green-50 rounded-full flex items-center justify-center">
+                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-green-600" />
                     </div>
-                    <span>{feature}</span>
+                    <span className="text-xs md:text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Action Button */}
-            <div className="p-8 pt-0 mt-auto">
+            <div className="p-4 md:p-6 lg:p-8 pt-0 mt-auto">
               <button
                 onClick={() => handleSubscribe(plan)}
                 disabled={loadingId !== null}
-                className={`w-full py-4 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center justify-center
+                className={`w-full py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-xs md:text-sm transition-all duration-300 flex items-center justify-center
                   ${plan.recommended 
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-200" 
+                    ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg md:shadow-xl shadow-indigo-200" 
                     : "bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200"
                   }
                   ${loadingId === plan.id ? "opacity-75 cursor-not-allowed" : ""}
@@ -225,7 +225,12 @@ const Pricing = () => {
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         Processing...
                     </span>
-                ) : `Get Started with ${plan.name}`}
+                ) : (
+                  <>
+                    <span className="md:hidden">Get {plan.name}</span>
+                    <span className="hidden md:inline">Get Started with {plan.name}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -234,9 +239,12 @@ const Pricing = () => {
       
       {/* Background Decorative Element */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-50/50 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-blue-50/50 rounded-full blur-[120px]" />
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-50/50 rounded-full blur-[80px] md:blur-[120px]" />
+        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-blue-50/50 rounded-full blur-[80px] md:blur-[120px]" />
       </div>
+
+      {/* Mobile spacing */}
+      <div className="h-10 md:h-0"></div>
     </div>
   );
 };

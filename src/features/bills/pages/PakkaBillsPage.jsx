@@ -132,13 +132,13 @@ const PakkaBillsPage = () => {
       <div className="max-w-[1800px] mx-auto">
         
         {/* Header with Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 mb-4 md:mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4 mb-3 md:mb-4">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Create Pakka Bill</h1>
-              <p className="text-xs text-gray-500">Save as official GST invoice</p>
+              <h1 className="text-lg md:text-xl font-bold text-gray-900">Create Pakka Bill</h1>
+              <p className="text-xs text-gray-500 mt-1">Save as official GST invoice</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-3 sm:mt-0">
               <button
                 onClick={() => setFormData({
                   buyer: { clientName: '', clientAddress: '', clientGst: '' },
@@ -147,14 +147,14 @@ const PakkaBillsPage = () => {
                   discount: 0,
                   notes: ''
                 })}
-                className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-3 md:px-4 py-2 border border-gray-300 text-gray-700 text-xs md:text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Clear All
               </button>
               <button
                 onClick={handleSave}
                 disabled={submitting || !isFormValid}
-                className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
+                className={`px-4 md:px-5 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all ${
                   submitting || !isFormValid
                     ? 'bg-blue-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700 shadow-sm'
@@ -162,16 +162,17 @@ const PakkaBillsPage = () => {
               >
                 {submitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
+                    <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white mr-2"></div>
+                    <span className="hidden sm:inline">Saving...</span>
+                    <span className="inline sm:hidden">Save...</span>
                   </>
                 ) : 'Save Invoice'}
               </button>
             </div>
           </div>
           
-          {/* Layout Controls */}
-          <div className="flex items-center justify-between mt-3">
+          {/* Layout Controls - Hidden on mobile */}
+          <div className="hidden md:flex items-center justify-between mt-3">
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-gray-600">Layout:</span>
               <div className="flex items-center gap-1">
@@ -226,9 +227,9 @@ const PakkaBillsPage = () => {
           </div>
           
           {/* Tabs for mobile view */}
-          <div className="md:hidden flex border-b border-gray-200 mb-4 mt-4">
+          <div className="md:hidden flex border-b border-gray-200 mb-3 mt-3">
             <button
-              className={`flex-1 py-2 text-sm font-medium text-center ${
+              className={`flex-1 py-2 text-xs font-medium text-center ${
                 activeTab === 'form'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -238,7 +239,7 @@ const PakkaBillsPage = () => {
               Form
             </button>
             <button
-              className={`flex-1 py-2 text-sm font-medium text-center ${
+              className={`flex-1 py-2 text-xs font-medium text-center ${
                 activeTab === 'preview'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -252,10 +253,10 @@ const PakkaBillsPage = () => {
           {!isFormValid && (
             <div className="mt-3 p-2.5 bg-red-50 border border-red-100 rounded-lg">
               <p className="text-xs text-red-700 flex items-center">
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 md:w-4 md:h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.768 0L3.338 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                Required: Client Name and at least one Product with rate/quantity.
+                <span className="text-xs">Required: Client Name and at least one Product with rate/quantity.</span>
               </p>
             </div>
           )}
@@ -344,11 +345,11 @@ const PakkaBillsPage = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white p-3 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-500 mb-1">Subtotal</p>
-                      <p className="text-lg font-bold text-gray-800">₹{totals.subtotal.toLocaleString('en-IN')}</p>
+                      <p className="text-base md:text-lg font-bold text-gray-800">₹{totals.subtotal.toLocaleString('en-IN')}</p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-500 mb-1">Grand Total</p>
-                      <p className="text-lg font-bold text-green-700">₹{totals.grandTotal.toLocaleString('en-IN')}</p>
+                      <p className="text-base md:text-lg font-bold text-green-700">₹{totals.grandTotal.toLocaleString('en-IN')}</p>
                     </div>
                   </div>
                 </div>
@@ -374,69 +375,86 @@ const PakkaBillsPage = () => {
         <div className="md:hidden">
           <div className={`${activeTab === 'form' ? 'block' : 'hidden'}`}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Invoice Details</h2>
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+              <h2 className="text-base md:text-lg font-semibold text-gray-800">Invoice Details</h2>
+              <span className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                 Fill all details
               </span>
             </div>
-            <BillForm formData={formData} setFormData={setFormData} />
+            <div className="mb-4">
+              <BillForm formData={formData} setFormData={setFormData} />
+            </div>
           </div>
           
           <div className={`${activeTab === 'preview' ? 'block' : 'hidden'}`}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800">Live Preview</h3>
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+              <h3 className="text-base md:text-lg font-semibold text-gray-800">Live Preview</h3>
+              <span className="px-2 md:px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                 GST Invoice
               </span>
             </div>
             
             {loading ? (
-              <div className="bg-white w-full h-96 rounded-xl flex items-center justify-center border border-dashed border-gray-300">
+              <div className="bg-white w-full h-64 rounded-xl flex items-center justify-center border border-dashed border-gray-300">
                 <div className="flex flex-col items-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
                   <p className="text-sm text-gray-500">Loading profile...</p>
                 </div>
               </div>
             ) : (
-              <div className="shadow-xl rounded-xl overflow-hidden border border-gray-200">
-                <BillPreview 
-                  formData={formData} 
-                  totals={totals} 
-                  companyDetails={{
-                    companyName: businessData?.company?.companyName,
-                    companyAddress: businessData?.company?.companyAddress,
-                    companyEmail: businessData?.company?.companyEmail,
-                    companyLogo: businessData?.company?.companyLogo,
-                    GST: businessData?.company?.GST,
-                    bankName: businessData?.bankDetails?.bankName,
-                    accountNumber: businessData?.bankDetails?.accountNumber,
-                    IFSC: businessData?.bankDetails?.IFSC,
-                    companySignature: businessData?.company?.companySignature,
-                    companyStamp: businessData?.company?.companyStamp,
-                  }} 
-                />
+              <div className="shadow-xl rounded-xl overflow-hidden border border-gray-200 mb-4">
+                <div className="scale-90 origin-top">
+                  <BillPreview 
+                    formData={formData} 
+                    totals={totals} 
+                    companyDetails={{
+                      companyName: businessData?.company?.companyName,
+                      companyAddress: businessData?.company?.companyAddress,
+                      companyEmail: businessData?.company?.companyEmail,
+                      companyLogo: businessData?.company?.companyLogo,
+                      GST: businessData?.company?.GST,
+                      bankName: businessData?.bankDetails?.bankName,
+                      accountNumber: businessData?.bankDetails?.accountNumber,
+                      IFSC: businessData?.bankDetails?.IFSC,
+                      companySignature: businessData?.company?.companySignature,
+                      companyStamp: businessData?.company?.companyStamp,
+                    }} 
+                  />
+                </div>
                 
                 {/* Quick Stats */}
-                <div className="bg-gray-50 border-t border-gray-200 p-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                <div className="bg-gray-50 border-t border-gray-200 p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-500 mb-1">Subtotal</p>
-                      <p className="text-lg font-bold text-gray-800">₹{totals.subtotal.toLocaleString('en-IN')}</p>
+                      <p className="text-base font-bold text-gray-800">₹{totals.subtotal.toLocaleString('en-IN')}</p>
                     </div>
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-500 mb-1">Grand Total</p>
-                      <p className="text-lg font-bold text-green-700">₹{totals.grandTotal.toLocaleString('en-IN')}</p>
+                      <p className="text-base font-bold text-green-700">₹{totals.grandTotal.toLocaleString('en-IN')}</p>
                     </div>
                   </div>
                 </div>
               </div>
             )}
+
+            {/* Mobile Help Text */}
+            <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+              <p className="text-xs text-blue-700 flex items-start">
+                <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>
+                  <span className="font-semibold">Tip:</span> Swipe between tabs to switch between form and preview. 
+                  Numbers will appear exactly as shown.
+                </span>
+              </p>
+            </div>
           </div>
         </div>
         
-        {/* Mobile navigation buttons */}
-        <div className="md:hidden fixed bottom-4 left-4 right-4 z-10">
-          <div className="bg-white rounded-xl shadow-lg p-3 flex justify-between items-center border border-gray-200">
+        {/* Mobile navigation buttons - Only show when keyboard might be open */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-200 p-3">
+          <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">
               {activeTab === 'form' ? 'Form View' : 'Preview View'}
             </span>
