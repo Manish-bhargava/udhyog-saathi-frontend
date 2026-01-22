@@ -3,14 +3,17 @@ import BillForm from '../components/BillForm';
 import BillPreview from '../components/BillPreview';
 import billAPI from '../api';
 import { profileAPI } from '../../profiles/api';
+import { useNavigate } from 'react-router-dom';
 
 const KachaBillsPage = () => {
+  const navigate = useNavigate();
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('form');
   const [isDragging, setIsDragging] = useState(false);
-  const [formWidth, setFormWidth] = useState(60);
+  const [formWidth, setFormWidth] = useState(50);
+  const [notification, setNotification] = useState(null);
   const containerRef = useRef(null);
   const dividerRef = useRef(null);
 
@@ -97,8 +100,10 @@ const KachaBillsPage = () => {
     try {
       const response = await billAPI.createKachaBill(formData);
       if (response.success) {
-        showNotification('Kacha Bill Saved!', 'Your proforma invoice has been created.', 'success');
+        // Show success notification
+        showNotification('success', 'Kacha Bill Created!', 'Your proforma invoice has been saved successfully.');
         
+        // Reset form
         setFormData({
           buyer: { clientName: '', clientAddress: '', clientGst: '' },
           products: [{ name: '', rate: 0, quantity: 1 }],
@@ -107,27 +112,30 @@ const KachaBillsPage = () => {
         });
       }
     } catch (err) {
-      showNotification('Failed to Save', 'Please check your connection.', 'error');
+      showNotification('error', 'Failed to Save', 'Please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Helper for notifications to keep handleSave clean
-  const showNotification = (title, msg, type) => {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-6 right-6 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-in`;
-    notification.innerHTML = `
-      <div class="flex items-center">
-        <div class="mr-3">${type === 'success' ? '✓' : '✕'}</div>
-        <div>
-          <p class="font-semibold">${title}</p>
-          <p class="text-sm opacity-90">${msg}</p>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 4000);
+  // Show notification
+  const showNotification = (type, title, message) => {
+    setNotification({ type, title, message });
+    
+    // Auto hide after 8 seconds for success (longer to read button) or 5 for error
+    setTimeout(() => {
+      setNotification(null);
+    }, type === 'success' ? 8000 : 5000);
+  };
+
+  // Close notification manually
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
+  // Navigate to dashboard
+  const goToDashboard = () => {
+    navigate('/dashboard');
   };
 
   const isFormValid = formData.buyer.clientName.trim() && 
@@ -135,11 +143,75 @@ const KachaBillsPage = () => {
 
   // Reset to default widths
   const resetLayout = () => {
-    setFormWidth(60);
+    setFormWidth(50);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 md:p-4">
+      {/* Success Notification */}
+      {notification && (
+        <div className={`fixed top-6 right-6 z-50 animate-slide-in`}>
+          <div className={`${notification.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-xl shadow-lg max-w-sm`}>
+            <div className="p-4">
+              <div className="flex items-start">
+                <div className={`flex-shrink-0 p-1.5 rounded-full ${notification.type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
+                  {notification.type === 'success' ? (
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className={`text-sm font-semibold ${notification.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                    {notification.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {notification.message}
+                  </p>
+                  {notification.type === 'success' && (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={goToDashboard}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        View in Dashboard
+                      </button>
+                      <button
+                        onClick={closeNotification}
+                        className="px-3 py-2 border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={closeNotification}
+                  className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {notification.type === 'success' && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    You can download and manage all your bills from the Dashboard.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-[1800px] mx-auto">
         
         {/* Header with Tabs */}
@@ -203,7 +275,7 @@ const KachaBillsPage = () => {
                 <button
                   onClick={resetLayout}
                   className={`px-2 py-1 text-xs rounded border ${
-                    Math.round(formWidth) === 60
+                    Math.round(formWidth) === 50
                       ? 'bg-amber-50 border-amber-200 text-amber-700'
                       : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                   }`}

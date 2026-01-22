@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
+import { 
+  FaTachometerAlt, 
+  FaFileInvoiceDollar, 
+  FaRobot, 
+  FaChartBar, 
+  FaRupeeSign,
+  FaChevronLeft,
+  FaBars,
+  FaUser,
+  FaSignOutAlt,
+  FaExclamationTriangle,
+  FaCaretDown,
+  FaCaretRight,
+  FaTimes,
+  FaUserCircle,
+  FaCog,
+  FaReceipt,
+  FaFileAlt,
+  FaFileContract
+} from 'react-icons/fa';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -28,11 +48,11 @@ const DashboardLayout = () => {
   if (!localStorage.getItem('token')) return null;
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/bills/template', label: 'Bills', icon: '📄' },
-    { path: '/ai-assistant', label: 'AI Assistant', icon: '🤖' },
-    { path: '/reports', label: 'Reports', icon: '📈' },
-    { path: '/billing', label: 'Billing', icon: '₹' },
+    { path: '/dashboard', label: 'Dashboard', icon: <FaTachometerAlt className="text-lg" /> },
+    { path: '/bills/template', label: 'Bills', icon: <FaFileInvoiceDollar className="text-lg" /> },
+    { path: '/ai-assistant', label: 'AI Assistant', icon: <FaRobot className="text-lg" /> },
+    { path: '/reports', label: 'Reports', icon: <FaChartBar className="text-lg" /> },
+    { path: '/billing', label: 'Billing', icon: <FaRupeeSign className="text-lg" /> },
   ];
 
   const handleLogout = () => {
@@ -73,15 +93,25 @@ const DashboardLayout = () => {
       `}>
         {/* Always render inner container but hide content when sidebar closed */}
         <div className="w-64 flex flex-col h-full">
-          <div className={`p-6 border-b border-slate-700/50 shrink-0 ${!sidebarOpen ? 'opacity-0' : 'opacity-100 transition-opacity duration-200'}`}>
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
-                <span className="text-xl font-bold">U</span>
+          <div className={`p-3 border-b border-slate-700/50 shrink-0 ${!sidebarOpen ? 'opacity-0' : 'opacity-100 transition-opacity duration-200'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+                  <span className="text-xl font-bold">U</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-l font-bold tracking-tight uppercase">Udhyog Saathi</h2>
+                  <p className="text-slate-400 text-xs mt-0.5">Business Suite</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-l font-bold tracking-tight uppercase">Udhyog Saathi</h2>
-                <p className="text-slate-400 text-xs mt-0.5">Business Suite</p>
-              </div>
+              {sidebarOpen && (
+                <button 
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 text-gray-300 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <FaChevronLeft className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -109,28 +139,45 @@ const DashboardLayout = () => {
                   {sidebarOpen && (
                     <span className="font-medium text-sm">{item.label}</span>
                   )}
+                  {sidebarOpen && item.label === 'Bills' && (
+                    <span className="ml-auto">
+                      {billsMenuOpen ? <FaCaretDown /> : <FaCaretRight />}
+                    </span>
+                  )}
                 </button>
                 
                 {sidebarOpen && item.label === 'Bills' && billsMenuOpen && (
                   <div className="ml-10 mt-2 space-y-1.5">
-                    {['Kacha', 'Pakka', 'Template'].map(sub => {
-                      const label =
-                        sub === 'Template' ? 'Bill Templates' : `${sub} Bills`;
-
-                      return (
-                        <button 
-                          key={sub}
-                          onClick={() => navigate(`/bills/${sub.toLowerCase()}`)}
-                          className={`w-full text-left px-4 py-2.5 text-sm transition-all rounded-lg ${
-                            location.pathname === `/bills/${sub.toLowerCase()}` 
-                              ? 'text-white font-semibold bg-slate-700/50' 
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
-                          }`}
-                        >
-                          • {label}
-                        </button>
-                      );
-                    })}
+                    <button 
+                      onClick={() => navigate('/bills/kacha')}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-all rounded-lg flex items-center gap-2 ${
+                        location.pathname === '/bills/kacha' 
+                          ? 'text-white font-semibold bg-slate-700/50' 
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
+                      }`}
+                    >
+                      <FaReceipt className="text-xs" /> Kacha Bills
+                    </button>
+                    <button 
+                      onClick={() => navigate('/bills/pakka')}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-all rounded-lg flex items-center gap-2 ${
+                        location.pathname === '/bills/pakka' 
+                          ? 'text-white font-semibold bg-slate-700/50' 
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
+                      }`}
+                    >
+                      <FaFileContract className="text-xs" /> Pakka Bills
+                    </button>
+                    <button 
+                      onClick={() => navigate('/bills/template')}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-all rounded-lg flex items-center gap-2 ${
+                        location.pathname === '/bills/template' 
+                          ? 'text-white font-semibold bg-slate-700/50' 
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/30'
+                      }`}
+                    >
+                      <FaFileAlt className="text-xs" /> Bill Templates
+                    </button>
                   </div>
                 )}
               </div>
@@ -146,7 +193,7 @@ const DashboardLayout = () => {
               `}
             >
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center font-bold shrink-0 shadow-md">
-                {user.name?.charAt(0).toUpperCase()}
+                {user.name?.charAt(0).toUpperCase() || <FaUserCircle className="text-xl" />}
               </div>
               {sidebarOpen && (
                 <div className="flex-1 min-w-0 text-left">
@@ -161,11 +208,11 @@ const DashboardLayout = () => {
                 onMouseLeave={() => setShowProfileMenu(false)}
                 className="absolute bottom-full left-4 right-4 mb-3 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden z-50"
               >
-                <Link to="/profile" className="w-full flex items-center px-4 py-3.5 text-sm text-slate-300 hover:bg-slate-700/80 transition-colors">
-                  <span className="mr-3">👤</span> Profile Settings
+                <Link to="/profile" className="w-full flex items-center px-4 py-3.5 text-sm text-slate-300 hover:bg-slate-700/80 transition-colors gap-3">
+                  <FaUser /> Profile Settings
                 </Link>
-                <button onClick={handleLogout} className="w-full flex items-center px-4 py-3.5 text-sm text-slate-300 hover:bg-red-600/80 transition-colors">
-                  <span className="mr-3">🚪</span> Logout
+                <button onClick={handleLogout} className="w-full flex items-center px-4 py-3.5 text-sm text-slate-300 hover:bg-red-600/80 transition-colors gap-3">
+                  <FaSignOutAlt /> Logout
                 </button>
               </div>
             )}
@@ -179,14 +226,14 @@ const DashboardLayout = () => {
         {/* HEADER: Shrink-0 ensures it doesn't get squashed */}
         <header className="h-20 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0 sticky top-0 z-30 shadow-sm">
           <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2.5 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
-            >
-              <svg className={`w-6 h-6 transition-transform duration-300 ${!sidebarOpen ? '' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+            {!sidebarOpen && (
+              <button 
+                onClick={() => setSidebarOpen(true)}
+                className="p-2.5 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <FaBars className="w-6 h-6" />
+              </button>
+            )}
             <h1 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h1>
           </div>
         </header>
@@ -196,7 +243,9 @@ const DashboardLayout = () => {
           {showBanner && (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 mb-8 flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="bg-amber-100 p-3 rounded-xl">⚠️</div>
+                <div className="bg-amber-100 p-3 rounded-xl">
+                  <FaExclamationTriangle className="text-amber-600 text-xl" />
+                </div>
                 <div>
                   <h3 className="font-bold text-gray-900">Complete Your Profile</h3>
                   <p className="text-sm text-gray-600">Finish onboarding to unlock all features.</p>

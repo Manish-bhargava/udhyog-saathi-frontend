@@ -3,14 +3,17 @@ import BillForm from '../components/BillForm';
 import BillPreview from '../components/BillPreview';
 import billAPI from '../api';
 import { profileAPI } from '../../profiles/api';
+import { useNavigate } from 'react-router-dom';
 
 const PakkaBillsPage = () => {
+  const navigate = useNavigate();
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('form');
   const [isDragging, setIsDragging] = useState(false);
-  const [formWidth, setFormWidth] = useState(60); // Default width in percentage
+  const [formWidth, setFormWidth] = useState(50);
+  const [notification, setNotification] = useState(null);
   const containerRef = useRef(null);
   const dividerRef = useRef(null);
 
@@ -67,7 +70,6 @@ const PakkaBillsPage = () => {
     const containerWidth = containerRect.width;
     const mouseX = e.clientX - containerRect.left;
     
-    // Calculate new width percentage (clamped between 30% and 70%)
     let newWidth = (mouseX / containerWidth) * 100;
     newWidth = Math.max(30, Math.min(70, newWidth));
     
@@ -102,7 +104,10 @@ const PakkaBillsPage = () => {
     try {
       const response = await billAPI.createPakkaBill(formData);
       if (response.success) {
-        // Success notification logic...
+        // Show success notification
+        showNotification('success', 'Invoice Created Successfully!', 'Your GST invoice has been saved and is ready for download.');
+        
+        // Reset form
         setFormData({
           buyer: { clientName: '', clientAddress: '', clientGst: '' },
           products: [{ name: '', rate: 0, quantity: 1 }],
@@ -112,10 +117,30 @@ const PakkaBillsPage = () => {
         });
       }
     } catch (err) {
-      console.error(err);
+      showNotification('error', 'Failed to Save Invoice', 'Please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Show notification
+  const showNotification = (type, title, message) => {
+    setNotification({ type, title, message });
+    
+    // Auto hide after 8 seconds for success (longer to read button) or 5 for error
+    setTimeout(() => {
+      setNotification(null);
+    }, type === 'success' ? 8000 : 5000);
+  };
+
+  // Close notification manually
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
+  // Navigate to dashboard
+  const goToDashboard = () => {
+    navigate('/dashboard');
   };
 
   const isFormValid = formData.buyer.clientName.trim() && 
@@ -123,12 +148,75 @@ const PakkaBillsPage = () => {
 
   // Reset to default widths
   const resetLayout = () => {
-    setFormWidth(60);
+    setFormWidth(50);
   };
-  console.log(businessData);
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 md:p-4">
+      {/* Success Notification */}
+      {notification && (
+        <div className={`fixed top-6 right-6 z-50 animate-slide-in`}>
+          <div className={`${notification.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-xl shadow-lg max-w-sm`}>
+            <div className="p-4">
+              <div className="flex items-start">
+                <div className={`flex-shrink-0 p-1.5 rounded-full ${notification.type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
+                  {notification.type === 'success' ? (
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className={`text-sm font-semibold ${notification.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                    {notification.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {notification.message}
+                  </p>
+                  {notification.type === 'success' && (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={goToDashboard}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        View in Dashboard
+                      </button>
+                      <button
+                        onClick={closeNotification}
+                        className="px-3 py-2 border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={closeNotification}
+                  className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {notification.type === 'success' && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    You can download and manage all your GST invoices from the Dashboard.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-[1800px] mx-auto">
         
         {/* Header with Tabs */}
@@ -190,7 +278,7 @@ const PakkaBillsPage = () => {
                 <button
                   onClick={resetLayout}
                   className={`px-2 py-1 text-xs rounded border ${
-                    Math.round(formWidth) === 60
+                    Math.round(formWidth) === 50
                       ? 'bg-blue-50 border-blue-200 text-blue-700'
                       : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
                   }`}
@@ -341,7 +429,7 @@ const PakkaBillsPage = () => {
                 />
                 
                 {/* Quick Stats */}
-                <div className="bg-gray-50 border-t border-gray-200 p-4">
+                {/* <div className="bg-gray-50 border-t border-gray-200 p-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white p-3 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-500 mb-1">Subtotal</p>
@@ -352,7 +440,7 @@ const PakkaBillsPage = () => {
                       <p className="text-base md:text-lg font-bold text-green-700">₹{totals.grandTotal.toLocaleString('en-IN')}</p>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
             
@@ -422,7 +510,7 @@ const PakkaBillsPage = () => {
                 </div>
                 
                 {/* Quick Stats */}
-                <div className="bg-gray-50 border-t border-gray-200 p-3">
+                {/* <div className="bg-gray-50 border-t border-gray-200 p-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-white p-2 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-500 mb-1">Subtotal</p>
@@ -433,7 +521,7 @@ const PakkaBillsPage = () => {
                       <p className="text-base font-bold text-green-700">₹{totals.grandTotal.toLocaleString('en-IN')}</p>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
 

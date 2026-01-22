@@ -32,17 +32,16 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
           </div>
         </div>
         
-        <div className="flex-shrink-0 self-center md:self-start mt-2 md:mt-0">
-          {companyDetails.companyLogo ? (
-            <img src={companyDetails.companyLogo} alt="Logo" className="max-h-12 md:max-h-16 lg:max-h-20 w-auto object-contain" />
-          ) : (
-            companyDetails.companyName && (
-              <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center ${isKachaBill ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'}`}>
-                <span className="text-xl md:text-2xl font-black">{companyDetails.companyName?.charAt(0)}</span>
-              </div>
-            )
-          )}
-        </div>
+        {/* COMPANY LOGO - Only shown if it exists */}
+        {companyDetails.companyLogo && (
+          <div className="flex-shrink-0 self-center md:self-start mt-2 md:mt-0">
+            <img 
+              src={companyDetails.companyLogo} 
+              alt={`${companyDetails.companyName || 'Company'} Logo`} 
+              className="max-h-12 md:max-h-16 lg:max-h-20 w-auto object-contain" 
+            />
+          </div>
+        )}
       </div>
 
       {/* ADDRESSES */}
