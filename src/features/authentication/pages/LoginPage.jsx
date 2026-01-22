@@ -71,7 +71,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 py-12 px-4">
       <AuthCard className="max-w-md w-full">
         <div className="text-center mb-10">
-          <Logo className="mx-auto h-14 w-auto mb-6" />
+          {/* <Logo className="mx-auto h-14 w-auto mb-6" /> */}
           <Heading className="text-3xl">Welcome back</Heading>
           <Subheading className="mt-3 text-gray-600">Sign in to your account to continue</Subheading>
         </div>
