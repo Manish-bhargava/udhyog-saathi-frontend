@@ -341,8 +341,8 @@ const ProfilePage = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Profile Management</h1>
-          <p className="text-gray-600 mt-2">Update your information across business and personal accounts.</p>
+          {/* <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Profile Management</h1> */}
+          <p className="text-gray-600 test-xl mt-2">Update your information across business and personal accounts.</p>
         </div>
         <div className={`px-5 py-2.5 rounded-full text-sm font-semibold ${user.onboarding ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
           {user.onboarding ? '✅ Profile Complete' : '⚠️ Profile Incomplete'}
