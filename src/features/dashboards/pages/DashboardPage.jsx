@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 
 import { profileAPI } from '../../profiles/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function UdhyogDashboard() {
   const [bills, setBills] = useState([]);
@@ -51,7 +52,7 @@ export default function UdhyogDashboard() {
         if (!token) return;
 
         const [billRes, profileRes] = await Promise.all([
-          fetch('http://localhost:3000/api/v1/bill/all', {
+          fetch(`${BASE_URL}/bill/all`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
           profileAPI.getProfile()
@@ -177,7 +178,7 @@ export default function UdhyogDashboard() {
     if (!window.confirm(`Delete Bill ${formatInvoiceId(invoiceNumber)}?`)) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/v1/bill/delete/${invoiceNumber}`, {
+      const response = await fetch(`${BASE_URL}/bill/delete/${invoiceNumber}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

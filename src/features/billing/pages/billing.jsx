@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Check, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Helper to load Razorpay Script dynamically
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -52,7 +53,7 @@ const Pricing = () => {
         return;
       }
 
-      const orderRes = await fetch("http://localhost:3000/api/v1/user/payment/create-order", {
+      const orderRes = await fetch(`${BASE_URL}/user/payment/create-order`, {
         method: "POST",
         credentials: "include", 
         headers: { 
@@ -77,7 +78,7 @@ const Pricing = () => {
         order_id: orderData.orderId,
         handler: async function (response) {
           try {
-            const verifyRes = await fetch("http://localhost:3000/api/v1/user/payment/verify", {
+            const verifyRes = await fetch(`${BASE_URL}/user/payment/verify`, {
               method: "POST",
               credentials: "include",
               headers: { 
