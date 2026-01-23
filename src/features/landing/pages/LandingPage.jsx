@@ -49,20 +49,20 @@ const LandingPage = () => {
       color: "bg-purple-50 text-purple-600",
       border: "border-purple-100"
     },
-    {
-      title: "Inventory Management",
-      description: "Track raw materials and finished goods. Get low-stock alerts and optimize your supply chain.",
-      icon: "📦",
-      color: "bg-amber-50 text-amber-600",
-      border: "border-amber-100"
-    },
-    {
-      title: "Customer Management",
-      description: "Maintain complete customer profiles, track order history, and manage credit limits efficiently.",
-      icon: "👥",
-      color: "bg-indigo-50 text-indigo-600",
-      border: "border-indigo-100"
-    },
+    // {
+    //   title: "Inventory Management",
+    //   description: "Track raw materials and finished goods. Get low-stock alerts and optimize your supply chain.",
+    //   icon: "📦",
+    //   color: "bg-amber-50 text-amber-600",
+    //   border: "border-amber-100"
+    // },
+    // {
+    //   title: "Customer Management",
+    //   description: "Maintain complete customer profiles, track order history, and manage credit limits efficiently.",
+    //   icon: "👥",
+    //   color: "bg-indigo-50 text-indigo-600",
+    //   border: "border-indigo-100"
+    // },
     {
       title: "Mobile & Desktop Sync",
       description: "Access your dashboard on any device. Create bills on desktop, check sales on mobile—everything stays in sync.",
@@ -131,17 +131,6 @@ const LandingPage = () => {
 
   const PLANS = [
     {
-      id: "starter",
-      name: "Starter",
-      price: "₹1",
-      period: "/month",
-      description: "Perfect for small manufacturing units.",
-      icon: Zap,
-      color: "bg-blue-50 text-blue-600",
-      features: ["Up to 100 bills/month", "Basic Inventory Tracking", "Email Support", "Mobile App Access"],
-      recommended: false,
-    },
-    {
       id: "pro",
       name: "Pro",
       price: "₹99",
@@ -152,23 +141,12 @@ const LandingPage = () => {
       features: ["Unlimited Bills", "Advanced Inventory", "Priority Support", "AI Assistant", "Multi-User Access", "GST Reports"],
       recommended: true,
     },
-    {
-      id: "business",
-      name: "Enterprise",
-      price: "₹1,999",
-      period: "/month",
-      description: "For large manufacturing units & factories.",
-      icon: Building,
-      color: "bg-orange-50 text-orange-600",
-      features: ["Everything in Pro", "Custom Workflows", "Dedicated Account Manager", "API Access", "On-Premise Deployment", "Training Sessions"],
-      recommended: false,
-    },
   ];
 
   const stats = [
     { value: "50+", label: "Active Manufacturers" },
-    { value: "₹2.5Cr+", label: "Monthly Transactions" },
-    { value: "10,000+", label: "Bills Created" },
+    { value: "₹100K+", label: "Monthly Transactions" },
+    { value: "1,000+", label: "Bills Created" },
     { value: "98%", label: "Customer Satisfaction" }
   ];
 
@@ -416,9 +394,9 @@ const LandingPage = () => {
             </span>
           </div>
           <div className="flex space-x-6 text-sm text-gray-400">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors">Contact Support</a>
+            <a href="privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="/about-us" className="hover:text-white transition-colors">About Us</a>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
           </div>
         </div>
@@ -676,80 +654,70 @@ const LandingPage = () => {
       {/* Pricing Section */}
       <section id="pricing" className="py-12 md:py-16 lg:py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 md:mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 md:mb-4">Simple, Transparent Pricing</h2>
+          <div className="text-center mb-10 md:mb-16">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 md:mb-4">
+              Simple, Transparent Pricing
+            </h2>
             <p className="text-gray-600 max-w-2xl mx-auto text-sm md:text-base">
-              Choose the perfect plan for your manufacturing business. No hidden fees, no surprises.
+              Get full access to all our AI features with our most popular professional plan.
             </p>
           </div>
           
-          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          {/* Centered Single Card Layout */}
+          <div className="max-w-md mx-auto relative">
             {PLANS.map((plan) => (
               <div 
                 key={plan.id}
-                className={`relative bg-white rounded-2xl border flex flex-col transition-all duration-300 hover:-translate-y-1
-                  ${plan.recommended 
-                    ? "border-blue-200 shadow-lg shadow-blue-600/10 md:scale-105 z-10" 
-                    : "border-gray-100 shadow-sm"
-                  }`}
+                className="relative bg-white rounded-3xl border border-blue-200 shadow-xl shadow-blue-600/10 z-10 flex flex-col transition-all duration-300 hover:-translate-y-1"
               >
-                {plan.recommended && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
-                    Most Popular
-                  </div>
-                )}
+                {/* Always show the Most Popular tag as it's the only plan now */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-xs font-bold px-5 py-2 rounded-full uppercase tracking-wider shadow-lg">
+                  Most Popular
+                </div>
 
-                <div className="p-6 md:p-8 flex-1">
+                <div className="p-8 md:p-10 flex-1">
                   {/* Icon */}
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${plan.color}`}>
-                    <plan.icon className="w-6 h-6" />
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${plan.color}`}>
+                    <plan.icon className="w-7 h-7" />
                   </div>
                   
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <p className="text-gray-500 text-sm mb-6 leading-relaxed">{plan.description}</p>
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                  <p className="text-gray-500 text-sm mb-8 leading-relaxed">{plan.description}</p>
 
                   {/* Price */}
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-3xl md:text-4xl font-black text-gray-900">{plan.price}</span>
-                    <span className="text-gray-400 font-medium">{plan.period}</span>
+                  <div className="flex items-baseline gap-1 mb-8">
+                    <span className="text-4xl md:text-5xl font-black text-gray-900">{plan.price}</span>
+                    <span className="text-gray-400 font-medium text-lg">{plan.period}</span>
                   </div>
 
                   {/* Features List */}
-                  <div className="w-full h-px bg-gray-100 mb-6" />
-                  <ul className="space-y-3 mb-6">
+                  <div className="w-full h-px bg-gray-100 mb-8" />
+                  <ul className="space-y-4 mb-8">
                     {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-3 text-gray-600 text-sm font-medium">
+                      <li key={i} className="flex items-center gap-3 text-gray-600 font-medium">
                         <div className="flex-shrink-0 w-5 h-5 bg-green-50 rounded-full flex items-center justify-center">
                           <Check className="w-3.5 h-3.5 text-green-600" />
                         </div>
-                        <span className="text-sm">{feature}</span>
+                        <span className="text-sm md:text-base">{feature}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
                 {/* Action Button */}
-                <div className="p-6 md:p-8 pt-0 mt-auto">
+                <div className="p-8 md:p-10 pt-0 mt-auto">
                   <button
                     onClick={() => handleChoosePlan(plan)}
                     disabled={loadingPlanId !== null}
-                    className={`w-full py-3 md:py-4 rounded-xl font-bold text-sm transition-all duration-300 flex items-center justify-center
-                      ${plan.recommended 
-                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg" 
-                        : "bg-gray-50 hover:bg-gray-100 text-gray-900 border border-gray-200"
-                      }
-                      ${loadingPlanId === plan.id ? "opacity-75 cursor-not-allowed" : ""}
-                    `}
+                    className={`w-full py-4 rounded-2xl font-bold text-base transition-all duration-300 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 ${loadingPlanId === plan.id ? "opacity-75 cursor-not-allowed" : ""}`}
                   >
                     {loadingPlanId === plan.id ? (
                       <span className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         Processing...
                       </span>
-                    ) : plan.recommended ? (
-                      "Start now!"
                     ) : (
-                      "Choose Plan"
+                      "Start Your Pro Journey"
                     )}
                   </button>
                 </div>
@@ -758,9 +726,9 @@ const LandingPage = () => {
           </div>
 
           {/* Pricing Note */}
-          <div className="mt-8 text-center">
-            <p className="text-gray-500 text-sm">
-              All plans include 14-day free trial • No credit card required • Cancel anytime
+          <div className="mt-12 text-center">
+            <p className="text-gray-500 text-sm font-medium">
+              Unlimited AI usage • No hidden costs • Cancel anytime
             </p>
             <p className="text-gray-400 text-xs mt-2">
               GST applicable as per Indian tax regulations

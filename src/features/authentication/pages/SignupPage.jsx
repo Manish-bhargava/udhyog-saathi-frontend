@@ -188,7 +188,7 @@ const SignupPage = () => {
 
         {/* --- MAIN CONTENT --- */}
         <div className="text-center mb-10">
-          <Logo className="mx-auto h-14 w-auto mb-6" />
+          {/* <Logo className="mx-auto h-14 w-auto mb-6" /> */}
           <Heading className="text-3xl">Create an account</Heading>
           <Subheading className="mt-3 text-gray-600">Start your journey with us today</Subheading>
         </div>
