@@ -11,11 +11,20 @@ import {
   LayoutList,
   X,
   Printer,
-  Download,
   ArrowUpRight,
-  MoreVertical,
-  ChevronDown
+  MoreVertical
 } from 'lucide-react';
+
+// 1. IMPORT RECHARTS COMPONENTS
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 import { profileAPI } from '../../profiles/api';
 
 export default function UdhyogDashboard() {
@@ -68,93 +77,46 @@ export default function UdhyogDashboard() {
     fetchData();
   }, [filterType]);
 
-  // --- 2. FORMATTING HELPERS (FIXED FOR LARGE NUMBERS) ---
-  const formatLargeNumber = (num) => {
-    if (num === undefined || num === null) return '₹0';
-    
-    const number = Number(num);
-    if (isNaN(number)) return '₹0';
-    
-    // For very large numbers, use compact notation
-    if (number >= 10000000) { // 1 crore+
-      return `₹${(number / 10000000).toFixed(2)}Cr`;
-    } else if (number >= 100000) { // 1 lakh+
-      return `₹${(number / 100000).toFixed(2)}L`;
-    } else if (number >= 1000) { // 1 thousand+
-      return `₹${(number / 1000).toFixed(2)}K`;
-    }
-    
-    return `₹${number.toLocaleString('en-IN', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
-    })}`;
-  };
-
-  const formatCompactNumber = (num) => {
-    if (num === undefined || num === null) return '0';
-    
-    const number = Number(num);
-    if (isNaN(number)) return '0';
-    
-    if (number >= 10000000) {
-      return `${(number / 10000000).toFixed(1)}Cr`;
-    } else if (number >= 100000) {
-      return `${(number / 100000).toFixed(1)}L`;
-    } else if (number >= 1000) {
-      return `${(number / 1000).toFixed(1)}K`;
-    }
-    
-    return number.toLocaleString('en-IN');
-  };
-
-  const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return '₹0.00';
-    
-    const num = Number(amount);
-    if (isNaN(num)) return '₹0.00';
-    
-    // For large amounts in detailed view, show full number with proper formatting
-    if (num >= 1000000) {
-      return `₹${num.toLocaleString('en-IN', { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 2 
-      })}`;
-    }
-    
-    return `₹${num.toLocaleString('en-IN', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
-    })}`;
-  };
-
-  // --- 3. STATS & ANALYTICS CALCULATION ---
+  // --- 2. STATS & ANALYTICS CALCULATION (FIXED) ---
   const stats = useMemo(() => {
-    const totalRev = bills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
-    const totalGst = bills.reduce((sum, b) => sum + (b.taxAmount || 0), 0);
-    const totalDiscount = bills.reduce((sum, b) => sum + (b.discount || 0), 0);
-    const totalProducts = bills.reduce((sum, b) => {
-      return sum + (b.products?.reduce((pSum, p) => pSum + (p.quantity || 0), 0) || 0);
-    }, 0);
+    // Force Number() conversion to prevent string concatenation errors
+    const totalRev = bills.reduce((sum, b) => sum + Number(b.grandTotal || 0), 0);
+    const totalGst = bills.reduce((sum, b) => sum + Number(b.taxAmount || 0), 0);
+    const totalDiscount = bills.reduce((sum, b) => sum + Number(b.discount || 0), 0);
+    const totalProducts = bills.reduce((sum, b) => sum + (b.products?.reduce((pSum, p) => pSum + Number(p.quantity || 0), 0) || 0), 0);
 
-    // Chart Data logic: Group Revenue by Date
-    const revenueByDate = {};
+    // 2. UPDATED CHART DATA LOGIC
+    const revenueMap = {};
+
     bills.forEach(bill => {
-      const date = new Date(bill.invoiceDate || bill.createdAt).toLocaleDateString('en-IN', { 
-        day: 'numeric', 
-        month: 'short' 
-      });
-      revenueByDate[date] = (revenueByDate[date] || 0) + (bill.grandTotal || 0);
+      if (!bill.invoiceDate && !bill.createdAt) return;
+
+      // Create a standard YYYY-MM-DD key for sorting
+      const dateObj = new Date(bill.invoiceDate || bill.createdAt);
+      if (isNaN(dateObj)) return; // Skip invalid dates
+
+      const dateKey = dateObj.toISOString().split('T')[0];
+      
+      // FIX: Ensure we are adding Numbers, not strings
+      const amount = Number(bill.grandTotal || 0);
+      revenueMap[dateKey] = (revenueMap[dateKey] || 0) + amount;
     });
 
-    // Type Split logic: Pakka vs Kaccha
+    // Convert map to array, SORT by date, then format for display
+    const chartData = Object.entries(revenueMap)
+      .map(([key, amount]) => ({
+        rawDate: key, 
+        date: new Date(key).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), 
+        amount: amount
+      }))
+      .sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate)) // Sort chronologically
+      .slice(-7); // Get last 7 active days
+
     const typeSplit = { pakka: 0, kaccha: 0 };
     bills.forEach(bill => {
-      const amount = bill.grandTotal || 0;
-      if (bill.billType === 'pakka') {
-        typeSplit.pakka += amount;
-      } else if (bill.billType === 'kaccha') {
-        typeSplit.kaccha += amount;
-      }
+       const amount = Number(bill.grandTotal || 0);
+       if(bill.billType === 'pakka') typeSplit.pakka += amount;
+       else typeSplit.kaccha += amount;
     });
 
     return { 
@@ -162,15 +124,12 @@ export default function UdhyogDashboard() {
       gst: totalGst, 
       discount: totalDiscount, 
       products: totalProducts,
-      chartData: Object.entries(revenueByDate)
-        .map(([date, amount]) => ({ date, amount }))
-        .slice(-7)
-        .sort((a, b) => new Date(a.date) - new Date(b.date)),
+      chartData,
       typeSplit
     };
   }, [bills]);
 
-  // --- 4. HANDLERS ---
+  // --- 3. HANDLERS ---
   const handleView = (bill) => {
     setSelectedBill(bill);
     setIsModalOpen(true);
@@ -210,10 +169,12 @@ export default function UdhyogDashboard() {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString('en-IN', {
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric'
+      day: 'numeric', month: 'short', year: 'numeric'
     });
+  };
+
+  const formatCurrency = (amount) => {
+    return `₹${Number(amount)?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   };
 
   return (
@@ -222,47 +183,24 @@ export default function UdhyogDashboard() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-8 gap-3 md:gap-4">
         <div>
-          <p className="text-slate-500 text-sm md:text-xl">Overview of your business performance.</p>
+          <p className="text-slate-500 text-xl md:text-xl">Overview of your business performance.</p>
         </div>
         <button 
-          onClick={() => window.location.href = '/bills/pakka'}
-          className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 md:px-5 py-2.5 rounded-lg text-sm font-medium shadow-lg transition active:scale-95 w-full md:w-auto justify-center"
+            onClick={() => window.location.href = '/bills/pakka'}
+            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium shadow-lg transition active:scale-95"
         >
-          <FileText size={18} />
-          <span>New Bill</span>
+          <FileText size={16} className="md:size-[18px]" /> 
+          <span className="hidden sm:inline">New Bill</span>
+          <span className="inline sm:hidden">+ Bill</span>
         </button>
       </div>
 
-      {/* STATS CARDS - FIXED FOR LARGE NUMBERS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
-        <StatCard 
-          label="Total Revenue" 
-          value={formatLargeNumber(stats.revenue)} 
-          fullValue={`₹${stats.revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-          icon={<TrendingUp className="w-4 h-4 md:w-5 md:h-5" />} 
-          color="blue" 
-        />
-        <StatCard 
-          label="GST Collected" 
-          value={formatLargeNumber(stats.gst)} 
-          fullValue={`₹${stats.gst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-          icon={<FileText className="w-4 h-4 md:w-5 md:h-5" />} 
-          color="green" 
-        />
-        <StatCard 
-          label="Discounts" 
-          value={formatLargeNumber(stats.discount)} 
-          fullValue={`₹${stats.discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-          icon={<AlertCircle className="w-4 h-4 md:w-5 md:h-5" />} 
-          color="yellow" 
-        />
-        <StatCard 
-          label="Products Sold" 
-          value={formatCompactNumber(stats.products)} 
-          fullValue={stats.products.toLocaleString('en-IN')}
-          icon={<CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />} 
-          color="purple" 
-        />
+      {/* STATS CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-6 md:mb-8">
+        <StatCard label="Total Revenue" value={`₹${stats.revenue.toLocaleString('en-IN')}`} icon={<TrendingUp size={16} className="md:size-[20px]" />} color="blue" />
+        <StatCard label="GST Collected" value={`₹${stats.gst.toLocaleString('en-IN')}`} icon={<FileText size={16} className="md:size-[20px]" />} color="green" />
+        <StatCard label="Discounts" value={`₹${stats.discount.toLocaleString('en-IN')}`} icon={<AlertCircle size={16} className="md:size-[20px]" />} color="yellow" />
+        <StatCard label="Products Sold" value={stats.products} icon={<CheckCircle2 size={16} className="md:size-[20px]" />} color="purple" />
       </div>
 
       {/* CONTROLS */}
@@ -272,7 +210,7 @@ export default function UdhyogDashboard() {
             <button
               key={type}
               onClick={() => setFilterType(type)}
-              className={`flex-1 md:flex-none px-3 md:px-6 py-2 md:py-2.5 rounded-lg text-sm font-medium capitalize transition-all ${
+              className={`flex-1 md:flex-none px-3 md:px-6 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium capitalize transition-all ${
                 filterType === type ? 'bg-slate-900 text-white shadow' : 'text-slate-500 hover:bg-slate-50'
               }`}
             >
@@ -281,23 +219,15 @@ export default function UdhyogDashboard() {
           ))}
         </div>
         <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex w-full md:w-auto">
-          <button 
-            onClick={() => setViewMode('table')} 
-            className={`flex-1 flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              viewMode === 'table' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'
-            }`}
-          >
-            <LayoutList className="w-4 h-4 md:w-5 md:h-5" /> 
-            <span>Table</span>
+          <button onClick={() => setViewMode('table')} className={`flex-1 flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+            <LayoutList size={14} className="md:size-[18px]" /> 
+            <span className="hidden sm:inline">Table</span>
+            <span className="inline sm:hidden">List</span>
           </button>
-          <button 
-            onClick={() => setViewMode('analytics')} 
-            className={`flex-1 flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              viewMode === 'analytics' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> 
-            <span>Analytics</span>
+          <button onClick={() => setViewMode('analytics')} className={`flex-1 flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all ${viewMode === 'analytics' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+            <BarChart3 size={14} className="md:size-[18px]" /> 
+            <span className="hidden sm:inline">Analytics</span>
+            <span className="inline sm:hidden">Stats</span>
           </button>
         </div>
       </div>
@@ -307,79 +237,58 @@ export default function UdhyogDashboard() {
         // TABLE VIEW
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           {loading ? (
-            <div className="p-8 md:p-12 text-center text-slate-400">Loading invoices...</div>
+             <div className="p-8 md:p-12 text-center text-slate-400">Loading invoices...</div>
           ) : bills.length === 0 ? (
-            <div className="p-8 md:p-12 text-center text-slate-500">No bills found.</div>
+             <div className="p-8 md:p-12 text-center text-slate-500">No bills found.</div>
           ) : (
             <>
               {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm text-left border-collapse min-w-[768px]">
+              <div className="hidden md:block">
+                <table className="w-full text-sm text-left border-collapse">
                   <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-xs border-b border-slate-200">
                     <tr>
-                      <th className="py-4 px-6 min-w-[120px]">Invoice ID</th>
-                      <th className="py-4 px-6 min-w-[100px]">Date</th>
-                      <th className="py-4 px-6 min-w-[180px]">Client</th>
-                      <th className="py-4 px-6 min-w-[90px]">Type</th>
-                      <th className="py-4 px-6 min-w-[120px] text-right">Amount</th>
-                      <th className="py-4 px-6 min-w-[140px] text-center">Actions</th>
+                      <th className="py-4 px-6">Invoice ID</th>
+                      <th className="py-4 px-6">Date</th>
+                      <th className="py-4 px-6">Client</th>
+                      <th className="py-4 px-6">Type</th>
+                      <th className="py-4 px-6 text-right">Amount</th>
+                      <th className="py-4 px-6 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {bills.map((bill) => (
                       <tr key={bill._id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-4 px-6 font-medium text-slate-800 truncate max-w-[120px]" title={formatInvoiceId(bill.invoiceNumber)}>
-                          {formatInvoiceId(bill.invoiceNumber)}
+                        <td className="py-4 px-6 font-medium text-slate-600">
+                            {formatInvoiceId(bill.invoiceNumber)}
                         </td>
-                        <td className="py-4 px-6 text-slate-600 whitespace-nowrap">
-                          {formatDate(bill.invoiceDate || bill.createdAt)}
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="font-medium text-slate-800 truncate max-w-[180px]" title={bill.buyer?.clientName}>
-                            {bill.buyer?.clientName || 'N/A'}
-                          </div>
-                          <div className="text-xs text-slate-400 truncate max-w-[180px]" title={bill.buyer?.clientAddress}>
-                            {bill.buyer?.clientAddress || ""}
-                          </div>
+                        <td className="py-4 px-6 text-slate-500">
+                            {formatDate(bill.invoiceDate || bill.createdAt)}
                         </td>
                         <td className="py-4 px-6">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                            <div className="font-medium text-slate-800">{bill.buyer?.clientName}</div>
+                            <div className="text-xs text-slate-400">{bill.buyer?.clientAddress || ""}</div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase ${
                             bill.billType === 'kaccha' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
                           }`}>
                             {bill.billType}
                           </span>
                         </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="font-bold text-slate-800 text-sm" title={formatCurrency(bill.grandTotal)}>
-                            {formatLargeNumber(bill.grandTotal)}
-                          </div>
-                          <div className="text-xs text-slate-400 mt-1">
-                            {bill.products?.length || 0} items
-                          </div>
+                        <td className="py-4 px-6 text-right font-bold text-slate-800">
+                          ₹{bill.grandTotal?.toLocaleString('en-IN')}
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-6 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {bill.billType === 'kaccha' && (
-                              <button 
-                                onClick={() => handleConvert(bill._id)} 
-                                className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                title="Convert"
-                              >
+                              <button onClick={() => handleConvert(bill._id)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded" title="Convert">
                                 <RefreshCw size={16} />
                               </button>
                             )}
-                            <button 
-                              onClick={() => handleView(bill)} 
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="View"
-                            >
+                            <button onClick={() => handleView(bill)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="View">
                               <Eye size={16} />
                             </button>
-                            <button 
-                              onClick={() => handleDelete(bill.invoiceNumber)} 
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete"
-                            >
+                            <button onClick={() => handleDelete(bill.invoiceNumber)} className="p-2 text-red-500 hover:bg-red-50 rounded" title="Delete">
                               <Trash2 size={16} />
                             </button>
                           </div>
@@ -395,16 +304,12 @@ export default function UdhyogDashboard() {
                 {bills.map((bill) => (
                   <div key={bill._id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                     <div className="flex justify-between items-start mb-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-slate-800 truncate" title={bill.buyer?.clientName}>
-                          {bill.buyer?.clientName || 'N/A'}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          {formatDate(bill.invoiceDate || bill.createdAt)}
-                        </div>
+                      <div>
+                        <div className="font-medium text-slate-800 text-sm">{bill.buyer?.clientName}</div>
+                        <div className="text-xs text-slate-500 mt-1">{formatDate(bill.invoiceDate || bill.createdAt)}</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase ${
                           bill.billType === 'kaccha' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
                         }`}>
                           {bill.billType === 'kaccha' ? 'Kacha' : 'Pakka'}
@@ -421,15 +326,11 @@ export default function UdhyogDashboard() {
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="text-xs text-slate-500">Invoice ID</div>
-                        <div className="font-medium text-slate-600 text-sm truncate max-w-[120px]" title={formatInvoiceId(bill.invoiceNumber)}>
-                          {formatInvoiceId(bill.invoiceNumber)}
-                        </div>
+                        <div className="font-medium text-slate-600 text-sm">{formatInvoiceId(bill.invoiceNumber)}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-xs text-slate-500">Amount</div>
-                        <div className="font-bold text-slate-800 text-sm" title={formatCurrency(bill.grandTotal)}>
-                          {formatLargeNumber(bill.grandTotal)}
-                        </div>
+                        <div className="font-bold text-slate-800">₹{bill.grandTotal?.toLocaleString('en-IN')}</div>
                       </div>
                     </div>
 
@@ -440,24 +341,24 @@ export default function UdhyogDashboard() {
                           {bill.billType === 'kaccha' && (
                             <button 
                               onClick={() => handleConvert(bill._id)}
-                              className="flex-1 px-3 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1"
+                              className="flex-1 px-3 py-2 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-lg flex items-center justify-center gap-1"
                             >
-                              <RefreshCw size={14} />
+                              <RefreshCw size={12} />
                               Convert
                             </button>
                           )}
                           <button 
                             onClick={() => handleView(bill)}
-                            className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1"
+                            className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg flex items-center justify-center gap-1"
                           >
-                            <Eye size={14} />
+                            <Eye size={12} />
                             View
                           </button>
                           <button 
                             onClick={() => handleDelete(bill.invoiceNumber)}
-                            className="flex-1 px-3 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1"
+                            className="flex-1 px-3 py-2 bg-red-50 text-red-700 text-xs font-medium rounded-lg flex items-center justify-center gap-1"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={12} />
                             Delete
                           </button>
                         </div>
@@ -473,117 +374,99 @@ export default function UdhyogDashboard() {
         // ANALYTICS VIEW
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             
-            {/* CHART 1: REVENUE TREND */}
+            {/* 3. RECHARTS LINE CHART: REVENUE TREND */}
             <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4 md:mb-6">Revenue Trend</h3>
-                <div className="h-48 md:h-64 flex items-end justify-between space-x-1 md:space-x-2 px-1 md:px-2 overflow-x-auto">
-                    {stats.chartData.length > 0 ? stats.chartData.map((d, i) => {
-                        const maxVal = Math.max(...stats.chartData.map(i => i.amount), 1);
-                        const height = (d.amount / maxVal) * 100;
-                        return (
-                            <div key={i} className="flex flex-col items-center flex-1 min-w-[40px] group">
-                                <div className="relative w-full bg-blue-100 rounded-t-sm hover:bg-blue-200 transition-all" style={{ height: `${height}%`, minHeight: '4px' }}>
-                                    <div className="absolute bottom-0 w-full bg-blue-500 rounded-t-sm h-full opacity-80"></div>
-                                    <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded pointer-events-none whitespace-nowrap z-10">
-                                        {formatLargeNumber(d.amount)}
-                                    </div>
-                                </div>
-                                <span className="text-xs text-slate-500 mt-2 truncate w-full text-center">
-                                    {d.date}
-                                </span>
-                            </div>
-                        )
-                    }) : (
-                        <div className="flex items-center justify-center w-full h-full">
-                            <p className="text-center text-slate-400 text-sm">Not enough data for chart</p>
-                        </div>
-                    )}
+                <div className="h-64 md:h-80 w-full">
+                  {stats.chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart 
+                        data={stats.chartData}
+                        margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="date" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: '#64748b', fontSize: 12 }} 
+                          dy={10}
+                        />
+                        <YAxis 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: '#64748b', fontSize: 12 }}
+                          tickFormatter={(value) => `₹${value}`} 
+                        />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, 'Revenue']}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="amount" 
+                          stroke="#4f46e5" 
+                          strokeWidth={3} 
+                          dot={{ r: 4, fill: '#4f46e5', strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 6, strokeWidth: 0 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                      Not enough data to display chart
+                    </div>
+                  )}
                 </div>
             </div>
 
             {/* CHART 2: BILL TYPE RATIO */}
             <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4 md:mb-6">Bill Type Distribution</h3>
-                <div className="flex items-center justify-center h-48 md:h-64">
-                    <div className="w-full max-w-xs space-y-4 md:space-y-6">
+                 <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4 md:mb-6">Pakka vs Kaccha (Revenue)</h3>
+                 <div className="flex items-center justify-center h-48 md:h-64">
+                    <div className="w-full max-w-xs space-y-3 md:space-y-4">
                         {/* Pakka Bar */}
                         <div>
-                            <div className="flex justify-between text-sm mb-2">
+                            <div className="flex justify-between text-xs md:text-sm mb-1">
                                 <span className="font-medium text-slate-700">Pakka Bills</span>
-                                <span className="text-slate-500" title={formatCurrency(stats.typeSplit.pakka)}>
-                                    {formatLargeNumber(stats.typeSplit.pakka)}
-                                </span>
+                                <span className="text-slate-500">₹{stats.typeSplit.pakka.toLocaleString()}</span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-3">
-                                <div 
-                                    className="bg-green-500 h-3 rounded-full transition-all duration-500" 
-                                    style={{ width: `${(stats.typeSplit.pakka / (stats.revenue || 1)) * 100}%` }}
-                                ></div>
+                            <div className="w-full bg-slate-100 rounded-full h-2 md:h-3">
+                                <div className="bg-green-500 h-2 md:h-3 rounded-full" style={{ width: `${(stats.typeSplit.pakka / (stats.revenue || 1)) * 100}%` }}></div>
                             </div>
                         </div>
-                        
-                        {/* Kaccha Bar */}
-                        <div>
-                            <div className="flex justify-between text-sm mb-2">
+                         {/* Kaccha Bar */}
+                         <div>
+                            <div className="flex justify-between text-xs md:text-sm mb-1">
                                 <span className="font-medium text-slate-700">Kaccha Bills</span>
-                                <span className="text-slate-500" title={formatCurrency(stats.typeSplit.kaccha)}>
-                                    {formatLargeNumber(stats.typeSplit.kaccha)}
-                                </span>
+                                <span className="text-slate-500">₹{stats.typeSplit.kaccha.toLocaleString()}</span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-3">
-                                <div 
-                                    className="bg-orange-400 h-3 rounded-full transition-all duration-500" 
-                                    style={{ width: `${(stats.typeSplit.kaccha / (stats.revenue || 1)) * 100}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                        
-                        {/* Summary */}
-                        <div className="pt-4 border-t border-slate-100">
-                            <div className="flex justify-between text-sm">
-                                <span className="font-bold text-slate-800">Total Revenue</span>
-                                <span className="font-bold text-slate-800" title={formatCurrency(stats.revenue)}>
-                                    {formatLargeNumber(stats.revenue)}
-                                </span>
+                            <div className="w-full bg-slate-100 rounded-full h-2 md:h-3">
+                                <div className="bg-orange-400 h-2 md:h-3 rounded-full" style={{ width: `${(stats.typeSplit.kaccha / (stats.revenue || 1)) * 100}%` }}></div>
                             </div>
                         </div>
                     </div>
-                </div>
+                 </div>
             </div>
 
             {/* LIST: TOP RECENT TRANSACTIONS */}
-            <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm md:col-span-2">
+             <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm md:col-span-2">
                 <h3 className="text-base md:text-lg font-bold text-slate-800 mb-3 md:mb-4">Top Recent Transactions</h3>
                 <div className="space-y-2 md:space-y-3">
-                    {bills.slice(0, 5).map(bill => (
-                        <div key={bill._id} className="flex items-center justify-between p-3 md:p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div className="bg-white p-2 rounded-lg border border-slate-200 text-slate-400 flex-shrink-0">
-                                    <ArrowUpRight size={16} />
+                    {bills.slice(0, 3).map(bill => (
+                        <div key={bill._id} className="flex items-center justify-between p-2 md:p-3 bg-slate-50 rounded-lg">
+                            <div className="flex items-center gap-2 md:gap-3">
+                                <div className="bg-white p-1.5 md:p-2 rounded-md border border-slate-200 text-slate-400">
+                                    <ArrowUpRight size={14} className="md:size-[18px]" />
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="font-bold text-slate-800 truncate" title={bill.buyer?.clientName}>
-                                        {bill.buyer?.clientName || 'N/A'}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs text-slate-500">{formatDate(bill.invoiceDate)}</span>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                            bill.billType === 'kaccha' 
-                                            ? 'bg-orange-100 text-orange-700' 
-                                            : 'bg-green-100 text-green-700'
-                                        }`}>
-                                            {bill.billType}
-                                        </span>
-                                    </div>
+                                <div>
+                                    <p className="font-bold text-slate-800 text-sm md:text-base">{bill.buyer?.clientName}</p>
+                                    <p className="text-xs text-slate-500">{formatDate(bill.invoiceDate)}</p>
                                 </div>
                             </div>
-                            <div className="text-right flex-shrink-0 ml-4">
-                                <p className="font-bold text-slate-900 text-sm md:text-base" title={formatCurrency(bill.grandTotal)}>
-                                    {formatLargeNumber(bill.grandTotal)}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                    {bill.products?.length || 0} Items
-                                </p>
+                            <div className="text-right">
+                                <p className="font-bold text-slate-900 text-sm md:text-base">₹{bill.grandTotal?.toLocaleString()}</p>
+                                <p className="text-xs text-slate-500">{bill.products?.length} Items</p>
                             </div>
                         </div>
                     ))}
@@ -592,240 +475,137 @@ export default function UdhyogDashboard() {
         </div>
       )}
 
+
       {/* --- INVOICE VIEW MODAL --- */}
       {isModalOpen && selectedBill && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-4xl shadow-2xl rounded-xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/70 backdrop-blur-sm print:p-0 print:bg-white print:block">
+          <div className="bg-white w-full max-w-3xl shadow-2xl rounded-lg flex flex-col max-h-[90vh] print:shadow-none print:w-full print:max-w-none print:max-h-none print:h-auto overflow-hidden">
             
             {/* FIXED HEADER */}
-            <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
-                <h2 className="font-bold text-slate-800 text-lg">Invoice Preview</h2>
-                <div className="flex gap-2">
-                    <button 
-                      onClick={() => window.print()} 
-                      className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-sm text-slate-700 transition-colors"
-                    >
-                        <Printer size={16} />
-                        <span>Print</span>
+            <div className="flex justify-between items-center p-3 md:p-4 border-b border-slate-100 bg-slate-50 shrink-0 print:hidden">
+                <h2 className="font-bold text-slate-700 text-sm md:text-base">Invoice Preview</h2>
+                <div className="flex gap-1 md:gap-2">
+                    <button onClick={() => window.print()} className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-white border border-slate-300 rounded text-xs md:text-sm text-slate-700 hover:bg-slate-100">
+                        <Printer size={14} className="md:size-[16px]" /> 
+                        <span className="hidden sm:inline">Print</span>
                     </button>
-                    <button 
-                      onClick={() => setIsModalOpen(false)} 
-                      className="p-2 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg transition-colors"
-                    >
-                        <X size={20} />
+                    <button onClick={() => setIsModalOpen(false)} className="p-1 md:p-1.5 hover:bg-red-100 text-slate-400 hover:text-red-600 rounded transition">
+                        <X size={16} className="md:size-[20px]" />
                     </button>
                 </div>
             </div>
 
             {/* SCROLLABLE BODY */}
-            <div className="overflow-y-auto p-6 md:p-8">
-              
-              {/* INVOICE HEADER AREA */}
-              <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 pb-6 border-b border-slate-200">
+            <div className="overflow-y-auto p-4 md:p-6 lg:p-10 print:p-0 print:overflow-visible bg-white">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-6 mb-6 md:mb-10 border-b pb-4 md:pb-8 border-slate-100">
                 <div className="min-w-0 flex-1">
-                  <h1 className={`text-3xl md:text-4xl font-bold mb-6 ${selectedBill.billType === 'kaccha' ? 'text-amber-600' : 'text-slate-900'}`}>
-                    {selectedBill.billType === 'kaccha' ? 'Proforma Invoice' : 'Tax Invoice'}
+                  <h1 className={`text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-4 md:mb-6 break-words ${selectedBill.billType === 'kaccha' ? 'text-amber-600' : 'text-slate-800'}`}>
+                    {selectedBill.billType === 'kaccha' ? 'Proforma Invoice' : 'Invoice'}
                   </h1>
-                  <div className="flex flex-wrap gap-4 md:gap-6">
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Invoice Number</p>
-                      <p className="text-slate-800 font-semibold text-lg">{formatInvoiceId(selectedBill.invoiceNumber)}</p>
+                  <div className="flex flex-wrap gap-4 md:gap-8">
+                    <div className="min-w-0">
+                      <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Invoice Number</p>
+                      <p className="text-slate-800 font-semibold text-sm md:text-base break-all">{formatInvoiceId(selectedBill.invoiceNumber)}</p>
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date of Issue</p>
-                      <p className="text-slate-800 font-semibold text-lg">{formatDate(selectedBill.invoiceDate || selectedBill.createdAt)}</p>
+                    <div className="min-w-0">
+                      <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date of Issue</p>
+                      <p className="text-slate-800 font-semibold text-sm md:text-base">{formatDate(selectedBill.invoiceDate || selectedBill.createdAt)}</p>
                     </div>
                   </div>
                 </div>
-                
-                {/* SELLER LOGO */}
-                {profileData?.company?.companyLogo && (
-                  <div className="flex-shrink-0">
+                <div className="flex-shrink-0 self-center md:self-start mt-2 md:mt-0">
+                  {profileData?.company?.companyLogo && (
                     <img 
                       src={profileData.company.companyLogo} 
                       alt="Company Logo" 
-                      className="max-h-20 w-auto object-contain" 
+                      className="max-h-12 md:max-h-16 lg:max-h-20 w-auto object-contain" 
                     />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
-              {/* ADDRESSES */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                {/* Billed To */}
-                <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Billed To</h3>
-                  <p className="font-bold text-slate-900 text-xl mb-2">
-                    {selectedBill.buyer?.clientName || 'N/A'}
-                  </p>
-                  <p className="text-slate-600 text-sm whitespace-pre-wrap mb-4">
-                    {selectedBill.buyer?.clientAddress || 'No address provided'}
-                  </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-8 md:mb-12">
+                <div className="min-w-0">
+                  <h3 className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 md:mb-3">Billed To</h3>
+                  <p className="font-bold text-slate-800 text-lg md:text-xl break-words leading-tight mb-1 md:mb-2">{selectedBill.buyer?.clientName}</p>
+                  <p className="text-slate-500 text-xs md:text-sm whitespace-pre-wrap break-words leading-relaxed">{selectedBill.buyer?.clientAddress}</p>
                   {selectedBill.billType !== 'kaccha' && selectedBill.buyer?.clientGst && (
-                    <div className="bg-slate-50 p-3 rounded-lg">
-                      <p className="text-sm font-medium text-slate-700">
-                        GSTIN: {selectedBill.buyer.clientGst}
-                      </p>
-                    </div>
+                    <p className="text-slate-600 text-xs mt-2 md:mt-3 font-medium bg-slate-50 inline-block px-2 py-1 rounded">GSTIN: {selectedBill.buyer.clientGst}</p>
                   )}
                 </div>
-
-                {/* From Seller */}
-                <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">From</h3>
-                  <p className="font-bold text-slate-900 text-xl mb-2">
-                    {profileData?.company?.companyName || 'Your Company'}
-                  </p>
-                  <p className="text-slate-600 text-sm whitespace-pre-wrap mb-4">
-                    {profileData?.company?.companyAddress || 'No address provided'}
-                  </p>
-                  {profileData?.company?.companyEmail && (
-                    <p className="text-slate-600 text-sm">{profileData.company.companyEmail}</p>
-                  )}
+                <div className="min-w-0 md:text-right mt-4 md:mt-0">
+                  <h3 className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 md:mb-3 md:ml-auto">From</h3>
+                  <p className="font-bold text-slate-800 text-lg md:text-xl break-words leading-tight mb-1 md:mb-2">{profileData?.company?.companyName || "Your Company"}</p>
+                  <p className="text-slate-500 text-xs md:text-sm whitespace-pre-wrap break-words leading-relaxed">{profileData?.company?.companyAddress}</p>
+                  {profileData?.company?.companyEmail && <p className="text-slate-500 text-xs md:text-sm mt-1">{profileData.company.companyEmail}</p>}
                   {profileData?.company?.GST && selectedBill.billType !== 'kaccha' && (
-                    <div className="bg-slate-50 p-3 rounded-lg mt-2">
-                      <p className="text-sm font-medium text-slate-700">
-                        GSTIN: {profileData.company.GST}
-                      </p>
-                    </div>
+                    <p className="text-slate-600 text-xs mt-2 md:mt-3 font-medium bg-slate-50 inline-block px-2 py-1 rounded">GST: {profileData.company.GST}</p>
                   )}
                 </div>
               </div>
 
-              {/* PRODUCT TABLE */}
-              <div className="overflow-x-auto mb-8">
-                <table className="w-full border-collapse">
+              <div className="flex-1 overflow-x-auto -mx-2 md:mx-0">
+                <table className="w-full mb-6 md:mb-8 border-collapse">
                   <thead>
-                    <tr className="bg-slate-50">
-                      <th className="text-left p-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Description</th>
-                      <th className="text-right p-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Rate</th>
-                      <th className="text-right p-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Qty</th>
-                      <th className="text-right p-4 text-xs font-bold text-slate-600 uppercase tracking-wider">Amount</th>
+                    <tr className="border-b-2 border-slate-100">
+                      <th className="text-left py-2 md:py-4 text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest w-1/2 px-2">Description</th>
+                      <th className="text-right py-2 md:py-4 text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Rate</th>
+                      <th className="text-right py-2 md:py-4 text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest w-12 md:w-16 px-2">Qty</th>
+                      <th className="text-right py-2 md:py-4 text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Amount</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-50">
                     {selectedBill.products?.map((p, i) => (
-                      <tr key={i} className="border-b border-slate-100">
-                        <td className="p-4 font-medium text-slate-800 min-w-[200px]">
-                          {p.name || 'Untitled Product/Service'}
-                          {p.description && (
-                            <p className="text-sm text-slate-500 mt-1">{p.description}</p>
-                          )}
-                        </td>
-                        <td className="p-4 text-right font-mono text-slate-700">
-                          {formatCurrency(p.rate)}
-                        </td>
-                        <td className="p-4 text-right font-mono text-slate-700">
-                          {p.quantity}
-                        </td>
-                        <td className="p-4 text-right font-bold text-slate-900 font-mono">
-                          {formatCurrency(p.amount || (p.rate * p.quantity))}
-                        </td>
+                      <tr key={i} className="group">
+                        <td className="py-3 md:py-5 pr-2 md:pr-4 text-xs md:text-sm font-semibold text-slate-700 break-words max-w-[150px] md:max-w-[200px] px-2">{p.name}</td>
+                        <td className="py-3 md:py-5 text-xs md:text-sm text-right text-slate-500 tabular-nums px-2">{formatCurrency(p.rate)}</td>
+                        <td className="py-3 md:py-5 text-xs md:text-sm text-right text-slate-500 tabular-nums px-2">{p.quantity}</td>
+                        <td className="py-3 md:py-5 text-xs md:text-sm text-right font-bold text-slate-800 tabular-nums px-2">{formatCurrency(p.amount)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* TOTALS */}
-              <div className="flex justify-end">
-                <div className="w-full max-w-md space-y-3">
-                  <div className="flex justify-between text-slate-600">
-                    <span>Subtotal</span>
-                    <span className="font-medium">{formatCurrency(selectedBill.subTotal)}</span>
-                  </div>
-                  
-                  {selectedBill.discount > 0 && (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Discount</span>
-                      <span className="text-red-500 font-medium">- {formatCurrency(selectedBill.discount)}</span>
-                    </div>
-                  )}
-                  
+              <div className="flex flex-col items-end pt-4 md:pt-6 border-t border-slate-100">
+                <div className="w-full max-w-xs space-y-2 md:space-y-3">
+                  <div className="flex justify-between text-xs md:text-sm text-slate-500"><span>Subtotal</span><span className="font-semibold text-slate-700">{formatCurrency(selectedBill.subTotal)}</span></div>
+                  {selectedBill.discount > 0 && <div className="flex justify-between text-xs md:text-sm text-slate-500"><span>Discount</span><span className="text-red-500">- {formatCurrency(selectedBill.discount)}</span></div>}
                   {selectedBill.billType !== 'kaccha' && selectedBill.taxAmount > 0 && (
                     <>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Tax Rate</span>
-                        <span>{selectedBill.gstPercentage}%</span>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Tax Amount</span>
-                        <span className="font-medium">+ {formatCurrency(selectedBill.taxAmount)}</span>
-                      </div>
+                      <div className="flex justify-between text-xs md:text-sm text-slate-500"><span>Tax Rate</span><span>{selectedBill.gstPercentage}%</span></div>
+                      <div className="flex justify-between text-xs md:text-sm text-slate-500"><span>Tax Amount</span><span>+ {formatCurrency(selectedBill.taxAmount)}</span></div>
                     </>
                   )}
-                  
-                  <div className="pt-4 border-t border-slate-300">
-                    <div className="flex justify-between items-center">
-                      <span className={`text-xl font-bold ${selectedBill.billType === 'kaccha' ? 'text-amber-600' : 'text-slate-900'}`}>
-                        {selectedBill.billType === 'kaccha' ? 'Total Amount' : 'Invoice Total'}
-                      </span>
-                      <span className={`text-2xl md:text-3xl font-bold ${selectedBill.billType === 'kaccha' ? 'text-amber-600' : 'text-slate-900'}`}>
-                        {formatCurrency(selectedBill.grandTotal)}
-                      </span>
-                    </div>
+                  <div className={`flex justify-between text-lg md:text-xl lg:text-2xl font-black pt-3 md:pt-4 border-t-2 mt-1 md:mt-2 ${selectedBill.billType === 'kaccha' ? 'text-amber-600 border-amber-50' : 'text-slate-900 border-slate-900'}`}>
+                    <span className="mr-2 md:mr-4">{selectedBill.billType === 'kaccha' ? 'Total Amount' : 'Invoice Total'}</span>
+                    <span className="break-all">{formatCurrency(selectedBill.grandTotal)}</span>
                   </div>
                 </div>
               </div>
               
-              {/* FOOTER */}
-              <div className="mt-12 pt-8 border-t border-slate-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Notes & Bank Details */}
-                  <div>
-                    {selectedBill.notes && (
-                      <div className="mb-6">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Notes</p>
-                        <p className="text-slate-600 text-sm whitespace-pre-wrap">
-                          {selectedBill.notes}
-                        </p>
+              <div className="mt-8 md:mt-12 lg:mt-16 pt-4 md:pt-6 lg:pt-8 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                <div className="min-w-0">
+                  <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 md:mb-3">Notes & Terms</p>
+                  <p className="text-xs md:text-sm text-slate-600 italic whitespace-pre-wrap break-words leading-relaxed">{selectedBill.notes || (selectedBill.billType === 'kaccha' ? 'Proforma only.' : 'Thank you!')}</p>
+                  {profileData?.bankDetails?.bankName && selectedBill.billType !== 'kaccha' && (
+                    <div className="mt-4 md:mt-6 min-w-0 bg-slate-50 p-3 md:p-4 rounded-lg md:rounded-xl">
+                      <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 md:mb-3">Bank Transfer Details</p>
+                      <div className="grid grid-cols-2 gap-y-1 text-xs">
+                        <span className="text-slate-500">Bank:</span><span className="font-bold text-slate-700 break-words">{profileData.bankDetails.bankName}</span>
+                        <span className="text-slate-500">Account:</span><span className="font-bold text-slate-700 break-all">{profileData.bankDetails.accountNumber}</span>
+                        <span className="text-slate-500">IFSC:</span><span className="font-bold text-slate-700 break-all">{profileData.bankDetails.IFSC}</span>
                       </div>
-                    )}
-                    
-                    {profileData?.bankDetails?.bankName && selectedBill.billType !== 'kaccha' && (
-                      <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Bank Details</p>
-                        <div className="bg-slate-50 p-4 rounded-lg">
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <span className="text-slate-500">Bank:</span>
-                            <span className="font-medium text-slate-800">{profileData.bankDetails.bankName}</span>
-                            <span className="text-slate-500">Account:</span>
-                            <span className="font-medium text-slate-800">{profileData.bankDetails.accountNumber}</span>
-                            <span className="text-slate-500">IFSC:</span>
-                            <span className="font-medium text-slate-800">{profileData.bankDetails.IFSC}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Signature */}
-                  <div className="flex flex-col items-end">
-                    <div className="relative">
-                      {profileData?.company?.companyStamp && (
-                        <img 
-                          src={profileData.company.companyStamp} 
-                          alt="Company Stamp" 
-                          className="absolute -top-8 opacity-70 w-20 h-20 object-contain" 
-                        />
-                      )}
-                      
-                      {profileData?.company?.companySignature && (
-                        <img 
-                          src={profileData.company.companySignature} 
-                          alt="Signature" 
-                          className="h-16 w-auto object-contain" 
-                        />
-                      )}
                     </div>
-                    
-                    <div className="mt-6 border-t border-slate-300 pt-4 text-center">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        Authorized Signatory
-                      </p>
-                      <p className="text-sm font-medium text-slate-800 mt-1">
-                        For {profileData?.company?.companyName || "Your Company"}
-                      </p>
+                  )}
+                </div>
+                <div className="flex flex-col items-center md:items-end justify-end mt-4 md:mt-0">
+                  <div className="relative flex flex-col items-center min-w-[120px] md:min-w-[150px]">
+                    {profileData?.company?.companyStamp && <img src={profileData.company.companyStamp} alt="Company Stamp" className="absolute -top-8 md:-top-12 opacity-70 w-16 h-16 md:w-24 md:h-24 object-contain pointer-events-none" />}
+                    {profileData?.company?.companySignature ? <img src={profileData.company.companySignature} alt="Authorized Signature" className="h-12 md:h-16 w-auto object-contain z-10" /> : <div className="h-12 md:h-16"></div>}
+                    <div className="mt-2 border-t border-slate-300 w-full pt-2 text-center">
+                      <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signatory</p>
+                      <p className="text-xs font-bold text-slate-800">For {profileData?.company?.companyName || "Your Company"}</p>
                     </div>
                   </div>
                 </div>
@@ -838,37 +618,22 @@ export default function UdhyogDashboard() {
   );
 }
 
-// Enhanced Stats Card Component with hover for full value
-function StatCard({ label, value, fullValue, icon, color }) {
+// Stats Card Helper
+function StatCard({ label, value, icon, color }) {
   const colors = {
     blue: "text-blue-600 bg-blue-50",
     green: "text-green-600 bg-green-50",
     yellow: "text-yellow-600 bg-yellow-50",
     purple: "text-purple-600 bg-purple-50",
   };
-  
   return (
-    <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white p-3 md:p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm">
       <div className="flex justify-between items-start">
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">
-            {label}
-          </p>
-          <h3 
-            className="text-xl md:text-2xl font-bold text-slate-800 truncate" 
-            title={fullValue || value}
-          >
-            {value}
-          </h3>
-          {fullValue && fullValue !== value && (
-            <p className="text-xs text-slate-400 mt-1 truncate" title={fullValue}>
-              {fullValue}
-            </p>
-          )}
+        <div>
+          <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
+          <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-800">{value}</h3>
         </div>
-        <div className={`p-2 rounded-lg ${colors[color]} flex-shrink-0 ml-2`}>
-          {icon}
-        </div>
+        <div className={`p-1.5 md:p-2 lg:p-2.5 rounded-lg ${colors[color]}`}>{icon}</div>
       </div>
     </div>
   );
