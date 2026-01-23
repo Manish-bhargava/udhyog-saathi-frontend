@@ -16,7 +16,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({ 
-    name: '', 
+    name: '', // Note: 'name' usually isn't needed for login, just email/password
     email: '', 
     password: '' 
   });
@@ -28,6 +28,16 @@ const LoginPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) setError(''); 
     if (success) setSuccess('');
+  };
+
+  // --- GOOGLE AUTH HANDLER ---
+  const handleGoogleLogin = () => {
+    // Option A: If using a backend API (Passport.js, etc.)
+    // Redirect the user to your backend's Google authentication route
+    window.location.href = 'http://localhost:3000/api/auth/google'; 
+    
+    // Option B: If using Firebase Auth directly in frontend
+    // authAPI.signInWithGoogle().then(...) 
   };
 
   const handleSubmit = async (e) => {
@@ -64,6 +74,8 @@ const LoginPage = () => {
         else {
             setError(`Server error: ${status || 'Unknown'} - ${serverMessage || 'Internal error'}`);
         }
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -92,13 +104,14 @@ const LoginPage = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Note: Standard login usually only asks for Email, not Name */}
           <InputField
             label="Full Name"
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
-            required
+            required // Remove this if your backend doesn't require name for login
             placeholder="Enter your name"
           />
 
@@ -150,7 +163,10 @@ const LoginPage = () => {
         <Divider className="my-8">Or continue with</Divider>
 
         <div className="grid grid-cols-2 gap-4">
-          <SocialLoginButton provider="google" onClick={() => {}} />
+          {/* UPDATED: Connected handler here */}
+          <SocialLoginButton provider="google" onClick={handleGoogleLogin} />
+          
+          {/* GitHub kept as placeholder unless you have a handler for it too */}
           <SocialLoginButton provider="github" onClick={() => {}} />
         </div>
 
