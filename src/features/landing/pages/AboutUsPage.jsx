@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, MessageSquare, User, Shield, Rocket, Linkedin, Github, Code, Database, Cpu, Palette, Globe, Award, BookOpen, Lightbulb, Zap, Users, Target } from 'lucide-react';
+import { Mail, Phone, MessageSquare, User, Shield, Rocket, Linkedin, Github, Code, Database, Cpu, Palette, Globe, Award, BookOpen, Lightbulb, Zap, Users, Target, Megaphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AboutUs = () => {
@@ -95,73 +95,73 @@ const AboutUs = () => {
       id: 1,
       initials: "KG",
       name: "Krishna Goyal",
-      role: "Founder & Frontend Lead",
-      futureRole: "Future CEO & Product Visionary",
+      role: "Founder & Director",
+      futureRole: "Leading CMO Operations",
       email: "krishnagoyal26112005@gmail.com",
       phone: "+91 9064700906",
       education: "B.Tech Computer Science (Specialization in Data Analytics)",
       university: "Vellore Institute of Technology, Andra Pradesh",
-      skills: ["React.js", "Next.js", "TypeScript", "Tailwind CSS", "Figma", "UI/UX Design", "Product Strategy"],
-      bio: "The visionary behind UdhyogSaathi. Krishna conceptualized the core idea of revolutionizing Indian manufacturing through technology. He combines technical expertise with business insight to drive the product vision forward.",
+      skills: ["Market Strategy", "Brand Development", "React.js", "UI/UX Design", "Growth Hacking"],
+      bio: "As Founder and Director, Krishna currently spearheads all CMO operations. He drives the brand narrative, market expansion, and strategic partnerships, ensuring UdhyogSaathi reaches every manufacturer in India while maintaining the product's core vision.",
       social: {
-        linkedin: "#",
+        linkedin: "", // Left blank as requested
         github: "#",
         twitter: "#"
       },
       color: "from-blue-600 to-blue-500",
-      icon: Lightbulb,
-      currentFocus: "Product vision, user experience, and business strategy",
+      icon: Megaphone,
+      currentFocus: "Marketing strategy, brand growth, and user acquisition",
       contributions: [
-        "Originated the UdhyogSaathi concept",
+        "Leads marketing and branding strategies",
         "Defines product roadmap and vision",
-        "Leads frontend development and design",
-        "Drives business strategy and partnerships"
+        "Manages investor and client relations",
+        "Oversees user experience and design"
       ]
     },
     {
       id: 2,
-      initials: "BM",
-      name: "Bhargav Manish",
-      role: "Co-founder & CTO",
-      futureRole: "Future CTO & Technical Architect",
+      initials: "MB",
+      name: "Manish Bhargava",
+      role: "Founder & Director",
+      futureRole: "Leading CTO Operations",
       email: "bhargavmanish908@gmail.com",
       phone: "+91 6376169979",
       education: "B.Tech Computer Science",
       university: "Vellore Institute of Technology, Andra Pradesh",
-      skills: ["Node.js", "Python", "AWS", "Docker", "MongoDB", "System Design", "DevOps"],
-      bio: "As Co-founder and CTO, Manish is responsible for technical implementation and strategies. He transforms Krishna's vision into scalable technical solutions, ensuring robust architecture and system reliability.",
+      skills: ["System Architecture", "Cloud Infrastructure", "Node.js", "Scalability", "Security"],
+      bio: "As Founder and Director, Manish currently oversees all CTO operations. He acts as the technical backbone of the company, architecting scalable solutions, managing the engineering team, and ensuring the platform's security and reliability.",
       social: {
-        linkedin: "#",
+        linkedin: "", // Left blank as requested
         github: "#",
         twitter: "#"
       },
       color: "from-green-600 to-green-500",
-      icon: Zap,
-      currentFocus: "Technical architecture, system scaling, and implementation strategies",
+      icon: Cpu,
+      currentFocus: "Technical architecture, system scaling, and R&D",
       contributions: [
-        "Leads backend development and architecture",
-        "Implements technical strategies",
-        "Manages cloud infrastructure and DevOps",
-        "Ensures system scalability and reliability"
+        "Leads overall technical strategy",
+        "Architects scalable cloud infrastructure",
+        "Manages development lifecycle and DevOps",
+        "Drives technological innovation"
       ]
     }
   ];
 
   const leadership = [
     {
-      role: "Founder & Future CEO",
+      role: "Founder & Director (CMO Ops)",
       name: "Krishna Goyal",
-      description: "Originator of the UdhyogSaathi vision. Krishna combines technical expertise with entrepreneurial insight to drive business growth and strategic direction.",
-      responsibilities: ["Product Vision & Strategy", "Business Development", "Investor Relations", "Team Leadership"],
+      description: "Driving the business forward through strategic marketing and vision. Krishna ensures that our technology meets real market needs and leads customer acquisition strategies.",
+      responsibilities: ["Marketing Strategy", "Brand Management", "Business Development", "Product Vision"],
       icon: Target,
       color: "from-blue-600 to-blue-500"
     },
     {
-      role: "Co-founder & CTO",
-      name: "Bhargav Manish",
-      description: "Technical architect who transforms vision into reality. Responsible for implementation strategies, technical roadmap, and ensuring scalable solutions.",
-      responsibilities: ["Technical Architecture", "Implementation Strategy", "System Scaling", "R&D Leadership"],
-      icon: Cpu,
+      role: "Founder & Director (CTO Ops)",
+      name: "Manish Bhargava",
+      description: "Leading the technological evolution of the platform. Manish ensures robust engineering practices, system stability, and leads the technical direction of the company.",
+      responsibilities: ["Tech Architecture", "Engineering Leadership", "System Security", "Product Development"],
+      icon: Database,
       color: "from-green-600 to-green-500"
     }
   ];
@@ -182,7 +182,7 @@ const AboutUs = () => {
               Vision Meets <span className="text-blue-600">Execution</span>
             </h1>
             <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-              UdhyogSaathi was born from Krishna's vision and brought to life through Manish's technical expertise. Together, they're revolutionizing Indian manufacturing.
+              UdhyogSaathi is led by two dynamic Founders and Directors. Together, they combine market insight with technical excellence to revolutionize Indian manufacturing.
             </p>
           </div>
 
@@ -192,16 +192,17 @@ const AboutUs = () => {
               <div className="md:w-2/3 mb-8 md:mb-0">
                 <div className="flex items-center mb-4">
                   <Users className="w-8 h-8 text-blue-600 mr-3" />
-                  <h3 className="text-2xl font-bold text-gray-900">How We Work Together</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">A Unified Leadership</h3>
                 </div>
                 <p className="text-gray-700 mb-4">
-                  <span className="font-semibold text-blue-600">Krishna</span> originates the vision and product strategy, while 
-                  <span className="font-semibold text-green-600"> Manish</span> architects the technical implementation. This complementary partnership 
-                  ensures every feature balances user needs with technical excellence.
+                  <span className="font-semibold text-blue-600">Krishna (Director)</span> currently leads the   
+                  <span className="font-bold"> CMO operations</span>, driving growth and market presence. 
+                  <span className="font-semibold text-green-600"> Manish (Director)</span> currently heads the 
+                  <span className="font-bold"> CTO operations</span>, ensuring the platform is robust and scalable.
                 </p>
                 <div className="flex items-center text-gray-600">
-                  <span className="font-medium">Our Mantra: </span>
-                  <span className="ml-2 italic">"Vision without execution is hallucination. Execution without vision is aimless."</span>
+                  <span className="font-medium">Our Synergy: </span>
+                  <span className="ml-2 italic">"One drives the market vision, the other builds the reality."</span>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -210,7 +211,7 @@ const AboutUs = () => {
                 </div>
                 <div className="text-2xl font-bold text-gray-400">+</div>
                 <div className="w-14 h-14 bg-gradient-to-br from-green-600 to-green-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                  BM
+                  MB
                 </div>
                 <div className="text-2xl font-bold text-gray-400">=</div>
                 <div className="w-14 h-14 bg-gradient-to-br from-purple-600 to-purple-500 rounded-xl flex items-center justify-center">
@@ -228,26 +229,26 @@ const AboutUs = () => {
                   <Mail className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Email the Founders</h3>
-                  <p className="text-gray-600">Direct access to the visionaries behind UdhyogSaathi</p>
+                  <h3 className="text-xl font-bold text-gray-900">Email the Directors</h3>
+                  <p className="text-gray-600">Direct access to the leadership team</p>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center p-3 bg-blue-50/50 rounded-xl">
                   <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                    <Lightbulb className="w-4 h-4 text-blue-600" />
+                    <Megaphone className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">Krishna Goyal (Founder)</p>
+                    <p className="font-medium text-gray-900">Krishna Goyal (Director -CEO &  CMO Ops)</p>
                     <p className="text-sm text-gray-600">krishnagoyal26112005@gmail.com</p>
                   </div>
                 </div>
                 <div className="flex items-center p-3 bg-green-50/50 rounded-xl">
                   <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                    <Zap className="w-4 h-4 text-green-600" />
+                    <Cpu className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">Manish Bhargav (Co-founder & CTO)</p>
+                    <p className="font-medium text-gray-900">Manish Bhargava (Director - CEO & CTO Ops)</p>
                     <p className="text-sm text-gray-600">bhargavmanish908@gmail.com</p>
                   </div>
                 </div>
@@ -261,7 +262,7 @@ const AboutUs = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">WhatsApp / Call</h3>
-                  <p className="text-gray-600">Connect directly for partnerships, technical queries, or collaborations</p>
+                  <p className="text-gray-600">Connect directly for partnerships and collaborations</p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -271,7 +272,7 @@ const AboutUs = () => {
                       <span className="text-blue-600 font-bold text-sm">KG</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Krishna Goyal (Founder)</p>
+                      <p className="font-medium text-gray-900">Krishna Goyal</p>
                       <p className="text-sm text-gray-600">+91 9064700906</p>
                     </div>
                   </div>
@@ -282,10 +283,10 @@ const AboutUs = () => {
                 <div className="flex items-center justify-between p-3 bg-green-50/50 rounded-xl">
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                      <span className="text-green-600 font-bold text-sm">BM</span>
+                      <span className="text-green-600 font-bold text-sm">MB</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Manish Bhargav (Co-founder & CTO)</p>
+                      <p className="font-medium text-gray-900">Manish Bhargava</p>
                       <p className="text-sm text-gray-600">+91 6376169979</p>
                     </div>
                   </div>
@@ -304,9 +305,9 @@ const AboutUs = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl mb-4">
                   <Target className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">The Founders</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">The Directors</h2>
                 <p className="text-gray-600 max-w-2xl mx-auto">
-                  Two computer science students from VIT Andra Pradesh, united by a common vision to transform Indian manufacturing
+                  Two computer science students from VIT Andra Pradesh, leading the company with distinct operational focuses.
                 </p>
               </div>
             </div>
@@ -322,8 +323,8 @@ const AboutUs = () => {
                         </div>
                         <div>
                           <h3 className="text-2xl font-bold">{dev.name}</h3>
-                          <p className="text-white/90">{dev.role}</p>
-                          <p className="text-white/80 text-sm mt-1">{dev.futureRole}</p>
+                          <p className="text-white/90 font-semibold">{dev.role}</p>
+                          <p className="text-white/80 text-sm mt-1 bg-white/10 px-2 py-0.5 rounded inline-block">{dev.futureRole}</p>
                         </div>
                       </div>
                       <dev.icon className="w-10 h-10 text-white/80" />
@@ -331,7 +332,7 @@ const AboutUs = () => {
                     <div className="flex items-center text-white/80">
                       <Shield className="w-5 h-5 mr-2" />
                       <span className="text-sm font-medium">
-                        {dev.id === 1 ? "Visionary & Strategist" : "Technical Architect & Implementer"}
+                        {dev.id === 1 ? "Driving Brand & Growth" : "Architecting Technology"}
                       </span>
                     </div>
                   </div>
@@ -342,7 +343,7 @@ const AboutUs = () => {
                       <p className="text-gray-700 mb-4">{dev.bio}</p>
                       
                       <div className="bg-gray-50 rounded-xl p-4">
-                        <h5 className="font-semibold text-gray-900 mb-2 text-sm">Key Contributions:</h5>
+                        <h5 className="font-semibold text-gray-900 mb-2 text-sm">Key Responsibilities:</h5>
                         <ul className="space-y-2">
                           {dev.contributions.map((contribution, index) => (
                             <li key={index} className="flex items-start">
@@ -364,7 +365,7 @@ const AboutUs = () => {
                     </div>
 
                     <div className="mb-6">
-                      <h4 className="font-bold text-gray-900 mb-3">Technical Expertise</h4>
+                      <h4 className="font-bold text-gray-900 mb-3">Core Expertise</h4>
                       <div className="flex flex-wrap gap-2">
                         {dev.skills.map((skill, index) => (
                           <span
@@ -379,9 +380,15 @@ const AboutUs = () => {
 
                     <div className="flex items-center justify-between pt-6 border-t border-gray-100">
                       <div className="flex space-x-4">
-                        <a href={dev.social.linkedin} className="text-blue-600 hover:text-blue-700 transition-colors">
-                          <Linkedin className="w-6 h-6" />
-                        </a>
+                        {dev.social.linkedin ? (
+                          <a href={dev.social.linkedin} className="text-blue-600 hover:text-blue-700 transition-colors">
+                            <Linkedin className="w-6 h-6" />
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 cursor-not-allowed" title="LinkedIn Profile Coming Soon">
+                            <Linkedin className="w-6 h-6" />
+                          </span>
+                        )}
                         <a href={dev.social.github} className="text-gray-700 hover:text-gray-900 transition-colors">
                           <Github className="w-6 h-6" />
                         </a>
@@ -407,7 +414,7 @@ const AboutUs = () => {
                 <Rocket className="w-12 h-12 text-blue-400 mx-auto mb-4" />
                 <h2 className="text-3xl font-bold mb-3">Leadership & Collaboration</h2>
                 <p className="text-gray-300 max-w-2xl mx-auto">
-                  Working hand in hand to build India's most innovative manufacturing platform
+                  Two Directors working in sync to build India's most innovative manufacturing platform
                 </p>
               </div>
             </div>
@@ -428,7 +435,7 @@ const AboutUs = () => {
                   <p className="text-gray-300 mb-6">{leader.description}</p>
                   
                   <div>
-                    <h4 className="font-bold text-white mb-3">Key Responsibilities:</h4>
+                    <h4 className="font-bold text-white mb-3">Key Focus Areas:</h4>
                     <div className="space-y-2">
                       {leader.responsibilities.map((resp, idx) => (
                         <div key={idx} className="flex items-center">
@@ -440,15 +447,6 @@ const AboutUs = () => {
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-10 text-center">
-              {/* <div className="inline-flex items-center justify-center px-6 py-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                <Users className="w-5 h-5 mr-2 text-blue-400" />
-                <span className="font-medium">
-                  Krishna sets the direction, Manish builds the path. Together, they make the journey possible.
-                </span>
-              </div> */}
             </div>
           </div>
 
@@ -464,7 +462,7 @@ const AboutUs = () => {
               <div className="flex items-center space-x-2">
                 <div className="text-sm font-medium px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full">Vision</div>
                 <div className="text-gray-400">×</div>
-                <div className="text-sm font-medium px-3 py-1.5 bg-green-100 text-green-700 rounded-full">Execution</div>
+                <div className="text-sm font-medium px-3 py-1.5 bg-green-100 text-green-700 rounded-full">Tech</div>
                 <div className="text-gray-400">=</div>
                 <div className="text-sm font-medium px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full">Innovation</div>
               </div>
@@ -473,21 +471,21 @@ const AboutUs = () => {
             <div className="grid md:grid-cols-3 gap-6">
               <div className="bg-blue-50 rounded-xl p-6">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Lightbulb className="w-6 h-6 text-blue-600" />
+                  <Megaphone className="w-6 h-6 text-blue-600" />
                 </div>
-                <h4 className="font-bold text-gray-900 mb-2">The Vision</h4>
+                <h4 className="font-bold text-gray-900 mb-2">The Marketing Vision</h4>
                 <p className="text-gray-700 text-sm">
-                  Krishna identified the challenges faced by Indian manufacturers and conceived UdhyogSaathi as a comprehensive solution for GST automation and business intelligence.
+                  Krishna identified the market gap and spearheads the CMO operations, ensuring the product reaches the right audience and solves real-world problems.
                 </p>
               </div>
               
               <div className="bg-green-50 rounded-xl p-6">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                  <Zap className="w-6 h-6 text-green-600" />
+                  <Cpu className="w-6 h-6 text-green-600" />
                 </div>
-                <h4 className="font-bold text-gray-900 mb-2">The Execution</h4>
+                <h4 className="font-bold text-gray-900 mb-2">The Tech Backbone</h4>
                 <p className="text-gray-700 text-sm">
-                  Manish joined as Co-founder and CTO, bringing technical expertise to transform the vision into a scalable, reliable platform with robust architecture.
+                  Manish leads the CTO operations, bringing technical expertise to transform the vision into a scalable, reliable platform with robust architecture.
                 </p>
               </div>
               
@@ -495,9 +493,9 @@ const AboutUs = () => {
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                   <Target className="w-6 h-6 text-purple-600" />
                 </div>
-                <h4 className="font-bold text-gray-900 mb-2">The Partnership</h4>
+                <h4 className="font-bold text-gray-900 mb-2">The Shared Direction</h4>
                 <p className="text-gray-700 text-sm">
-                  Working hand in hand, they combine strategic vision with technical excellence to build a platform that truly addresses the needs of Indian manufacturers.
+                  As Directors, both founders work hand in hand, combining strategic market vision with technical excellence to build a platform that truly matters.
                 </p>
               </div>
             </div>
@@ -507,20 +505,20 @@ const AboutUs = () => {
           <div className="bg-gradient-to-r from-blue-600 to-green-600 rounded-3xl p-10 text-center text-white">
             <h3 className="text-2xl font-bold mb-4">Ready to Transform Your Manufacturing Business?</h3>
             <p className="text-white/90 mb-8 max-w-2xl mx-auto">
-              Connect directly with the founders who understand both technology and manufacturing challenges.
+              Connect directly with the directors who understand both technology and manufacturing challenges.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <a 
-                href="mailto:krishnagoyal26112005@gmail.com?subject=UdhyogSaathi Inquiry - Founder"
+                href="mailto:krishnagoyal26112005@gmail.com?subject=UdhyogSaathi Inquiry - Krishna"
                 className="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3 rounded-xl transition-colors"
               >
-                Email Krishna (Founder)
+                Email Krishna (Director)
               </a>
               <a 
                 href="mailto:bhargavmanish908@gmail.com?subject=UdhyogSaathi Technical Inquiry"
                 className="bg-white/20 hover:bg-white/30 backdrop-blur-sm font-semibold px-6 py-3 rounded-xl border border-white/30 transition-colors"
               >
-                Email Manish (Co-founder & CTO)
+                Email Manish (Director)
               </a>
             </div>
           </div>

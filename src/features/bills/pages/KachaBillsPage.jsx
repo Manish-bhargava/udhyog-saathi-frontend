@@ -223,6 +223,8 @@ const KachaBillsPage = () => {
                 <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold uppercase rounded">Proforma</span>
               </div>
               <p className="text-xs text-gray-500 mt-1">Estimates and non-tax quotations</p>
+              <p className="text-xs text-red-500 text-bold mt-1 border-2 p-2 rounded-md border-black">Always complete the onboarding first from profile section to get your details on bill</p>
+
             </div>
             <div className="flex gap-2 mt-3 sm:mt-0">
               <button
@@ -424,19 +426,8 @@ const KachaBillsPage = () => {
                   }} 
                 />
                 
-                {/* Quick Stats */}
-                <div className="bg-gray-50 border-t border-gray-200 p-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1">Subtotal</p>
-                      <p className="text-base md:text-lg font-bold text-gray-800">₹{totals.subtotal.toLocaleString('en-IN')}</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1">Grand Total</p>
-                      <p className="text-base md:text-lg font-bold text-amber-700">₹{totals.grandTotal.toLocaleString('en-IN')}</p>
-                    </div>
-                  </div>
-                </div>
+              
+      
               </div>
             )}
             
@@ -455,7 +446,7 @@ const KachaBillsPage = () => {
           </div>
         </div>
 
-        {/* Mobile view - Tabbed interface */}
+       
         <div className="md:hidden">
           <div className={`${activeTab === 'form' ? 'block' : 'hidden'}`}>
             <div className="mb-4 flex items-center justify-between">
@@ -505,18 +496,7 @@ const KachaBillsPage = () => {
                 </div>
                 
                 {/* Quick Stats */}
-                <div className="bg-gray-50 border-t border-gray-200 p-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white p-2 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1">Subtotal</p>
-                      <p className="text-base font-bold text-gray-800">₹{totals.subtotal.toLocaleString('en-IN')}</p>
-                    </div>
-                    <div className="bg-white p-2 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1">Grand Total</p>
-                      <p className="text-base font-bold text-amber-700">₹{totals.grandTotal.toLocaleString('en-IN')}</p>
-                    </div>
-                  </div>
-                </div>
+   
               </div>
             )}
 

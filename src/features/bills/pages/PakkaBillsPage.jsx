@@ -225,6 +225,7 @@ const PakkaBillsPage = () => {
             <div>
               <h1 className="text-lg md:text-xl font-bold text-gray-900">Create Pakka Bill</h1>
               <p className="text-xs text-gray-500 mt-1">Save as official GST invoice</p>
+              <p className="text-xs text-red-500 text-bold mt-1 border-2 p-2 rounded-md border-black">Always complete the onboarding first from profile section to get your details on bill</p>
             </div>
             <div className="flex gap-2 mt-3 sm:mt-0">
               <button
