@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, User, Bot, Loader2, Menu, X } from 'lucide-react';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
@@ -25,7 +26,7 @@ const ChatInterface = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/v1/ai/message', {
+      const response = await fetch(`${BASE_URL}/ai/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
