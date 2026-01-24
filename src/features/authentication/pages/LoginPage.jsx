@@ -13,7 +13,6 @@ import Logo from '../../../components/Logo';
 
 // Your Google Client ID
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -36,7 +35,7 @@ const LoginPage = () => {
     
     try {
       // Use the same endpoint as Signup. Backend usually handles "Login if exists, Create if not"
-      const res = await fetch(`${BASE_URL}/auth/google`, {
+      const res = await fetch('http://localhost:3000/api/v1/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: response.credential }),

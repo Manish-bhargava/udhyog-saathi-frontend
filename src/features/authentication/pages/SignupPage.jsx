@@ -15,7 +15,6 @@ import Logo from '../../../components/Logo';
 // Your Google Client ID
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 console.log("Google Client ID:", clientId);
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -42,7 +41,7 @@ const SignupPage = () => {
     
     try {
       // We use the SAME endpoint because your backend handles "Create if not exists"
-      const res = await fetch(`${BASE_URL}/auth/google`, {
+      const res = await fetch('http://localhost:3000/api/v1/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: response.credential }),

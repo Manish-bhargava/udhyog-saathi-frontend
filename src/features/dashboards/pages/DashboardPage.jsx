@@ -13,9 +13,12 @@ import {
   Printer,
   Download,
   ArrowUpRight,
-  MoreVertical,
-  ChevronDown
+  MoreVertical
 } from 'lucide-react';
+
+// --- ADDED PDF IMPORTS ---
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // --- 1. ADDED RECHARTS IMPORTS ---
 import { 
@@ -42,6 +45,7 @@ export default function UdhyogDashboard() {
   const [selectedBill, setSelectedBill] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mobileActionsOpen, setMobileActionsOpen] = useState(null);
+  const [downloading, setDownloading] = useState(null);
 
   // --- 1. API FETCHING ---
   useEffect(() => {
@@ -133,8 +137,6 @@ export default function UdhyogDashboard() {
     // Chart Data logic
     const revenueByDate = {};
     bills.forEach(bill => {
-      // Use raw timestamp for sorting, but formatted date for display if needed
-      // To ensure graph line connects correctly, let's allow the reduce logic to group by date string
       const date = new Date(bill.invoiceDate || bill.createdAt).toLocaleDateString('en-IN', { 
         day: 'numeric', 
         month: 'short' 
@@ -154,11 +156,9 @@ export default function UdhyogDashboard() {
       gst: totalGst, 
       discount: totalDiscount, 
       products: totalProducts,
-      // Sort logic ensures line chart goes left-to-right chronologically
       chartData: Object.entries(revenueByDate)
         .map(([date, amount]) => ({ date, amount }))
         .sort((a, b) => {
-            // Helper to parse "23 Jan" type dates for current year
             const dateA = new Date(a.date + ` ${new Date().getFullYear()}`);
             const dateB = new Date(b.date + ` ${new Date().getFullYear()}`);
             return dateA - dateB;
@@ -192,6 +192,266 @@ export default function UdhyogDashboard() {
     } catch (error) {
       alert("Error deleting bill");
     }
+  };
+
+  // --- UPDATED: PDF DOWNLOAD HANDLER (Using jsPDF) ---
+  const handleDownloadPDF = async (bill) => {
+    try {
+      setDownloading(bill.invoiceNumber);
+      
+      // Create a temporary div for PDF generation
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '0';
+      tempDiv.style.width = '210mm'; // A4 width
+      tempDiv.style.padding = '20px';
+      tempDiv.style.background = 'white';
+      tempDiv.style.fontFamily = 'Arial, sans-serif';
+      
+      // Generate invoice content using the exact same template as view modal
+      const invoiceContent = generateInvoiceContent(bill);
+      tempDiv.innerHTML = invoiceContent;
+      document.body.appendChild(tempDiv);
+      
+      // Wait for images to load
+      const images = tempDiv.getElementsByTagName('img');
+      const imagePromises = [];
+      for (let img of images) {
+        if (!img.complete) {
+          const promise = new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = resolve; // Continue even if image fails
+          });
+          imagePromises.push(promise);
+        }
+      }
+      
+      await Promise.all(imagePromises);
+      
+      // Generate PDF
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth - 20; // 10mm margin on each side
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+      
+      // Save the PDF
+      pdf.save(`Invoice_${formatInvoiceId(bill.invoiceNumber)}.pdf`);
+      
+      // Cleanup
+      document.body.removeChild(tempDiv);
+      setMobileActionsOpen(null);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  // Helper function to generate invoice content for PDF (EXACT SAME AS VIEW MODAL)
+  const generateInvoiceContent = (bill) => {
+    const invoiceId = formatInvoiceId(bill.invoiceNumber);
+    const date = formatDate(bill.invoiceDate || bill.createdAt);
+    const clientName = bill.buyer?.clientName || 'N/A';
+    const clientAddress = bill.buyer?.clientAddress || '';
+    const clientGst = bill.buyer?.clientGst || '';
+    const companyName = profileData?.company?.companyName || 'Your Company';
+    const companyAddress = profileData?.company?.companyAddress || '';
+    const companyEmail = profileData?.company?.companyEmail || '';
+    const companyGst = profileData?.company?.GST || '';
+    const companyLogo = profileData?.company?.companyLogo || '';
+    const companyStamp = profileData?.company?.companyStamp || '';
+    const companySignature = profileData?.company?.companySignature || '';
+    const bankDetails = profileData?.bankDetails || null;
+    
+    return `
+      <div style="max-width: 800px; margin: 0 auto; padding: 32px; background: white; font-family: Arial, sans-serif; color: #334155;">
+        <!-- Header with Title and Logo -->
+        <div style="display: flex; flex-direction: column; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
+          <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 24px;">
+            <div style="flex: 1;">
+              <h1 style="font-size: 48px; font-weight: bold; margin-bottom: 24px; color: ${bill.billType === 'kaccha' ? '#d97706' : '#1e293b'};">
+                ${bill.billType === 'kaccha' ? 'Proforma Invoice' : 'Tax Invoice'}
+              </h1>
+              <div style="display: flex; flex-wrap: wrap; gap: 24px;">
+                <div>
+                  <p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Invoice Number</p>
+                  <p style="color: #1e293b; font-weight: 600; font-size: 18px;">${invoiceId}</p>
+                </div>
+                <div>
+                  <p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Date of Issue</p>
+                  <p style="color: #1e293b; font-weight: 600; font-size: 18px;">${date}</p>
+                </div>
+              </div>
+            </div>
+            ${companyLogo ? `
+              <div style="flex-shrink: 0;">
+                <img src="${companyLogo}" alt="Company Logo" style="max-height: 80px; max-width: 200px; object-fit: contain;" />
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        
+        <!-- Billed To and From Sections -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 40px;">
+          <!-- Billed To -->
+          <div>
+            <h3 style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Billed To</h3>
+            <p style="font-weight: bold; color: #1e293b; font-size: 20px; margin-bottom: 8px;">${clientName}</p>
+            <p style="color: #64748b; font-size: 14px; white-space: pre-wrap; margin-bottom: 16px;">${clientAddress || 'No address provided'}</p>
+            ${bill.billType !== 'kaccha' && clientGst ? `
+              <div style="background: #f8fafc; padding: 12px; border-radius: 8px;">
+                <p style="font-size: 14px; font-weight: 500; color: #334155;">GSTIN: ${clientGst}</p>
+              </div>
+            ` : ''}
+          </div>
+          
+          <!-- From -->
+          <div>
+            <h3 style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">From</h3>
+            <p style="font-weight: bold; color: #1e293b; font-size: 20px; margin-bottom: 8px;">${companyName}</p>
+            <p style="color: #64748b; font-size: 14px; white-space: pre-wrap; margin-bottom: 16px;">${companyAddress || 'No address provided'}</p>
+            ${companyEmail ? `<p style="color: #64748b; font-size: 14px;">${companyEmail}</p>` : ''}
+            ${companyGst && bill.billType !== 'kaccha' ? `
+              <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-top: 8px;">
+                <p style="font-size: 14px; font-weight: 500; color: #334155;">GSTIN: ${companyGst}</p>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        
+        <!-- Products Table -->
+        <div style="margin-bottom: 32px; overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="text-align: left; padding: 16px; font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Description</th>
+                <th style="text-align: right; padding: 16px; font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Rate</th>
+                <th style="text-align: right; padding: 16px; font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Qty</th>
+                <th style="text-align: right; padding: 16px; font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bill.products?.map((p, i) => `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                  <td style="padding: 16px; font-weight: 500; color: #1e293b; min-width: 200px;">
+                    ${p.name || 'Untitled Product/Service'}
+                    ${p.description ? `
+                      <p style="font-size: 14px; color: #64748b; margin-top: 4px;">${p.description}</p>
+                    ` : ''}
+                  </td>
+                  <td style="padding: 16px; text-align: right; font-family: monospace; color: #334155;">${formatCurrency(p.rate)}</td>
+                  <td style="padding: 16px; text-align: right; font-family: monospace; color: #334155;">${p.quantity}</td>
+                  <td style="padding: 16px; text-align: right; font-weight: bold; color: #1e293b; font-family: monospace;">${formatCurrency(p.amount || (p.rate * p.quantity))}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Totals Section -->
+        <div style="display: flex; justify-content: flex-end;">
+          <div style="width: 100%; max-width: 400px; space-y: 12px;">
+            <div style="display: flex; justify-content: space-between; color: #64748b;">
+              <span>Subtotal</span>
+              <span style="font-weight: 500;">${formatCurrency(bill.subTotal)}</span>
+            </div>
+            ${bill.discount > 0 ? `
+              <div style="display: flex; justify-content: space-between; color: #64748b;">
+                <span>Discount</span>
+                <span style="color: #ef4444; font-weight: 500;">- ${formatCurrency(bill.discount)}</span>
+              </div>
+            ` : ''}
+            ${bill.billType !== 'kaccha' && bill.taxAmount > 0 ? `
+              <div style="display: flex; justify-content: space-between; color: #64748b;">
+                <span>Tax Rate</span>
+                <span>${bill.gstPercentage}%</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: #64748b;">
+                <span>Tax Amount</span>
+                <span style="font-weight: 500;">+ ${formatCurrency(bill.taxAmount)}</span>
+              </div>
+            ` : ''}
+            <div style="padding-top: 16px; border-top: 1px solid #cbd5e1; margin-top: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 20px; font-weight: bold; color: ${bill.billType === 'kaccha' ? '#d97706' : '#1e293b'};">${bill.billType === 'kaccha' ? 'Total Amount' : 'Invoice Total'}</span>
+                <span style="font-size: 36px; font-weight: bold; color: ${bill.billType === 'kaccha' ? '#d97706' : '#1e293b'};">${formatCurrency(bill.grandTotal)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Notes and Signature Section -->
+        <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid #e2e8f0;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+            <!-- Left Column: Notes and Bank Details -->
+            <div>
+              ${bill.notes ? `
+                <div style="margin-bottom: 24px;">
+                  <p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Notes</p>
+                  <p style="color: #64748b; font-size: 14px; white-space: pre-wrap;">${bill.notes}</p>
+                </div>
+              ` : ''}
+              
+              ${bankDetails?.bankName && bill.billType !== 'kaccha' ? `
+                <div>
+                  <p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Bank Details</p>
+                  <div style="background: #f8fafc; padding: 16px; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;">
+                      <span style="color: #64748b;">Bank:</span>
+                      <span style="font-weight: 500; color: #334155;">${bankDetails.bankName}</span>
+                      <span style="color: #64748b;">Account:</span>
+                      <span style="font-weight: 500; color: #334155;">${bankDetails.accountNumber}</span>
+                      <span style="color: #64748b;">IFSC:</span>
+                      <span style="font-weight: 500; color: #334155;">${bankDetails.IFSC}</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+            
+            <!-- Right Column: Signature and Stamp -->
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+              <div style="position: relative; margin-bottom: 24px;">
+                ${companyStamp ? `
+                  <img src="${companyStamp}" alt="Company Stamp" style="position: absolute; top: -32px; opacity: 0.7; width: 80px; height: 80px; object-fit: contain;" />
+                ` : ''}
+                ${companySignature ? `
+                  <img src="${companySignature}" alt="Signature" style="height: 64px; width: auto; object-fit: contain;" />
+                ` : ''}
+              </div>
+              <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #cbd5e1; text-align: center;">
+                <p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Authorized Signatory</p>
+                <p style="font-size: 14px; font-weight: 500; color: #334155; margin-top: 4px;">For ${companyName}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 12px;">
+          <p>Thank you for your business!</p>
+          <p style="margin-top: 4px;">Invoice generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        </div>
+      </div>
+    `;
   };
 
   const handleConvert = (id) => {
@@ -264,7 +524,7 @@ export default function UdhyogDashboard() {
 
       {/* --- MAIN CONTENT AREA --- */}
       {viewMode === 'table' ? (
-        // TABLE VIEW (Kept logic same)
+        // TABLE VIEW
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           {loading ? (
             <div className="p-8 md:p-12 text-center text-slate-400">Loading invoices...</div>
@@ -282,7 +542,7 @@ export default function UdhyogDashboard() {
                       <th className="py-4 px-6 min-w-[180px]">Client</th>
                       <th className="py-4 px-6 min-w-[90px]">Type</th>
                       <th className="py-4 px-6 min-w-[120px] text-right">Amount</th>
-                      <th className="py-4 px-6 min-w-[140px] text-center">Actions</th>
+                      <th className="py-4 px-6 min-w-[160px] text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -324,6 +584,18 @@ export default function UdhyogDashboard() {
                             )}
                             <button onClick={() => handleView(bill)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View">
                               <Eye size={16} />
+                            </button>
+                            <button 
+                              onClick={() => handleDownloadPDF(bill)} 
+                              disabled={downloading === bill.invoiceNumber}
+                              className={`p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors ${downloading === bill.invoiceNumber ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                              title="Download PDF"
+                            >
+                              {downloading === bill.invoiceNumber ? (
+                                <RefreshCw size={16} className="animate-spin" />
+                              ) : (
+                                <Download size={16} />
+                              )}
                             </button>
                             <button onClick={() => handleDelete(bill.invoiceNumber)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
                               <Trash2 size={16} />
@@ -378,16 +650,27 @@ export default function UdhyogDashboard() {
 
                     {mobileActionsOpen === bill._id && (
                       <div className="mt-3 pt-3 border-t border-slate-100">
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           {bill.billType === 'kaccha' && (
-                            <button onClick={() => handleConvert(bill._id)} className="flex-1 px-3 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1">
+                            <button onClick={() => handleConvert(bill._id)} className="flex-1 min-w-[100px] px-3 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1">
                               <RefreshCw size={14} /> Convert
                             </button>
                           )}
-                          <button onClick={() => handleView(bill)} className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1">
+                          <button onClick={() => handleView(bill)} className="flex-1 min-w-[100px] px-3 py-2 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1">
                             <Eye size={14} /> View
                           </button>
-                          <button onClick={() => handleDelete(bill.invoiceNumber)} className="flex-1 px-3 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => handleDownloadPDF(bill)} 
+                            disabled={downloading === bill.invoiceNumber}
+                            className={`flex-1 min-w-[100px] px-3 py-2 bg-green-50 text-green-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1 ${downloading === bill.invoiceNumber ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            {downloading === bill.invoiceNumber ? (
+                              <RefreshCw size={14} className="animate-spin" />
+                            ) : (
+                              <Download size={14} />
+                            )} Download
+                          </button>
+                          <button onClick={() => handleDelete(bill.invoiceNumber)} className="flex-1 min-w-[100px] px-3 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg flex items-center justify-center gap-1">
                             <Trash2 size={14} /> Delete
                           </button>
                         </div>
@@ -532,7 +815,7 @@ export default function UdhyogDashboard() {
         </div>
       )}
 
-      {/* MODAL IS KEPT EXACTLY THE SAME BELOW (omitted for brevity as per instructions to only change graph logic, but in real file keep it) */}
+      {/* MODAL (EXACT TEMPLATE THAT PDF USES) */}
       {isModalOpen && selectedBill && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-white w-full max-w-4xl shadow-2xl rounded-xl flex flex-col max-h-[90vh] overflow-hidden">
@@ -540,9 +823,9 @@ export default function UdhyogDashboard() {
             <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
                 <h2 className="font-bold text-slate-800 text-lg">Invoice Preview</h2>
                 <div className="flex gap-2">
-                    <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-sm text-slate-700 transition-colors">
+                    {/* <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-sm text-slate-700 transition-colors">
                         <Printer size={16} /> <span>Print</span>
-                    </button>
+                    </button> */}
                     <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg transition-colors">
                         <X size={20} />
                     </button>
@@ -550,7 +833,6 @@ export default function UdhyogDashboard() {
             </div>
             {/* SCROLLABLE BODY */}
             <div className="overflow-y-auto p-6 md:p-8">
-              {/* Reuse the modal content from your previous code here */}
               <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 pb-6 border-b border-slate-200">
                 <div className="min-w-0 flex-1">
                   <h1 className={`text-3xl md:text-4xl font-bold mb-6 ${selectedBill.billType === 'kaccha' ? 'text-amber-600' : 'text-slate-900'}`}>
