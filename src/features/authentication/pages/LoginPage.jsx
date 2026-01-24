@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../api';
 import AuthCard from '../../auth/components/AuthCard';
@@ -9,79 +9,166 @@ import PasswordField from '../../auth/components/PasswordField';
 import Button from '../../auth/components/Button';
 import ErrorMessage from '../../auth/components/ErrorMessage';
 import Divider from '../../auth/components/Divider';
-import SocialLoginButton from '../../auth/components/SocialLoginButton';
 import Logo from '../../../components/Logo';
+
+// Your Google Client ID
+const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const LoginPage = () => {
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({ 
-    name: '', // Note: 'name' usually isn't needed for login, just email/password
+    // Name is usually not needed for login, just email/pass
     email: '', 
     password: '' 
   });
+  
+  // UI States
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false); // Controls Success Checkmark
+  const [loading, setLoading] = useState(false); // Controls Spinner/Blur
+
+  // --- GOOGLE AUTH LOGIC ---
+  const handleGoogleResponse = async (response) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Use the same endpoint as Signup. Backend usually handles "Login if exists, Create if not"
+      const res = await fetch('http://localhost:3000/api/v1/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: response.credential }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        handleLoginSuccess(data);
+      } else {
+        setError(data.message || 'Google login failed');
+        setLoading(false);
+      }
+    } catch (err) {
+      setError('Network error during Google login');
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    /* global google */
+    if (window.google) {
+      initializeGoogleAuth();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogleAuth;
+    document.head.appendChild(script);
+
+    function initializeGoogleAuth() {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleResponse,
+        });
+
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-btn"),
+          { 
+            theme: "outline", 
+            size: "large", 
+            width: "100%", 
+            text: "signin_with" // Changing text to 'Sign in with Google'
+          } 
+        );
+      }
+    }
+  }, []);
+
+  // --- SHARED SUCCESS LOGIC ---
+  const handleLoginSuccess = (result) => {
+    setSuccess(true);
+    
+    // Save Token & User Data
+    localStorage.setItem('token', result.token);
+    if (result.user || result.data) {
+        // Handle structure difference if any (result.user vs result.data)
+        const userData = result.user || result.data;
+        localStorage.setItem('user', JSON.stringify(userData));
+    }
+    
+    localStorage.setItem('isNewUser', 'false'); // Usually false for login
+
+    // Redirect after 1.5 seconds
+    setTimeout(() => {
+      window.location.href = '/dashboard'; 
+    }, 1500);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) setError(''); 
-    if (success) setSuccess('');
-  };
-
-  // --- GOOGLE AUTH HANDLER ---
-  const handleGoogleLogin = () => {
-    // Option A: If using a backend API (Passport.js, etc.)
-    // Redirect the user to your backend's Google authentication route
-    window.location.href = 'http://localhost:3000/api/auth/google'; 
-    
-    // Option B: If using Firebase Auth directly in frontend
-    // authAPI.signInWithGoogle().then(...) 
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
 
     try {
       const result = await authAPI.login(formData);
       
       if (result.status === 200 || result.token) {
-        setSuccess('Logged in successfully! Redirecting...');
-        
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('user', JSON.stringify(result.data));
-        localStorage.setItem('isNewUser', 'false');
-        
-        setTimeout(() => {
-          window.location.href = '/dashboard'; 
-        }, 1500);
+        handleLoginSuccess(result);
       }
     } catch (err) {
-        const status = err.response?.status;
+        setLoading(false);
         const serverMessage = err.response?.data?.message || '';
 
         if (serverMessage === "Invalid credentials") {
-            setError("Invalid credentials. If you don't have an account, redirecting to Signup...");
-            
-            setTimeout(() => {
-            navigate('/signup');
-            }, 2500);
-        } 
-        else {
-            setError(`Server error: ${status || 'Unknown'} - ${serverMessage || 'Internal error'}`);
+            setError("Invalid credentials. Please check your email/password.");
+        } else if (serverMessage.includes("User not found")) {
+             setError("User not found. Redirecting to Signup...");
+             setTimeout(() => navigate('/signup'), 2500);
+        } else {
+            setError(serverMessage || 'Login failed. Please try again.');
         }
-    } finally {
-        setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 py-12 px-4">
-      <AuthCard className="max-w-md w-full">
+      
+      <AuthCard className="max-w-md w-full relative overflow-hidden">
+        
+        {/* --- LOADING / SUCCESS OVERLAY --- */}
+        {(loading || success) && (
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center transition-all duration-300">
+            {success ? (
+              // SUCCESS STATE
+              <div className="text-center animate-in fade-in zoom-in duration-300">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                  <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">Welcome Back!</h3>
+                <p className="text-sm text-gray-500 mt-1">Redirecting to dashboard...</p>
+              </div>
+            ) : (
+              // LOADING SPINNER STATE
+              <div className="text-center">
+                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                 <p className="text-sm font-medium text-gray-600">Signing you in...</p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="text-center mb-10">
           {/* <Logo className="mx-auto h-14 w-auto mb-6" /> */}
           <Heading className="text-3xl">Welcome back</Heading>
@@ -96,24 +183,9 @@ const LoginPage = () => {
           </div>
         )}
 
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-center text-sm font-medium flex items-center justify-center">
-            <span className="mr-2">✅</span>
-            {success}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Note: Standard login usually only asks for Email, not Name */}
-          <InputField
-            label="Full Name"
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required // Remove this if your backend doesn't require name for login
-            placeholder="Enter your name"
-          />
+          
+          {/* Note: 'name' field removed for Login */}
 
           <InputField
             label="Email Address"
@@ -123,6 +195,7 @@ const LoginPage = () => {
             onChange={handleChange}
             required
             placeholder="you@example.com"
+            disabled={loading}
           />
           
           <PasswordField
@@ -132,6 +205,7 @@ const LoginPage = () => {
             onChange={handleChange}
             required
             placeholder="Enter your password"
+            disabled={loading}
           />
           
           <div className="flex items-center justify-between">
@@ -156,18 +230,15 @@ const LoginPage = () => {
             fullWidth 
             className="py-3.5 text-base font-semibold"
           >
-            {loading ? 'Signing in...' : 'Sign in to Dashboard'}
+            Sign in to Dashboard
           </Button>
         </form>
 
-        <Divider className="my-8">Or continue with</Divider>
+        <Divider className="my-8" text="Or continue with" />
 
-        <div className="grid grid-cols-2 gap-4">
-          {/* UPDATED: Connected handler here */}
-          <SocialLoginButton provider="google" onClick={handleGoogleLogin} />
-          
-          {/* GitHub kept as placeholder unless you have a handler for it too */}
-          <SocialLoginButton provider="github" onClick={() => {}} />
+        <div className="flex flex-col gap-4">
+          {/* GOOGLE BUTTON CONTAINER */}
+          <div id="google-btn" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}></div>
         </div>
 
         <div className="mt-8 text-center">

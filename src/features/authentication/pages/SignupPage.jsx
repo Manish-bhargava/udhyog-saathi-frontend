@@ -11,22 +11,28 @@ import ErrorMessage from '../../auth/components/ErrorMessage';
 import Divider from '../../auth/components/Divider';
 import Logo from '../../../components/Logo';
 
+
 // Your Google Client ID
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+console.log("Google Client ID:", clientId);
 
-const LoginPage = () => {
+const SignupPage = () => {
   const navigate = useNavigate();
   
+  // Signup needs Name, Email, Password
   const [formData, setFormData] = useState({ 
-    // Name is usually not needed for login, just email/pass
+    name: '',
     email: '', 
     password: '' 
   });
   
+  // Frontend-only confirm password state
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
   // UI States
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false); // Controls Success Checkmark
-  const [loading, setLoading] = useState(false); // Controls Spinner/Blur
+  const [success, setSuccess] = useState(false); // Controls the Success Checkmark
+  const [loading, setLoading] = useState(false); // Controls the Spinner/Blur
 
   // --- GOOGLE AUTH LOGIC ---
   const handleGoogleResponse = async (response) => {
@@ -34,7 +40,7 @@ const LoginPage = () => {
     setError('');
     
     try {
-      // Use the same endpoint as Signup. Backend usually handles "Login if exists, Create if not"
+      // We use the SAME endpoint because your backend handles "Create if not exists"
       const res = await fetch('http://localhost:3000/api/v1/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,13 +50,13 @@ const LoginPage = () => {
       const data = await res.json();
 
       if (res.ok) {
-        handleLoginSuccess(data);
+        handleSignupSuccess(data);
       } else {
-        setError(data.message || 'Google login failed');
+        setError(data.message || 'Google signup failed');
         setLoading(false);
       }
     } catch (err) {
-      setError('Network error during Google login');
+      setError('Network error during Google signup');
       setLoading(false);
     }
   };
@@ -82,7 +88,7 @@ const LoginPage = () => {
             theme: "outline", 
             size: "large", 
             width: "100%", 
-            text: "signin_with" // Changing text to 'Sign in with Google'
+            text: "signup_with" // Changing text to 'Sign up with Google'
           } 
         );
       }
@@ -90,22 +96,19 @@ const LoginPage = () => {
   }, []);
 
   // --- SHARED SUCCESS LOGIC ---
-  const handleLoginSuccess = (result) => {
-    setSuccess(true);
+  const handleSignupSuccess = (data) => {
+    setSuccess(true); // Show Green Checkmark
     
-    // Save Token & User Data
-    localStorage.setItem('token', result.token);
-    if (result.user || result.data) {
-        // Handle structure difference if any (result.user vs result.data)
-        const userData = result.user || result.data;
-        localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('token', data.token);
+    if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
     }
-    
-    localStorage.setItem('isNewUser', 'false'); // Usually false for login
+    // Mark as new user for onboarding flows
+    localStorage.setItem('isNewUser', 'true');
 
     // Redirect after 1.5 seconds
     setTimeout(() => {
-      window.location.href = '/dashboard'; 
+         window.location.href = '/dashboard'; 
     }, 1500);
   };
 
@@ -114,29 +117,43 @@ const LoginPage = () => {
     if (error) setError(''); 
   };
 
+  // Handle confirm password change
+  const handleConfirmPasswordChange = (e) => {
+    setConfirmPassword(e.target.value);
+    if (error) setError('');
+  };
+
+  // --- MANUAL SIGNUP SUBMIT ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    // Frontend validation for password match
+    if (formData.password !== confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    // Optional: Add password strength validation here
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const result = await authAPI.login(formData);
+      // Call your Manual Signup API - ONLY send formData (name, email, password)
+      const result = await authAPI.signup(formData);
       
-      if (result.status === 200 || result.token) {
-        handleLoginSuccess(result);
+      if (result.status === 201 || result.status === 200 || result.token) {
+        handleSignupSuccess(result);
       }
     } catch (err) {
         setLoading(false);
         const serverMessage = err.response?.data?.message || '';
-
-        if (serverMessage === "Invalid credentials") {
-            setError("Invalid credentials. Please check your email/password.");
-        } else if (serverMessage.includes("User not found")) {
-             setError("User not found. Redirecting to Signup...");
-             setTimeout(() => navigate('/signup'), 2500);
-        } else {
-            setError(serverMessage || 'Login failed. Please try again.');
-        }
+        setError(serverMessage || 'Signup failed. Please try again.');
     }
   };
 
@@ -156,28 +173,29 @@ const LoginPage = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">Welcome Back!</h3>
-                <p className="text-sm text-gray-500 mt-1">Redirecting to dashboard...</p>
+                <h3 className="text-lg font-medium text-gray-900">Account Created!</h3>
+                <p className="text-sm text-gray-500 mt-1">Setting up your dashboard...</p>
               </div>
             ) : (
               // LOADING SPINNER STATE
               <div className="text-center">
                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                 <p className="text-sm font-medium text-gray-600">Signing you in...</p>
+                 <p className="text-sm font-medium text-gray-600">Creating your account...</p>
               </div>
             )}
           </div>
         )}
 
+        {/* --- MAIN CONTENT --- */}
         <div className="text-center mb-10">
           {/* <Logo className="mx-auto h-14 w-auto mb-6" /> */}
-          <Heading className="text-3xl">Welcome back</Heading>
-          <Subheading className="mt-3 text-gray-600">Sign in to your account to continue</Subheading>
+          <Heading className="text-3xl">Create an account</Heading>
+          <Subheading className="mt-3 text-gray-600">Start your journey with us today</Subheading>
         </div>
 
         {error && (
           <div className="mb-6">
-            <ErrorMessage type={error.includes('Redirecting') ? 'warning' : 'error'}>
+            <ErrorMessage type="error">
               {error}
             </ErrorMessage>
           </div>
@@ -185,7 +203,17 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* Note: 'name' field removed for Login */}
+          {/* Added Name Field for Signup */}
+          <InputField
+            label="Full Name"
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            placeholder="Enter your name"
+            disabled={loading}
+          />
 
           <InputField
             label="Email Address"
@@ -204,25 +232,20 @@ const LoginPage = () => {
             value={formData.password}
             onChange={handleChange}
             required
-            placeholder="Enter your password"
+            placeholder="Create a password (min. 6 characters)"
             disabled={loading}
           />
           
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-            <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500">
-              Forgot password?
-            </Link>
-          </div>
+          {/* Confirm Password Field - Frontend Only */}
+          <PasswordField
+            label="Confirm Password"
+            name="confirmPassword"
+            value={confirmPassword}
+            onChange={handleConfirmPasswordChange}
+            required
+            placeholder="Re-enter your password"
+            disabled={loading}
+          />
           
           <Button 
             type="submit" 
@@ -230,22 +253,22 @@ const LoginPage = () => {
             fullWidth 
             className="py-3.5 text-base font-semibold"
           >
-            Sign in to Dashboard
+            Create Account
           </Button>
         </form>
 
-        <Divider className="my-8" text="Or continue with" />
+        <Divider className="my-8" text="Or sign up with"></Divider>
 
         <div className="flex flex-col gap-4">
-          {/* GOOGLE BUTTON CONTAINER */}
+          {/* GOOGLE BUTTON ONLY - GitHub Removed */}
           <div id="google-btn" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}></div>
         </div>
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">
-              Create account
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">
+              Sign in
             </Link>
           </p>
         </div>
@@ -254,4 +277,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default SignupPage;
