@@ -10,19 +10,19 @@ const getAuthHeader = () => {
 const billAPI = {
   // Post to /create/pakka
   createPakkaBill: async (billData) => {
-    const response = await axios.post(`${API_BASE_URL}/create/pakka`, billData, getAuthHeader());
+    const response = await axios.post(`${API_BASE_URL}/bill/create/pakka`, billData, getAuthHeader());
     return response.data;
   },
 
   // Post to /create/kaccha
   createKachaBill: async (billData) => {
-    const response = await axios.post(`${API_BASE_URL}/create/kaccha`, billData, getAuthHeader());
+    const response = await axios.post(`${API_BASE_URL}/bill/create/kaccha`, billData, getAuthHeader());
     return response.data;
   },
 
   // Get from /all?type=...
   getBillsByType: async (type) => {
-    const response = await axios.get(`${API_BASE_URL}/all?type=${type}`, getAuthHeader());
+    const response = await axios.get(`${API_BASE_URL}/bills/all?type=${type}`, getAuthHeader());
     return response.data;
   }
 };
