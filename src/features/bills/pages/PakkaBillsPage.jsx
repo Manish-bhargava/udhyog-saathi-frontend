@@ -100,12 +100,17 @@ const PakkaBillsPage = () => {
   }, [isDragging]);
 
   const handleSave = async () => {
+    // Guard clause to check if onboarding data is present in businessData
+    if (!businessData?.company?.GST || !businessData?.company?.companyName) {
+      showNotification('error', 'Profile Incomplete', 'A valid GST and Company Name are required for Pakka Bills. Please update your profile.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const response = await billAPI.createPakkaBill(formData);
       if (response.success) {
-        // Show success notification
-        showNotification('success', 'Invoice Created Successfully!', 'Your GST invoice has been saved and is ready for download.');
+        showNotification('success', 'Invoice Created!', 'Your GST invoice is ready.');
         
         // Reset form
         setFormData({
@@ -117,7 +122,8 @@ const PakkaBillsPage = () => {
         });
       }
     } catch (err) {
-      showNotification('error', 'Failed to Save Invoice', 'Please check your connection and try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to Save Invoice. Check your internet or profile status.';
+      showNotification('error', 'Failed to Save', errorMessage);
     } finally {
       setSubmitting(false);
     }

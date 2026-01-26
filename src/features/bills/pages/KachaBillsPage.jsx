@@ -14,6 +14,7 @@ const KachaBillsPage = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [formWidth, setFormWidth] = useState(50);
   const [notification, setNotification] = useState(null);
+  const [isOnboarded, setIsOnboarded] = useState(true);
   const containerRef = useRef(null);
   const dividerRef = useRef(null);
 
@@ -23,16 +24,44 @@ const KachaBillsPage = () => {
         setLoading(true);
         const response = await profileAPI.getProfile(); 
         if (response.success) {
-          setBusinessData(response.data); 
+          setBusinessData(response.data);
+          // Check if essential onboarding data exists
+          if (!response.data.company?.companyName) {
+            showNotification('error', 'Onboarding Incomplete', 'Please complete your business profile in Settings to enable billing.');
+          }
         }
       } catch (err) {
-        console.error("Error fetching company data:", err);
+        // Specifically check for 403/404 or empty profile errors
+        if (err.response?.status === 404 || err.response?.status === 403) {
+          showNotification('error', 'Onboarding Required', 'Complete your profile setup to start creating bills.');
+        } else {
+          console.error("Error fetching company data:", err);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchCompanyDetails();
   }, []);
+  if (!loading && !isOnboarded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-xl border border-red-100 max-w-md">
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Onboarding Required</h2>
+          <p className="text-gray-600 mb-6">
+            You cannot create bills until you complete your business profile. This ensures your invoices have correct legal details.
+          </p>
+          <button 
+            onClick={() => navigate('/onboarding')}
+            className="w-full py-3 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition-all"
+          >
+            Complete Onboarding Now
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const [formData, setFormData] = useState({
     buyer: { clientName: '', clientAddress: '', clientGst: '' },
@@ -96,12 +125,17 @@ const KachaBillsPage = () => {
   }, [isDragging]);
 
   const handleSave = async () => {
+    // FINAL GUARD: Prevent API call if onboarding is missing
+    if (!businessData?.company?.companyName) {
+      showNotification('error', 'Action Blocked', 'You must finish onboarding before saving bills.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const response = await billAPI.createKachaBill(formData);
       if (response.success) {
-        // Show success notification
-        showNotification('success', 'Kacha Bill Created!', 'Your proforma invoice has been saved successfully.');
+        showNotification('success', 'Kacha Bill Created!', 'Your proforma invoice has been saved.');
         
         // Reset form
         setFormData({
@@ -112,7 +146,11 @@ const KachaBillsPage = () => {
         });
       }
     } catch (err) {
-      showNotification('error', 'Failed to Save', 'Please check your connection and try again.');
+      // Check if the backend rejected it due to onboarding
+      const errorMessage = err.response?.status === 403 
+        ? 'Onboarding required to save bills.' 
+        : 'Failed to Save. Please check your connection.';
+      showNotification('error', 'Error', errorMessage);
     } finally {
       setSubmitting(false);
     }
