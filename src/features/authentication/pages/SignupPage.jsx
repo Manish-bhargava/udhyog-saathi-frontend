@@ -147,4 +147,66 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 py-12 px-4
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 py-12 px-4">
+      <AuthCard className="max-w-md w-full relative overflow-hidden">
+        
+        {(loading || success) && (
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center transition-all duration-300">
+            {success ? (
+              <div className="text-center animate-in fade-in zoom-in duration-300">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                  <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">Account Created!</h3>
+                <p className="text-sm text-gray-500 mt-1">Setting up your dashboard...</p>
+              </div>
+            ) : (
+              <div className="text-center">
+                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                 <p className="text-sm font-medium text-gray-600">Creating your account...</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="text-center mb-10">
+          <Heading className="text-3xl">Create an account</Heading>
+          <Subheading className="mt-3 text-gray-600">Start your journey with us today</Subheading>
+        </div>
+
+        {error && (
+          <div className="mb-6">
+            <ErrorMessage type="error">
+              {error}
+            </ErrorMessage>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <InputField label="Full Name" type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="Enter your name" disabled={loading} />
+          <InputField label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="you@example.com" disabled={loading} />
+          <PasswordField label="Password" name="password" value={formData.password} onChange={handleChange} required placeholder="Create a password (min. 6 characters)" disabled={loading} />
+          <PasswordField label="Confirm Password" name="confirmPassword" value={confirmPassword} onChange={handleConfirmPasswordChange} required placeholder="Re-enter your password" disabled={loading} />
+          
+          <Button type="submit" disabled={loading} fullWidth className="py-3.5 text-base font-semibold">Create Account</Button>
+        </form>
+
+        <Divider className="my-8" text="Or sign up with"></Divider>
+        <div className="flex flex-col gap-4">
+          <div id="google-btn" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}></div>
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">Sign in</Link>
+          </p>
+        </div>
+      </AuthCard>
+    </div>
+  );
+};
+
+export default SignupPage;

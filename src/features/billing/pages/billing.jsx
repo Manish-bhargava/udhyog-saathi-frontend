@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { Check, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Ensure this points to https://udhyogsaathi.in/api/v1
+const BASE_URL = import.meta.env.VITE_API_BASE_URL; 
+
 // Helper to load Razorpay Script dynamically
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -14,12 +16,11 @@ const loadRazorpayScript = () => {
   });
 };
 
-// Kept only the "Most Popular" (Pro) plan
 const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: "₹99",
+    price: "₹499", // Updated to match your backend amount (499)
     period: "/month",
     description: "For professional creators & businesses.",
     icon: Crown,
@@ -53,16 +54,16 @@ const Pricing = () => {
         return;
       }
 
-      const orderRes = await fetch(`${BASE_URL}/user/payment/create-order`, {
+      // --- FIX 1: Correct URL (Removed '/user') ---
+      const orderRes = await fetch(`${BASE_URL}/payment/create-order`, {
         method: "POST",
-        credentials: "include", 
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ 
             planName: plan.id, 
-            amount: parseInt(plan.price.replace("₹", "").replace(",", ""))
+            amount: 499 // Sending explicit amount or plan ID
         }), 
       });
 
@@ -72,15 +73,15 @@ const Pricing = () => {
       const options = {
         key: orderData.keyId, 
         amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Aura AI",
+        currency: "INR",
+        name: "Udhyog Saathi", // Updated App Name
         description: `Subscription for ${plan.name}`,
         order_id: orderData.orderId,
         handler: async function (response) {
           try {
-            const verifyRes = await fetch(`${BASE_URL}/user/payment/verify`, {
+            // --- FIX 2: Correct URL (Updated to match backend '/verify-payment') ---
+            const verifyRes = await fetch(`${BASE_URL}/payment/verify-payment`, {
               method: "POST",
-              credentials: "include",
               headers: { 
                   "Content-Type": "application/json",
                   "Authorization": `Bearer ${token}`
@@ -97,7 +98,7 @@ const Pricing = () => {
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
               alert("PAYMENT SUCCESSFUL! 🎉 Plan Activated.");
-              navigate("/homepage"); 
+              navigate("/dashboard"); // Redirect to Dashboard after success
             } else {
               alert("Payment verification failed.");
             }
@@ -107,7 +108,7 @@ const Pricing = () => {
           }
         },
         prefill: {
-          name: user.email,
+          name: user.name || "User",
           email: user.email,
         },
         theme: { color: "#4F46E5" },
@@ -127,20 +128,18 @@ const Pricing = () => {
   return (
     <div className="min-h-screen bg-[#FDFDFD] px-4 font-sans text-slate-900 flex flex-col justify-center py-12">
       
-      {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-12">
         <h2 className="text-indigo-600 font-bold uppercase text-xs md:text-sm tracking-widest mb-3">
           Pricing Plans
         </h2>
         <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
-          Ready to scale your content?
+          Ready to scale your business?
         </h1>
         <p className="text-slate-500 leading-relaxed">
           The all-in-one plan for professional creators.
         </p>
       </div>
 
-      {/* Pricing Card (Centered Single Layout) */}
       <div className="max-w-md mx-auto w-full relative z-10">
         {PLANS.map((plan) => (
           <div 
@@ -197,7 +196,6 @@ const Pricing = () => {
         ))}
       </div>
       
-      {/* Background Decorative Element */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-50/50 rounded-full blur-[120px]" />
         <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-blue-50/50 rounded-full blur-[120px]" />
