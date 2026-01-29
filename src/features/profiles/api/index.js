@@ -1,33 +1,37 @@
 import axios from 'axios';
 
-// 1. Define the instance
-const BASE_URL = import.meta.env.VITE_API_BASE_URL
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const API = axios.create({
   baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' }
 });
 
-// 2. Add the interceptor
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  
+  // CRITICAL: If data is FormData, remove Content-Type to let the browser
+  // set the boundary (multipart/form-data; boundary=----...)
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  } else {
+    config.headers['Content-Type'] = 'application/json';
+  }
+  
   return config;
 });
 
-// 3. Export the profile methods
 export const profileAPI = {
   getProfile: async () => {
     const response = await API.get('/user/profile');
     return response.data;
   },
-
-  // Use the Onboarding API for Business/Bank info
-  updateBusinessInfo: async (payload) => {
-    const response = await API.post('/user/onboarding', payload);
+  updateBusinessInfo: async (formData) => {
+    // Ensure the endpoint matches your backend route exactly
+    const response = await API.post('/user/onboarding', formData);
     return response.data;
   },
 
-  // Use Update Profile API for Personal info
   updatePersonalInfo: async (payload) => {
     const response = await API.put('/auth/update-profile', payload);
     return response.data;

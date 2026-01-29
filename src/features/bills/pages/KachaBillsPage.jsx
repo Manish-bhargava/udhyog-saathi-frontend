@@ -457,6 +457,8 @@ const KachaBillsPage = () => {
                     companyAddress: businessData?.company?.companyAddress,
                     companyEmail: businessData?.company?.companyEmail,
                     companyLogo: businessData?.company?.companyLogo,
+                    companyStamp: businessData?.company?.companyStamp, // Add this if you want stamps too
+                    companySignature: businessData?.company?.companySignature, // The missing key
                     GST: businessData?.company?.GST,
                     bankName: businessData?.bankDetails?.bankName,
                     accountNumber: businessData?.bankDetails?.accountNumber,
@@ -525,6 +527,8 @@ const KachaBillsPage = () => {
                       companyAddress: businessData?.company?.companyAddress,
                       companyEmail: businessData?.company?.companyEmail,
                       companyLogo: businessData?.company?.companyLogo,
+                      companyStamp: businessData?.company?.companyStamp, // Add this if you want stamps too
+                      companySignature: businessData?.company?.companySignature, // The missing key
                       GST: businessData?.company?.GST,
                       bankName: businessData?.bankDetails?.bankName,
                       accountNumber: businessData?.bankDetails?.accountNumber,

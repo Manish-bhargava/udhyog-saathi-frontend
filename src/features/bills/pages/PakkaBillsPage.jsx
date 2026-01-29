@@ -421,17 +421,18 @@ const PakkaBillsPage = () => {
                 <BillPreview 
                   formData={formData} 
                   totals={totals} 
+                  isKachaBill={true}
                   companyDetails={{
                     companyName: businessData?.company?.companyName,
                     companyAddress: businessData?.company?.companyAddress,
                     companyEmail: businessData?.company?.companyEmail,
                     companyLogo: businessData?.company?.companyLogo,
+                    companyStamp: businessData?.company?.companyStamp, // Add this if you want stamps too
+                    companySignature: businessData?.company?.companySignature, // The missing key
                     GST: businessData?.company?.GST,
                     bankName: businessData?.bankDetails?.bankName,
                     accountNumber: businessData?.bankDetails?.accountNumber,
-                    IFSC: businessData?.bankDetails?.IFSC,
-                    companySignature: businessData?.company?.companySignature,
-                    companyStamp: businessData?.company?.companyStamp,
+                    IFSC: businessData?.bankDetails?.IFSC
                   }} 
                 />
                 
@@ -501,17 +502,18 @@ const PakkaBillsPage = () => {
                   <BillPreview 
                     formData={formData} 
                     totals={totals} 
+                    isKachaBill={true}
                     companyDetails={{
                       companyName: businessData?.company?.companyName,
                       companyAddress: businessData?.company?.companyAddress,
                       companyEmail: businessData?.company?.companyEmail,
                       companyLogo: businessData?.company?.companyLogo,
+                      companyStamp: businessData?.company?.companyStamp, // Add this if you want stamps too
+                      companySignature: businessData?.company?.companySignature, // The missing key
                       GST: businessData?.company?.GST,
                       bankName: businessData?.bankDetails?.bankName,
                       accountNumber: businessData?.bankDetails?.accountNumber,
-                      IFSC: businessData?.bankDetails?.IFSC,
-                      companySignature: businessData?.company?.companySignature,
-                      companyStamp: businessData?.company?.companyStamp,
+                      IFSC: businessData?.bankDetails?.IFSC
                     }} 
                   />
                 </div>
