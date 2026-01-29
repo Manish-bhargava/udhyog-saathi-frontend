@@ -731,18 +731,20 @@ export default function UdhyogDashboard() {
                     </div>
                     <div className="p-4 md:p-6 max-h-[60vh] overflow-y-auto">
                       <BillPreview 
-                        formData={editFormData} 
-                        totals={editTotals} 
+                        formData={formData} 
+                        totals={totals} 
                         isKachaBill={true}
                         companyDetails={{
-                          companyName: profileData?.company?.companyName,
-                          companyAddress: profileData?.company?.companyAddress,
-                          companyEmail: profileData?.company?.companyEmail,
-                          companyLogo: profileData?.company?.companyLogo,
-                          GST: profileData?.company?.GST,
-                          bankName: profileData?.bankDetails?.bankName,
-                          accountNumber: profileData?.bankDetails?.accountNumber,
-                          IFSC: profileData?.bankDetails?.IFSC
+                          companyName: businessData?.company?.companyName,
+                          companyAddress: businessData?.company?.companyAddress,
+                          companyEmail: businessData?.company?.companyEmail,
+                          companyLogo: businessData?.company?.companyLogo,
+                          companyStamp: businessData?.company?.companyStamp, // Add this if you want stamps too
+                          companySignature: businessData?.company?.companySignature, // The missing key
+                          GST: businessData?.company?.GST,
+                          bankName: businessData?.bankDetails?.bankName,
+                          accountNumber: businessData?.bankDetails?.accountNumber,
+                          IFSC: businessData?.bankDetails?.IFSC
                         }} 
                       />
                     </div>
@@ -792,18 +794,20 @@ export default function UdhyogDashboard() {
                     </div>
                     <div className="p-4 max-h-[60vh] overflow-y-auto">
                       <BillPreview 
-                        formData={editFormData} 
-                        totals={editTotals} 
+                        formData={formData} 
+                        totals={totals} 
                         isKachaBill={true}
                         companyDetails={{
-                          companyName: profileData?.company?.companyName,
-                          companyAddress: profileData?.company?.companyAddress,
-                          companyEmail: profileData?.company?.companyEmail,
-                          companyLogo: profileData?.company?.companyLogo,
-                          GST: profileData?.company?.GST,
-                          bankName: profileData?.bankDetails?.bankName,
-                          accountNumber: profileData?.bankDetails?.accountNumber,
-                          IFSC: profileData?.bankDetails?.IFSC
+                          companyName: businessData?.company?.companyName,
+                          companyAddress: businessData?.company?.companyAddress,
+                          companyEmail: businessData?.company?.companyEmail,
+                          companyLogo: businessData?.company?.companyLogo,
+                          companyStamp: businessData?.company?.companyStamp, // Add this if you want stamps too
+                          companySignature: businessData?.company?.companySignature, // The missing key
+                          GST: businessData?.company?.GST,
+                          bankName: businessData?.bankDetails?.bankName,
+                          accountNumber: businessData?.bankDetails?.accountNumber,
+                          IFSC: businessData?.bankDetails?.IFSC
                         }} 
                       />
                     </div>
