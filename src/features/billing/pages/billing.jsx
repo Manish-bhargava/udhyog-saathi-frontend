@@ -20,7 +20,7 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: "₹499", // Updated to match your backend amount (499)
+    price: "₹99",
     period: "/month",
     description: "For professional creators & businesses.",
     icon: Crown,

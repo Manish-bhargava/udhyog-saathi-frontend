@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 
 // --- CORE FEATURE IMPORTS ---
 import { LandingPage } from './features/landing';
@@ -35,47 +36,49 @@ function App() {
   }, []);
 
   return (
-    <Routes>
-      <Route path='/' element={<LandingPage />} />
-      <Route path='/terms' element={<TermsOfUsage />} />
-      <Route path='/about-us' element={<AboutUs />} />
-      <Route path='/privacy-policy' element={<PrivacyPolicy />} />
-      <Route path='/login' element={<LoginPage />} />
-      <Route path='/signup' element={<SignupPage />} />
+    <>
+      <Toaster position="top-right" richColors closeButton />
+      <Routes>
+        <Route path='/' element={<LandingPage />} />
+        <Route path='/terms' element={<TermsOfUsage />} />
+        <Route path='/about-us' element={<AboutUs />} />
+        <Route path='/privacy-policy' element={<PrivacyPolicy />} />
+        <Route path='/login' element={<LoginPage />} />
+        <Route path='/signup' element={<SignupPage />} />
 
-      <Route 
-        path='/onboarding' 
-        element={isAuth ? <OnboardingPage /> : <Navigate to="/login" replace />} 
-      />
-      <Route 
-        path='/tour' 
-        element={isAuth ? <TourPage /> : <Navigate to="/login" replace />} 
-      />
-
-      <Route element={<DashboardLayout />}>
         <Route 
-          path='/dashboard' 
-          element={!isAuth ? <Navigate to="/login" replace /> : isNewUser ? <Navigate to="/onboarding" replace /> : <DashboardPage />} 
+          path='/onboarding' 
+          element={isAuth ? <OnboardingPage /> : <Navigate to="/login" replace />} 
         />
         <Route 
-          path='/profile' 
-          element={isAuth ? <ProfilePage /> : <Navigate to="/login" replace />} 
+          path='/tour' 
+          element={isAuth ? <TourPage /> : <Navigate to="/login" replace />} 
         />
-        <Route path="bills">
-          <Route path="template" element={<div className="p-8 text-gray-500 font-medium">Bill Templates - Coming Soon</div>} />
-          <Route path="pakka" element={<PakkaBillsPage />} />
-          <Route path="kacha" element={<KachaBillsPage />} />
+
+        <Route element={<DashboardLayout />}>
+          <Route 
+            path='/dashboard' 
+            element={!isAuth ? <Navigate to="/login" replace /> : isNewUser ? <Navigate to="/onboarding" replace /> : <DashboardPage />} 
+          />
+          <Route 
+            path='/profile' 
+            element={isAuth ? <ProfilePage /> : <Navigate to="/login" replace />} 
+          />
+          <Route path="bills">
+            <Route path="template" element={<div className="p-8 text-gray-500 font-medium">Bill Templates - Coming Soon</div>} />
+            <Route path="pakka" element={<PakkaBillsPage />} />
+            <Route path="kacha" element={<KachaBillsPage />} />
+          </Route>
+          <Route path='/ai-assistant' element={isAuth ? <ChatInterface /> : <Navigate to="/login" replace />} />
+          
+          <Route path='/reports' element={<div className="p-8 text-gray-500 font-medium">Business Reports - Coming Soon</div>} />
+          <Route path='/billing' element={<BillingPage />} />
         </Route>
-        <Route path='/ai-assistant' element={isAuth ? <ChatInterface /> : <Navigate to="/login" replace />} />
-        
-        <Route path='/reports' element={<div className="p-8 text-gray-500 font-medium">Business Reports - Coming Soon</div>} />
-        <Route path='/billing' element={<BillingPage />} />
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 
 export default App;
-

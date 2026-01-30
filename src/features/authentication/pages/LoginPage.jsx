@@ -7,8 +7,8 @@ import Subheading from '../../auth/components/Subheading';
 import InputField from '../../auth/components/InputField';
 import PasswordField from '../../auth/components/PasswordField';
 import Button from '../../auth/components/Button';
-import ErrorMessage from '../../auth/components/ErrorMessage';
 import Divider from '../../auth/components/Divider';
+import { toast } from 'sonner';
 
 // Your Google Client ID
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -23,14 +23,12 @@ const LoginPage = () => {
     password: '' 
   });
   
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false); 
   const [loading, setLoading] = useState(false); 
 
   // --- GOOGLE AUTH LOGIC ---
   const handleGoogleResponse = async (response) => {
     setLoading(true);
-    setError('');
     
     try {
       // FIX: Changed from localhost:3000 to the live API URL
@@ -45,12 +43,12 @@ const LoginPage = () => {
       if (res.ok) {
         handleLoginSuccess(data);
       } else {
-        setError(data.message || 'Google login failed');
+        toast.error(data.message || 'Google login failed');
         setLoading(false);
       }
     } catch (err) {
       console.error(err);
-      setError('Network error during Google login');
+      toast.error('Network error during Google login');
       setLoading(false);
     }
   };
@@ -92,6 +90,7 @@ const LoginPage = () => {
   // --- SHARED SUCCESS LOGIC ---
   const handleLoginSuccess = (result) => {
     setSuccess(true);
+    toast.success('Welcome back!');
     
     localStorage.setItem('token', result.token);
     if (result.user || result.data) {
@@ -108,13 +107,11 @@ const LoginPage = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (error) setError(''); 
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
       const result = await authAPI.login(formData);
@@ -127,12 +124,12 @@ const LoginPage = () => {
         const serverMessage = err.response?.data?.message || '';
 
         if (serverMessage === "Invalid credentials") {
-            setError("Invalid credentials. Please check your email/password.");
+            toast.error("Invalid credentials. Please check your email/password.");
         } else if (serverMessage.includes("User not found")) {
-             setError("User not found. Redirecting to Signup...");
+             toast.warning("User not found. Redirecting to Signup...");
              setTimeout(() => navigate('/signup'), 2500);
         } else {
-            setError(serverMessage || 'Login failed. Please try again.');
+            toast.error(serverMessage || 'Login failed. Please try again.');
         }
     }
   };
@@ -166,14 +163,6 @@ const LoginPage = () => {
           <Heading className="text-3xl">Welcome back</Heading>
           <Subheading className="mt-3 text-gray-600">Sign in to your account to continue</Subheading>
         </div>
-
-        {error && (
-          <div className="mb-6">
-            <ErrorMessage type={error.includes('Redirecting') ? 'warning' : 'error'}>
-              {error}
-            </ErrorMessage>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <InputField
