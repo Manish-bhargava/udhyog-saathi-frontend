@@ -208,17 +208,17 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
           )}
           
           <div className="space-y-2 md:space-y-3">
-            <label className="text-xs md:text-sm font-medium text-gray-700">Discount Amount</label>
+            <label className="text-xs md:text-sm font-medium text-gray-700">Discount Amount (₹)</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm font-medium">₹</span>
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-bold">₹</span>
               <input
                 type="number"
                 placeholder="0.00"
                 value={formData.discount === 0 ? '' : formData.discount}
                 onChange={(e) => setFormData({...formData, discount: e.target.value === '' ? 0 : parseFloat(e.target.value)})}
-                className="w-full pl-8 md:pl-10 pr-3 md:pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-800 font-medium text-sm"
+                className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all outline-none text-gray-800 font-medium text-sm text-right pr-4 pl-10"
                 min="0"
-                step="0.01"
+                step="any"
               />
             </div>
           </div>

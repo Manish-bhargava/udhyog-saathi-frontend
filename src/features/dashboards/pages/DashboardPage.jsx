@@ -19,6 +19,7 @@ import {
 
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { toast } from 'sonner';
 
 import { 
   LineChart, 
@@ -78,7 +79,7 @@ export default function UdhyogDashboard() {
         }),
         profileAPI.getProfile()
       ]);
-
+      console.log("billRes:", billRes);
       const billResult = await billRes.json();
       
       if (billResult.success) {
@@ -94,6 +95,7 @@ export default function UdhyogDashboard() {
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      toast.error("Failed to load dashboard data.");
     } finally {
       setLoading(false);
     }
@@ -193,6 +195,7 @@ export default function UdhyogDashboard() {
   }, [bills]);
 
   const handleView = (bill) => {
+    console.log("Viewing bill:", bill);
     setSelectedBill(bill);
     setIsModalOpen(true);
   };
@@ -209,11 +212,12 @@ export default function UdhyogDashboard() {
       if (result.success) {
         setBills(prev => prev.filter(b => b.invoiceNumber !== invoiceNumber));
         setMobileActionsOpen(null);
+        toast.success("Bill deleted successfully");
       } else {
-        alert(result.message);
+        toast.error(result.message);
       }
     } catch (error) {
-      alert("Error deleting bill");
+      toast.error("Error deleting bill");
     }
   };
 
@@ -236,10 +240,10 @@ export default function UdhyogDashboard() {
         setIsConvertModalOpen(false);
         setConvertingBill(null);
         setMobileActionsOpen(null);
-        alert("Successfully converted to Pakka Bill!");
+        toast.success("Successfully converted to Pakka Bill!");
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Error converting bill");
+      toast.error(error.response?.data?.message || "Error converting bill");
     } finally {
       setLoading(false);
     }
@@ -254,12 +258,10 @@ export default function UdhyogDashboard() {
         clientGst: bill.buyer?.clientGst || '' 
       },
       products: bill.products?.map(p => ({ 
-        name: p.name, 
-        rate: p.rate, 
-        quantity: p.quantity 
+        name: p.name, rate: p.rate, quantity: p.quantity 
       })) || [{ name: '', rate: 0, quantity: 1 }],
-      discount: bill.discount || 0,
-      notes: bill.notes || ''
+      discount: bill.discount || 0, // Just load the value as-is
+      notes: bill.notes || ''       // Capture existing notes
     });
     setIsEditModalOpen(true);
   };
@@ -267,15 +269,26 @@ export default function UdhyogDashboard() {
   const handleUpdateSave = async () => {
     try {
       setLoading(true);
-      const result = await billAPI.updateBill(editingBillId, editFormData);
+      const sanitizedData = {
+        ...editFormData,
+        discount: Number(editFormData.discount) || 0, // Ensure numeric amount
+        notes: editFormData.notes || "",             // Ensure notes are sent
+        products: editFormData.products.map(p => ({
+          ...p,
+          rate: Number(p.rate),
+          quantity: Number(p.quantity)
+        }))
+      };
+
+      const result = await billAPI.updateBill(editingBillId, sanitizedData);
       if (result.success) {
         await fetchData();
         setIsEditModalOpen(false);
         setMobileActionsOpen(null);
-        alert("Bill updated successfully!");
+        toast.success("Bill updated successfully!");
       }
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to update bill");
+      toast.error("Failed to update bill");
     } finally {
       setLoading(false);
     }
@@ -315,8 +328,9 @@ export default function UdhyogDashboard() {
       pdf.save(`Invoice_${formatInvoiceId(bill.invoiceNumber)}.pdf`);
       document.body.removeChild(tempDiv);
       setMobileActionsOpen(null);
+      toast.success("PDF Downloaded successfully");
     } catch (error) {
-      alert("Failed to generate PDF.");
+      toast.error("Failed to generate PDF.");
     } finally {
       setDownloading(null);
     }
@@ -385,8 +399,8 @@ export default function UdhyogDashboard() {
         <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid #e2e8f0;">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
             <div>
-              ${bill.notes ? `<div style="margin-bottom: 24px;"><p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Notes</p><p style="color: #64748b; font-size: 14px; white-space: pre-wrap;">${bill.notes}</p></div>` : ''}
-              ${bankDetails?.bankName && bill.billType !== 'kaccha' ? `<div><p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Bank Details</p><div style="background: #f8fafc; padding: 16px; border-radius: 8px;"><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;"><span style="color: #64748b;">Bank:</span><span style="font-weight: 500; color: #334155;">${bankDetails.bankName}</span><span style="color: #64748b;">Account:</span><span style="font-weight: 500; color: #334155;">${bankDetails.accountNumber}</span><span style="color: #64748b;">IFSC:</span><span style="font-weight: 500; color: #334155;">${bankDetails.IFSC}</span></div></div></div>` : ''}
+              ${bill.notes ? `<div style=\"margin-bottom: 24px;\"><p style=\"font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;\">Notes</p><p style=\"color: #64748b; font-size: 14px; white-space: pre-wrap;\">${bill.notes}</p></div>` : ''}
+              ${bankDetails?.bankName && bill.billType !== 'kaccha' ? `<div><p style=\"font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;\">Bank Details</p><div style=\"background: #f8fafc; padding: 16px; border-radius: 8px;\"><div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;\"><span style=\"color: #64748b;\">Bank:</span><span style=\"font-weight: 500; color: #334155;\">${bankDetails.bankName}</span><span style=\"color: #64748b;\">Account:</span><span style=\"font-weight: 500; color: #334155;\">${bankDetails.accountNumber}</span><span style=\"color: #64748b;\">IFSC:</span><span style=\"font-weight: 500; color: #334155;\">${bankDetails.IFSC}</span></div></div></div>` : ''}
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end;">
               <div style="position: relative; margin-bottom: 24px;">${companyStamp ? `<img src="${companyStamp}" style="position: absolute; top: -32px; opacity: 0.7; width: 80px; height: 80px; object-fit: contain;" />` : ''}${companySignature ? `<img src="${companySignature}" style="height: 64px; width: auto; object-fit: contain;" />` : ''}</div>
@@ -537,6 +551,7 @@ export default function UdhyogDashboard() {
         </div>
       )}
 
+      {/* VIEW MODAL */}
       {isModalOpen && selectedBill && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-white w-full max-w-4xl shadow-2xl rounded-xl flex flex-col max-h-[90vh] overflow-hidden">
@@ -567,247 +582,68 @@ export default function UdhyogDashboard() {
         </div>
       )}
 
-      {/* CONVERSION MODAL - MOBILE OPTIMIZED */}
+      {/* CONVERSION MODAL */}
       {isConvertModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 md:p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md md:max-w-lg rounded-xl md:rounded-2xl shadow-2xl overflow-hidden border border-gray-200 max-h-[90vh] md:max-h-auto flex flex-col">
+          <div className="bg-white w-full max-w-md md:max-w-lg rounded-xl md:rounded-2xl shadow-2xl overflow-hidden border border-gray-200 flex flex-col">
             <div className="p-4 md:p-6 border-b border-gray-100 bg-white flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
-                <div className="bg-indigo-100 p-2 rounded-lg">
-                  <RefreshCw size={20} className="text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg md:text-xl font-bold text-gray-900">Convert to Pakka Bill</h3>
-                  <p className="text-xs md:text-sm text-gray-500 mt-1">Update client details for {convertingBill?.buyer?.clientName || 'Unknown Client'}</p>
-                </div>
+                <div className="bg-indigo-100 p-2 rounded-lg"><RefreshCw size={20} className="text-indigo-600" /></div>
+                <div><h3 className="text-lg md:text-xl font-bold text-gray-900">Convert to Pakka Bill</h3><p className="text-xs md:text-sm text-gray-500">Update client details for {convertingBill?.buyer?.clientName}</p></div>
               </div>
-              <button 
-                onClick={() => setIsConvertModalOpen(false)} 
-                className="p-2 hover:bg-gray-100 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <button onClick={() => setIsConvertModalOpen(false)} className="p-2 hover:bg-gray-100 text-gray-400 rounded-lg transition-colors"><X size={20} /></button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Client Address <span className="text-red-500">*</span>
-                </label>
-                <textarea 
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition resize-none"
-                  rows="3" 
-                  placeholder="Enter complete address..."
-                  value={conversionData.clientAddress} 
-                  onChange={(e) => setConversionData({...conversionData, clientAddress: e.target.value})} 
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GSTIN <span className="text-red-500">*</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
-                    placeholder="Enter 15-digit GSTIN"
-                    value={conversionData.clientGst} 
-                    onChange={(e) => setConversionData({...conversionData, clientGst: e.target.value})} 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GST Rate
-                  </label>
-                  <select 
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white"
-                    value={conversionData.gstPercentage} 
-                    onChange={(e) => setConversionData({...conversionData, gstPercentage: Number(e.target.value)})}
-                  >
-                    {[0, 5, 12, 18, 28].map(r => (
-                      <option key={r} value={r}>{r}% GST</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              
-              <div className="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-100">
-                <div className="flex items-start gap-3">
-                  <AlertCircle size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs md:text-sm text-blue-700">
-                    Converting this bill will add GST tax calculations and make it a formal tax invoice. This action cannot be undone.
-                  </p>
-                </div>
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-2">Address <span className="text-red-500">*</span></label><textarea className="w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition resize-none" rows="3" placeholder="Enter complete address..." value={conversionData.clientAddress} onChange={(e) => setConversionData({...conversionData, clientAddress: e.target.value})} /></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="block text-sm font-medium text-gray-700 mb-2">GSTIN <span className="text-red-500">*</span></label><input type="text" className="w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" value={conversionData.clientGst} onChange={(e) => setConversionData({...conversionData, clientGst: e.target.value})} /></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-2">GST Rate</label><select className="w-full p-3 border rounded-lg text-sm bg-white" value={conversionData.gstPercentage} onChange={(e) => setConversionData({...conversionData, gstPercentage: Number(e.target.value)})}>{[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}% GST</option>)}</select></div>
               </div>
             </div>
-            
-            <div className="p-4 md:p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-3 shrink-0">
-              <button 
-                onClick={() => setIsConvertModalOpen(false)} 
-                className="w-full sm:flex-1 px-4 py-3 md:py-2.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={processConversion} 
-                disabled={!conversionData.clientAddress.trim() || !conversionData.clientGst.trim()}
-                className="w-full sm:flex-1 px-4 py-3 md:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                Convert to Pakka Bill
-              </button>
-            </div>
+            <div className="p-4 md:p-6 bg-gray-50 border-t flex flex-col sm:flex-row gap-3"><button onClick={() => setIsConvertModalOpen(false)} className="w-full sm:flex-1 px-4 py-2.5 border rounded-lg text-sm font-medium">Cancel</button><button onClick={processConversion} disabled={!conversionData.clientAddress.trim() || !conversionData.clientGst.trim()} className="w-full sm:flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-lg disabled:opacity-50 transition-all">Convert to Pakka Bill</button></div>
           </div>
         </div>
       )}
 
-      {/* EDIT MODAL - COMPLETELY REVISED WITH BETTER MOBILE SUPPORT */}
+      {/* EDIT MODAL - FIXED VARIABLES */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md flex items-center justify-center p-0 md:p-4 overflow-hidden">
           <div className="bg-white w-full h-full md:w-full md:max-w-6xl md:h-[95vh] md:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
-            {/* Modal Header */}
-            <div className="p-4 md:p-6 bg-white border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+            <div className="p-4 md:p-6 bg-white border-b flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
-                <div className="bg-amber-100 p-2 md:p-3 rounded-lg md:rounded-xl">
-                  <Pencil size={20} md:size={24} className="text-amber-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg md:text-2xl font-bold text-gray-900">Edit Kacha Bill</h2>
-                  <p className="text-xs md:text-sm text-gray-500 mt-1">Modify bill details and preview changes</p>
-                </div>
+                <div className="bg-amber-100 p-2 md:p-3 rounded-lg"><Pencil size={24} className="text-amber-600" /></div>
+                <div><h2 className="text-lg md:text-2xl font-bold text-gray-900">Edit Kacha Bill</h2><p className="text-xs md:text-sm text-gray-500 mt-1">Modify details and preview in real-time</p></div>
               </div>
-              <div className="flex items-center gap-2 self-stretch sm:self-auto">
-                <button 
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleUpdateSave}
-                  className="flex-1 sm:flex-none px-4 md:px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg shadow-lg shadow-amber-200 transition-all active:scale-95"
-                >
-                  Save Changes
-                </button>
-              </div>
+              <div className="flex items-center gap-2"><button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button><button onClick={handleUpdateSave} className="px-4 md:px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg shadow-lg active:scale-95 transition-all">Save Changes</button></div>
             </div>
 
-            {/* Modal Body - Responsive Layout */}
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-              {/* Left Panel: Form - Full width on mobile, half on desktop */}
               <div className="w-full md:w-1/2 overflow-y-auto p-4 md:p-6 border-b md:border-r border-gray-200">
-                <div className="max-w-2xl mx-auto">
-                  <div className="mb-6 md:mb-8">
-                    <h3 className="text-base md:text-lg font-bold text-gray-900 mb-2">Client Information</h3>
-                    <p className="text-xs md:text-sm text-gray-500">Update client details and products</p>
-                  </div>
-                  <BillForm 
-                    formData={editFormData} 
-                    setFormData={setEditFormData} 
-                    isKachaBill={true} 
-                  />
-                </div>
+                <div className="max-w-2xl mx-auto"><h3 className="text-base font-bold text-gray-900 mb-6">Client & Product Information</h3><BillForm formData={editFormData} setFormData={setEditFormData} isKachaBill={true} /></div>
               </div>
 
-              {/* Right Panel: Preview - Hidden on mobile, shown on desktop with toggle */}
               <div className="hidden md:block w-1/2 overflow-y-auto bg-gray-50 p-6">
                 <div className="sticky top-0 bg-gray-50 pb-4">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">Live Preview</h3>
-                      <p className="text-sm text-gray-500">Real-time preview of your changes</p>
-                    </div>
-                    <div className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
-                      KACHA BILL
-                    </div>
-                  </div>
-                  
+                  <h3 className="text-lg font-bold text-gray-900 mb-6">Live Preview</h3>
                   <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                    <div className="p-3 bg-amber-50 border-b border-amber-100">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-medium text-amber-700">Live Preview - Changes auto-update</span>
-                      </div>
-                    </div>
+                    <div className="p-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2"><div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div><span className="text-xs font-medium text-amber-700">Live Preview - Changes auto-update</span></div>
                     <div className="p-4 md:p-6 max-h-[60vh] overflow-y-auto">
                       <BillPreview 
-                        formData={formData} 
-                        totals={totals} 
+                        formData={editFormData} 
+                        totals={editTotals} 
                         isKachaBill={true}
                         companyDetails={{
-                          companyName: businessData?.company?.companyName,
-                          companyAddress: businessData?.company?.companyAddress,
-                          companyEmail: businessData?.company?.companyEmail,
-                          companyLogo: businessData?.company?.companyLogo,
-                          companyStamp: businessData?.company?.companyStamp, // Add this if you want stamps too
-                          companySignature: businessData?.company?.companySignature, // The missing key
-                          GST: businessData?.company?.GST,
-                          bankName: businessData?.bankDetails?.bankName,
-                          accountNumber: businessData?.bankDetails?.accountNumber,
-                          IFSC: businessData?.bankDetails?.IFSC
-                        }} 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-blue-800 mb-1">Editing in Progress</p>
-                        <p className="text-xs text-blue-600">
-                          All changes are reflected in real-time. Click "Save Changes" to update the bill permanently.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile Preview Toggle */}
-              <div className="md:hidden border-t border-gray-200">
-                <button 
-                  onClick={() => {
-                    const previewElement = document.getElementById('mobile-preview');
-                    if (previewElement) {
-                      previewElement.classList.toggle('hidden');
-                    }
-                  }}
-                  className="w-full p-4 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Eye size={16} className="text-gray-600" />
-                    <span className="text-sm font-medium text-gray-900">Show Preview</span>
-                  </div>
-                  <div className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
-                    PREVIEW
-                  </div>
-                </button>
-                
-                <div id="mobile-preview" className="hidden p-4 bg-gray-50 border-t border-gray-200">
-                  <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                    <div className="p-3 bg-amber-50 border-b border-amber-100">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-medium text-amber-700">Live Preview</span>
-                      </div>
-                    </div>
-                    <div className="p-4 max-h-[60vh] overflow-y-auto">
-                      <BillPreview 
-                        formData={formData} 
-                        totals={totals} 
-                        isKachaBill={true}
-                        companyDetails={{
-                          companyName: businessData?.company?.companyName,
-                          companyAddress: businessData?.company?.companyAddress,
-                          companyEmail: businessData?.company?.companyEmail,
-                          companyLogo: businessData?.company?.companyLogo,
-                          companyStamp: businessData?.company?.companyStamp, // Add this if you want stamps too
-                          companySignature: businessData?.company?.companySignature, // The missing key
-                          GST: businessData?.company?.GST,
-                          bankName: businessData?.bankDetails?.bankName,
-                          accountNumber: businessData?.bankDetails?.accountNumber,
-                          IFSC: businessData?.bankDetails?.IFSC
+                          companyName: profileData?.company?.companyName,
+                          companyAddress: profileData?.company?.companyAddress,
+                          companyEmail: profileData?.company?.companyEmail,
+                          companyLogo: profileData?.company?.companyLogo,
+                          companyStamp: profileData?.company?.companyStamp,
+                          companySignature: profileData?.company?.companySignature,
+                          GST: profileData?.company?.GST,
+                          bankName: profileData?.bankDetails?.bankName,
+                          accountNumber: profileData?.bankDetails?.accountNumber,
+                          IFSC: profileData?.bankDetails?.IFSC,
                         }} 
                       />
                     </div>

@@ -7,8 +7,8 @@ import Subheading from '../../auth/components/Subheading';
 import InputField from '../../auth/components/InputField';
 import PasswordField from '../../auth/components/PasswordField';
 import Button from '../../auth/components/Button';
-import ErrorMessage from '../../auth/components/ErrorMessage';
 import Divider from '../../auth/components/Divider';
+import { toast } from 'sonner';
 
 // Your Google Client ID
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -25,14 +25,12 @@ const SignupPage = () => {
   });
   
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false); 
   const [loading, setLoading] = useState(false); 
 
   // --- GOOGLE AUTH LOGIC ---
   const handleGoogleResponse = async (response) => {
     setLoading(true);
-    setError('');
     
     try {
       // FIX: Changed from localhost:3000 to the live API URL
@@ -47,12 +45,12 @@ const SignupPage = () => {
       if (res.ok) {
         handleSignupSuccess(data);
       } else {
-        setError(data.message || 'Google signup failed');
+        toast.error(data.message || 'Google signup failed');
         setLoading(false);
       }
     } catch (err) {
       console.error(err);
-      setError('Network error during Google signup');
+      toast.error('Network error during Google signup');
       setLoading(false);
     }
   };
@@ -94,6 +92,7 @@ const SignupPage = () => {
   // --- SHARED SUCCESS LOGIC ---
   const handleSignupSuccess = (data) => {
     setSuccess(true); 
+    toast.success('Account Created!');
     
     localStorage.setItem('token', data.token);
     if (data.user) {
@@ -108,27 +107,24 @@ const SignupPage = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (error) setError(''); 
   };
 
   const handleConfirmPasswordChange = (e) => {
     setConfirmPassword(e.target.value);
-    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     if (formData.password !== confirmPassword) {
-      setError('Passwords do not match');
+      toast.error('Passwords do not match');
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      toast.error('Password must be at least 6 characters long');
       setLoading(false);
       return;
     }
@@ -142,7 +138,7 @@ const SignupPage = () => {
     } catch (err) {
         setLoading(false);
         const serverMessage = err.response?.data?.message || '';
-        setError(serverMessage || 'Signup failed. Please try again.');
+        toast.error(serverMessage || 'Signup failed. Please try again.');
     }
   };
 
@@ -156,7 +152,7 @@ const SignupPage = () => {
               <div className="text-center animate-in fade-in zoom-in duration-300">
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
                   <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-gray-900">Account Created!</h3>
@@ -175,14 +171,6 @@ const SignupPage = () => {
           <Heading className="text-3xl">Create an account</Heading>
           <Subheading className="mt-3 text-gray-600">Start your journey with us today</Subheading>
         </div>
-
-        {error && (
-          <div className="mb-6">
-            <ErrorMessage type="error">
-              {error}
-            </ErrorMessage>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <InputField label="Full Name" type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="Enter your name" disabled={loading} />

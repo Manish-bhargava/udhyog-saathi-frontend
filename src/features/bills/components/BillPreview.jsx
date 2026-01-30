@@ -116,7 +116,12 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
             <span>Subtotal</span>
             <span className="font-semibold text-slate-700">{formatCurrency(totals.subtotal)}</span>
           </div>
-          {/* ... other total rows ... */}
+            {totals.discount > 0 && (
+              <div className="flex justify-between text-xs md:text-sm text-slate-500">
+                <span>Discount</span>
+                <span className="font-semibold text-red-600">-{formatCurrency(totals.discount)}</span>
+              </div>
+            )}
           <div className={`flex justify-between text-lg md:text-xl lg:text-2xl font-black pt-3 md:pt-4 border-t-2 mt-1 md:mt-2 ${isKachaBill ? 'text-amber-600 border-amber-50' : 'text-slate-900 border-slate-900'}`}>
             <span className="mr-2 md:mr-4">Total</span>
             <span className="break-all">{formatCurrency(totals.grandTotal)}</span>
