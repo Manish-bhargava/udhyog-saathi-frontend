@@ -29,7 +29,7 @@ const billAPI = {
   // Conversion API calls
   convertKachaToPakka: async (billId, conversionData) => {
     const response = await axios.post(
-      `${API_BASE_URL}/bill/convert/:${billId}`, 
+      `${API_BASE_URL}/bill/convert/${billId}`, 
       conversionData, 
       getAuthHeader()
     );
