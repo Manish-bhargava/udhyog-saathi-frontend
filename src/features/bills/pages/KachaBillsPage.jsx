@@ -48,14 +48,6 @@ const KachaBillsPage = () => {
   });
   console.log("Kacha Bill Form Data:", formData);
 
-  // const totals = (() => {
-  //   const subtotal = formData.products.reduce((s, p) => s + (p.rate * p.quantity), 0);
-  //   return {
-  //     subtotal,
-  //     discount: formData.discount,
-  //     grandTotal: subtotal - formData.discount
-  //   };
-  // })();
 
   const totals = (() => {
     const subtotal = formData.products.reduce((s, p) => s + (Number(p.rate || 0) * Number(p.quantity || 0)), 0);
