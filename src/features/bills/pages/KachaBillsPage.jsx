@@ -60,7 +60,7 @@ const KachaBillsPage = () => {
   const totals = (() => {
     const subtotal = formData.products.reduce((s, p) => s + (Number(p.rate || 0) * Number(p.quantity || 0)), 0);
     const discountAmount = Number(formData.discount) || 0; // Treat as Amount
-    const gst = ((subtotal - discountAmount) * formData.gstPercentage) / 100;
+    const gst = 0;
     
     return {
       subtotal,
