@@ -16,6 +16,7 @@ import {
   FaCaretDown,
   FaCaretRight,
   FaTimes,
+  FaShoppingCart,
   FaUserCircle,
   FaReceipt,
   FaFileAlt,
@@ -82,6 +83,7 @@ const DashboardLayout = () => {
     { path: '/ai-assistant', label: 'AI Assistant', icon: <FaRobot /> },
     { path: '/reports', label: 'Reports', icon: <FaChartBar /> },
     { path: '/billing', label: 'Billing', icon: <FaRupeeSign /> },
+    { path: '/inventory', label: 'Inventory', icon: <FaShoppingCart /> },
   ];
 
   const handleLogout = () => {
