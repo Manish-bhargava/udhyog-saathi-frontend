@@ -19,6 +19,7 @@ import PrivacyPolicy from './features/landing/pages/PrivacyPolicyPage.jsx';
 
 import PakkaBillsPage from './features/bills/pages/PakkaBillsPage';
 import KachaBillsPage from './features/bills/pages/KachaBillsPage';
+import InventoryPage from './features/Inventory/InventoryPage';
 import { RiPhoneCameraFill, RiSpace } from 'react-icons/ri';
 
 function App() {
@@ -73,6 +74,7 @@ function App() {
           
           <Route path='/reports' element={<div className="p-8 text-gray-500 font-medium">Business Reports - Coming Soon</div>} />
           <Route path='/billing' element={<BillingPage />} />
+          <Route path='/inventory' element={isAuth ? <InventoryPage /> : <Navigate to="/login" replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
