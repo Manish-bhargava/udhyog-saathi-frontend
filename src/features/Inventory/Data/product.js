@@ -152,7 +152,6 @@
 // Data/product.js – completely refreshed with 12 distinct products
 export const products = [
   {
-    id: "PROD-001",
     name: "Quantum Pro Monitor 27\"",
     category: "Electronics",
     sku: "MON-27-QP",

@@ -61,40 +61,62 @@
 
 // AddProductModal.jsx
 import React, { useState } from "react";
-
+import inventoryAPI from "../api";
+import { toast } from "sonner";
 export default function AddProductModal({ onClose, onAdd }) {
   const [form, setForm] = useState({
     name: "",
-    sku: "",
     category: "",
+    location: "",
+    brand: "",
     price: "",
     stock: "",
+    weight: "",
     status: "In Stock",
   });
+  const [imageFile, setImageFile] = useState(null);
 
-  const handleSubmit = () => {
-    if (!form.name || !form.sku) return;
+  const handleSubmit = async () => {
+    if (!form.name || !form.category) {
+      toast.error("Name and Category are required");
+      return;
+    }
 
-    onAdd({
-      id: Date.now(),
-      ...form,
-      price: Number(form.price),
-      stock: Number(form.stock),
-      capacity: Math.floor(Math.random() * 60) + 20, // random capacity for demo
-      image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3", // placeholder
-      brand: "Generic",
-      location: "Warehouse A",
-      weight: "1.5kg",
-      updatedAt: "Just now",
-    });
+    const payload = new FormData();
+    payload.append("name", form.name.trim());
+    payload.append("unit", form.category.trim());
+    payload.append("sellingPrice", form.price || 0);
+    payload.append("reorderLevel", form.stock || 0);
+    payload.append("canBeSold", form.status === "In Stock");
+    payload.append("canBePurchased", false);
+    payload.append("canBeManufactured", false);
+    payload.append("brand", form.brand?.trim() || "");
+    payload.append("location", form.location?.trim() || "");
+    payload.append("weight", form.weight?.toString().trim() || "");
+    if (imageFile) {
+      payload.append("productImg", imageFile);
+    }
+
+    try {
+      const res = await inventoryAPI.addFinishedItem(payload);
+      toast.success("Product added successfully");
+      onAdd?.(res);
+      onClose();
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "Failed to add product"
+      );
+    }
   };
 
   const fields = [
     { key: "name", label: "Name", type: "text" },
-    { key: "sku", label: "SKU", type: "text" },
     { key: "category", label: "Category", type: "text" },
+    { key: "location", label: "Location", type: "text" },
+    { key: "brand", label: "Brand", type: "text" },
     { key: "price", label: "Price (₹)", type: "number" },
     { key: "stock", label: "Stock", type: "number" },
+    { key: "weight", label: "Weight", type: "number" },
   ];
 
   return (
@@ -116,6 +138,22 @@ export default function AddProductModal({ onClose, onAdd }) {
             />
           </div>
         ))}
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Product Image
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            className="w-full text-sm"
+            onChange={(e) =>
+              setImageFile(e.target.files && e.target.files[0]
+                ? e.target.files[0]
+                : null)
+            }
+          />
+        </div>
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>

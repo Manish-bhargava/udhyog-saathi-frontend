@@ -121,18 +121,17 @@
 
 
 // InventoryPage.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import InventoryFilters from "./Components/InventoryFilters";
 import ProductDetails from "./Components/ProductDetails";
 import InventoryGrid from "./Components/InventoryGrid";
 import AddProductModal from "./Components/AddProductModal"; // make sure path matches
-import { products as initialProducts } from "./Data/product";
+import inventoryAPI from "./api";
+import { toast } from "sonner";
 
 export default function InventoryPage() {
   // ✅ PRODUCTS STATE (mutable)
-  const [products, setProducts] = useState(
-    Array.isArray(initialProducts) ? initialProducts : []
-  );
+  const [products, setProducts] = useState([]);
 
   const [selectedProduct, setSelectedProduct] = useState(
     products?.[0] || null
@@ -140,6 +139,8 @@ export default function InventoryPage() {
 
   // ✅ ADD PRODUCT MODAL STATE
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const [loading, setLoading] = useState(false);
 
   // FILTER STATES
   const [search, setSearch] = useState("");
@@ -154,6 +155,47 @@ export default function InventoryPage() {
     setCategory("all");
     setStatus("all");
   };
+
+  const mapItemToProduct = (item) => ({
+    id: item._id,
+    name: item.name,
+    category: item.unit,
+    price: item.sellingPrice ?? 0,
+    stock: item.reorderLevel ?? 0,
+    capacity: 60,
+    status: item.isActive ? "In Stock" : "Out of Stock",
+    image: item.imageUrl || "",
+    sku: item.sku || "",
+    brand: item.brand || "",
+    location: item.location || "",
+    weight: item.weight || "",
+    updatedAt: item.updatedAt
+      ? new Date(item.updatedAt).toLocaleString()
+      : "",
+  });
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await inventoryAPI.getFinishedItems();
+      const items = Array.isArray(res?.data) ? res.data : [];
+      const mapped = items.map(mapItemToProduct);
+      setProducts(mapped);
+      setSelectedProduct(mapped[0] || null);
+    } catch (error) {
+      console.error("Failed to load inventory", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to load inventory items",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // FILTER LOGIC
   const filteredProducts = useMemo(() => {
@@ -189,9 +231,8 @@ export default function InventoryPage() {
   }, [products, search, sort, category, status]);
 
   // ✅ ADD PRODUCT HANDLER
-  const handleAddProduct = (newProduct) => {
-    setProducts((prev) => [newProduct, ...prev]);
-    setSelectedProduct(newProduct);
+  const handleAddProduct = () => {
+    fetchProducts();
     setShowAddModal(false);
   };
 
@@ -212,7 +253,11 @@ export default function InventoryPage() {
             onClear={clearFilters}
           />
 
-          <ProductDetails product={selectedProduct} />
+          <ProductDetails
+            product={selectedProduct}
+            onDeleteSuccess={fetchProducts}
+            onUpdateSuccess={fetchProducts}
+          />
         </div>
 
         {/* RIGHT */}
@@ -227,11 +272,17 @@ export default function InventoryPage() {
             </button>
           </div>
 
-          <InventoryGrid
-            products={filteredProducts}
-            onSelectProduct={setSelectedProduct}
-            selectedId={selectedProduct?.id}
-          />
+          {loading ? (
+            <div className="text-center py-10 text-gray-500 text-sm">
+              Loading inventory...
+            </div>
+          ) : (
+            <InventoryGrid
+              products={filteredProducts}
+              onSelectProduct={setSelectedProduct}
+              selectedId={selectedProduct?.id}
+            />
+          )}
         </div>
       </div>
 
