@@ -44,7 +44,7 @@ const InventoryGrid = ({ products, onSelectProduct, selectedId }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5">
             {products.map((product) => (
               <InventoryCard
-                key={product.id}
+                key={product.id || product._id || product.sku}
                 product={product}
                 isSelected={product.id === selectedId}
                 onClick={() => onSelectProduct(product)}

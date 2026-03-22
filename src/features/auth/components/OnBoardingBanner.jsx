@@ -1,11 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
 const OnboardingBanner = () => {
   const navigate = useNavigate();
-  const { completeOnboarding } = useAuth();
-
   const handleCompleteOnboarding = () => {
     // Navigate to profile page for onboarding completion
     navigate('/profile');

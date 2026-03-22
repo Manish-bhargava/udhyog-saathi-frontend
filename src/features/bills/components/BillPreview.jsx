@@ -9,7 +9,7 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
     day: 'numeric', month: 'short', year: 'numeric' 
   });
 
-  const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
+  const invoiceNumber = formData?.invoiceNumber || 'INV-DRAFT';
 
   return (
     <div className="bg-white w-full shadow-2xl rounded-lg flex flex-col p-4 md:p-6 lg:p-10 print:shadow-none print:p-0 overflow-hidden scale-95 md:scale-100 origin-top">

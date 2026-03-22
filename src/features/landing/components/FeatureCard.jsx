@@ -1,6 +1,6 @@
 import React from 'react';
 
-const FeatureCard = ({ feature, index }) => {
+const FeatureCard = ({ feature }) => {
   const { title, description, icon, color, border } = feature;
   
   return (

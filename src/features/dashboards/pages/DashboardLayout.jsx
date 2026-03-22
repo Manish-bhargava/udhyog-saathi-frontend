@@ -27,6 +27,7 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [billsMenuOpen, setBillsMenuOpen] = useState(false);
+  const [inventoryMenuOpen, setInventoryMenuOpen] = useState(false);
   
   // State for user data to ensure name display is always correct
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
@@ -104,6 +105,9 @@ const DashboardLayout = () => {
     setBillsMenuOpen(!billsMenuOpen);
   };
 
+  const handleInventoryClick = () => {
+    setInventoryMenuOpen(!inventoryMenuOpen);
+  };
   return (
     <div className="h-screen w-full bg-gray-50 flex flex-col md:flex-row overflow-hidden">
       
@@ -135,6 +139,7 @@ const DashboardLayout = () => {
                 <button
                   onClick={() => {
                     if (item.label === 'Bills') handleBillsClick();
+                    else if (item.label === 'Inventory') handleInventoryClick();
                     else {
                       navigate(item.path);
                       setSidebarOpen(false);
@@ -145,11 +150,19 @@ const DashboardLayout = () => {
                   {item.icon}
                   <span className="font-medium">{item.label}</span>
                   {item.label === 'Bills' && <span className="ml-auto">{billsMenuOpen ? <FaCaretDown /> : <FaCaretRight />}</span>}
+                  {item.label === 'Inventory' && <span className="ml-auto">{inventoryMenuOpen ? <FaCaretDown /> : <FaCaretRight />}</span>}
                 </button>
                 {item.label === 'Bills' && billsMenuOpen && (
                   <div className="ml-8 mt-2 space-y-1">
                     <button onClick={() => { navigate('/bills/kacha'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Kacha Bills</button>
                     <button onClick={() => { navigate('/bills/pakka'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Pakka Bills</button>
+                  </div>
+                )}
+                {item.label === 'Inventory' && inventoryMenuOpen && (
+                  <div className="ml-8 mt-2 space-y-1">
+                    <button onClick={() => { navigate('/inventory/finished'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Finished Products</button>
+                    <button onClick={() => { navigate('/inventory/raw'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Raw Materials</button>
+                    <button onClick={() => { navigate('/inventory/warehouses'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Warehouses</button>
                   </div>
                 )}
               </div>
@@ -204,7 +217,7 @@ const DashboardLayout = () => {
             {navItems.map((item) => (
               <div key={item.path}>
                 <button
-                  onClick={() => item.label === 'Bills' ? handleBillsClick() : navigate(item.path)}
+                  onClick={() => item.label === 'Bills' ? handleBillsClick() : item.label === "Inventory"? handleInventoryClick() : navigate(item.path)}
                   className={`
                     w-full flex items-center rounded-xl duration-200 p-3.5
                     ${location.pathname.startsWith(item.path.split('/template')[0]) ? 'bg-blue-600/20 text-blue-100 border border-blue-500/30' : 'text-slate-300 hover:bg-slate-800/50'}
@@ -220,6 +233,25 @@ const DashboardLayout = () => {
                     <button onClick={() => navigate('/bills/pakka')} className="w-full text-left py-2 text-xs text-slate-400 hover:text-white">Pakka Bills</button>
                   </div>
                 )}
+                {sidebarOpen && item.label === "Inventory" && inventoryMenuOpen && (
+                  <div className="ml-10 mt-2 space-y-1 border-l border-slate-700 pl-4">
+                    <button
+                    onClick={() => navigate("/inventory/finished")}
+                    className="w-full text-left py-2 text-xs text-slate-400 hover:text-white">
+                      Finished Products
+                    </button>
+                    <button
+                      onClick={() => navigate("/inventory/raw")}
+                      className="w-full text-left py-2 text-xs text-slate-400 hover:text-white">
+                        Raw Materials
+                    </button>
+                    <button
+                      onClick={() => navigate("/inventory/warehouses")}
+                      className="w-full text-left py-2 text-xs text-slate-400 hover:text-white">
+                        Warehouses
+                    </button>
+                    </div>
+                  )}
               </div>
             ))}
           </nav>

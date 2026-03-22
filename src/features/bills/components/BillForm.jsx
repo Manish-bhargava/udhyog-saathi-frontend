@@ -1,19 +1,83 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import inventoryAPI from '../../Inventory/api';
+import ProductSearchInput from './ProductSearchInput';
 
 const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const res = await inventoryAPI.getFinishedItems();
+        const items = Array.isArray(res?.data) ? res.data : [];
+        setInventoryItems(
+          items.map((item) => ({
+            id: item._id,
+            inventoryItemId: item._id,
+            name: item.name,
+            price: item.sellingPrice ?? 0,
+            stock:
+              item.availableQuantity ??
+              item.quantity ??
+              item.reorderLevel ??
+              0,
+            warehouseId: item.warehouseId || item.warehouse?._id || null,
+            warehouseName: item.warehouseName || item.warehouse?.name || '',
+          })),
+        );
+      } catch {
+        // silently fail – the text field still works without inventory data
+      }
+    };
+    fetchInventory();
+  }, []);
+
+  useEffect(() => {
+    const loadWh = async () => {
+      try {
+        const res = await inventoryAPI.getWarehouses();
+        setWarehouses(Array.isArray(res?.data) ? res.data : []);
+      } catch {
+        setWarehouses([]);
+      }
+    };
+    loadWh();
+  }, []);
+
   const updateBuyer = (field, value) => {
     setFormData({ ...formData, buyer: { ...formData.buyer, [field]: value } });
   };
 
   const updateProduct = (index, field, value) => {
     const newProducts = [...formData.products];
-    // We store the raw value to allow empty strings while typing
     newProducts[index][field] = value;
+    // If the user manually edits the name, unlink the inventory item
+    if (field === 'name') {
+      newProducts[index].inventoryItemId = null;
+      newProducts[index].warehouseId = null;
+    }
+    setFormData({ ...formData, products: newProducts });
+  };
+
+  // Called when user picks a product from the inventory dropdown
+  const selectInventoryProduct = (index, item) => {
+    const newProducts = [...formData.products];
+    newProducts[index] = {
+      ...newProducts[index],
+      name: item.name,
+      rate: item.price,
+      inventoryItemId: item.inventoryItemId || item.id,
+      warehouseId: item.warehouseId || null,
+    };
     setFormData({ ...formData, products: newProducts });
   };
 
   const addProduct = () => {
-    setFormData({ ...formData, products: [...formData.products, { name: '', rate: 0, quantity: 1 }] });
+    setFormData({
+      ...formData,
+      products: [...formData.products, { name: '', rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+    });
   };
 
   const removeProduct = (index) => {
@@ -98,9 +162,10 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
         </div>
         
         <div className="hidden md:grid grid-cols-12 gap-4 mb-4 px-4">
-          <div className="col-span-5 text-xs font-bold text-gray-600 uppercase tracking-wider">Description</div>
+          <div className="col-span-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Description</div>
+          <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider">Warehouse</div>
           <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Rate</div>
-          <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Qty</div>
+          <div className="col-span-1 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Qty</div>
           <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Amount</div>
           <div className="col-span-1"></div>
         </div>
@@ -108,15 +173,37 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
         <div className="space-y-3 md:space-y-4">
           {formData.products.map((p, i) => (
             <div key={i} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-3 items-center p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-white transition-colors">
-              <div className="col-span-1 md:col-span-5 min-w-0">
+              <div className="col-span-1 md:col-span-4 min-w-0">
                 <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">Description</label>
-                <textarea
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm resize-none"
-                  placeholder="Product name"
-                  rows="2"
+                <ProductSearchInput
                   value={p.name}
-                  onChange={(e) => updateProduct(i, 'name', e.target.value)}
+                  onChangeText={(val) => updateProduct(i, 'name', val)}
+                  onSelectProduct={(item) => selectInventoryProduct(i, item)}
+                  inventoryItems={inventoryItems}
+                  isKachaBill={isKachaBill}
                 />
+              </div>
+
+              <div className="col-span-1 md:col-span-2 min-w-0">
+                <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">Warehouse</label>
+                <select
+                  value={p.warehouseId || ''}
+                  onChange={(e) =>
+                    updateProduct(i, 'warehouseId', e.target.value || null)
+                  }
+                  className={`w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-xs md:text-sm focus:ring-2 outline-none ${
+                    isKachaBill
+                      ? 'focus:ring-amber-500 focus:border-amber-500'
+                      : 'focus:ring-blue-500 focus:border-blue-500'
+                  }`}
+                >
+                  <option value="">Default (auto)</option>
+                  {warehouses.map((w) => (
+                    <option key={w._id} value={w._id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               {/* Rate Input with Placeholder Logic */}
@@ -137,7 +224,7 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
               </div>
               
               {/* Quantity Input with Placeholder Logic */}
-              <div className="col-span-1 md:col-span-2 min-w-0">
+              <div className="col-span-1 md:col-span-1 min-w-0">
                 <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">Quantity</label>
                 <input
                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-right text-sm md:text-base font-semibold text-gray-800 tracking-tight"
