@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { authAPI } from '../api';
 import AuthCard from '../../auth/components/AuthCard';
 import Heading from '../../auth/components/Heading';
@@ -16,8 +16,6 @@ const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://udhyogsaathi.in/api/v1';
 
 const SignupPage = () => {
-  const navigate = useNavigate();
-  
   const [formData, setFormData] = useState({ 
     name: '',
     email: '', 
@@ -56,7 +54,6 @@ const SignupPage = () => {
   };
 
   useEffect(() => {
-    /* global google */
     if (window.google) {
       initializeGoogleAuth();
       return;

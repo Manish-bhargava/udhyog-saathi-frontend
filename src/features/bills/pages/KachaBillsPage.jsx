@@ -43,11 +43,10 @@ const KachaBillsPage = () => {
 
   const [formData, setFormData] = useState({
     buyer: { clientName: "", clientAddress: "", clientGst: "" },
-    products: [{ name: "", rate: 0, quantity: 1 }],
+    products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
     discount: 0,
     notes: "",
   });
-  console.log("Kacha Bill Form Data:", formData);
 
   const totals = (() => {
     const subtotal = formData.products.reduce(
@@ -117,7 +116,7 @@ const KachaBillsPage = () => {
 
         setFormData({
           buyer: { clientName: "", clientAddress: "", clientGst: "" },
-          products: [{ name: "", rate: 0, quantity: 1 }],
+          products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
           discount: 0,
           notes: "",
         });
@@ -182,9 +181,9 @@ const KachaBillsPage = () => {
               </div>
 
               <button
-                onClick={() => setFormData({
+              onClick={() => setFormData({
                   buyer: { clientName: "", clientAddress: "", clientGst: "" },
-                  products: [{ name: "", rate: 0, quantity: 1 }],
+                  products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
                   discount: 0,
                   notes: "",
                 })}

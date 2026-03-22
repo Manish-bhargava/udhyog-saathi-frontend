@@ -78,11 +78,17 @@ const InventoryCard = ({ product, onClick, isSelected }) => {
         {product.status || 'Unknown'}
       </div>
 
-      <img
-        src={product.image || ''}
-        alt={product.name || 'Product'}
-        className="rounded-lg mb-3 w-full h-32 object-cover"
-      />
+      {product.image ? (
+        <img
+          src={product.image}
+          alt={product.name || 'Product'}
+          className="rounded-lg mb-3 w-full h-32 object-cover"
+        />
+      ) : (
+        <div className="rounded-lg mb-3 w-full h-32 bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+          No Image
+        </div>
+      )}
 
       <p className="text-xs text-gray-400">{product.sku}</p>
       <h4 className="font-semibold text-sm mb-1 line-clamp-1">{product.name}</h4>

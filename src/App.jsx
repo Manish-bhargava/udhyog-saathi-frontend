@@ -20,7 +20,8 @@ import PrivacyPolicy from "./features/landing/pages/PrivacyPolicyPage.jsx";
 import PakkaBillsPage from "./features/bills/pages/PakkaBillsPage";
 import KachaBillsPage from "./features/bills/pages/KachaBillsPage";
 import InventoryPage from "./features/Inventory/InventoryPage";
-import RawMaterials from "./features/Inventory/Components/RawMaterials";
+import WarehousesPage from "./features/Inventory/WarehousesPage";
+// Raw materials now use the same UI as finished products
 import { RiPhoneCameraFill, RiSpace } from "react-icons/ri";
 
 function App() {
@@ -110,7 +111,8 @@ function App() {
           <Route path="/billing" element={<BillingPage />} />
           <Route path="inventory">
             <Route path="finished" element={isAuth ? <InventoryPage /> : <Navigate to="/login" replace />}/>
-            <Route path="raw" element={isAuth ? <RawMaterials /> : <Navigate to="/login" replace />}/>
+            <Route path="raw" element={isAuth ? <InventoryPage variant="raw" /> : <Navigate to="/login" replace />}/>
+            <Route path="warehouses" element={isAuth ? <WarehousesPage /> : <Navigate to="/login" replace />}/>
           </Route>
         </Route>
 

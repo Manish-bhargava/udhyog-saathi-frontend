@@ -73,7 +73,7 @@
 // export default InventoryFilters;
 
 // InventoryFilters.jsx
-import React from 'react';
+import React from "react";
 
 const InventoryFilters = ({
   search,
@@ -85,6 +85,7 @@ const InventoryFilters = ({
   status,
   setStatus,
   onClear,
+  showSearch = true,
 }) => {
   return (
     <div className="bg-blue-50 rounded-xl p-5 space-y-4 shadow-sm">
@@ -99,14 +100,16 @@ const InventoryFilters = ({
         </button>
       </div>
 
-      {/* Search */}
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name, SKU, or category..."
-        className="w-full px-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
+      {/* Search (can be hidden if handled at page level) */}
+      {showSearch && (
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, SKU, or category..."
+          className="w-full px-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      )}
 
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
