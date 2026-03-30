@@ -33,7 +33,7 @@ export default function AddRawProduct({ onClose, onAdd, title = "Add Raw Materia
     payload.append("unit", form.unit.trim());
     if (form.sellingPrice) payload.append("sellingPrice", form.sellingPrice);
     if (form.costPrice)    payload.append("costPrice",    form.costPrice);
-    if (form.quantity)     payload.append("quantity",     form.quantity);
+    payload.append("quantity", form.quantity || "0");  // Always append quantity, default to 0
     if (form.reorderLevel) payload.append("reorderLevel", form.reorderLevel);
     payload.append("canBeSold", form.status === "In Stock");
     payload.append("canBePurchased", false);
@@ -46,8 +46,12 @@ export default function AddRawProduct({ onClose, onAdd, title = "Add Raw Materia
     try {
       const res = await inventoryAPI.addRawItem(payload);
       toast.success("Raw material added successfully");
-      // inventoryAPI returns { success, message, data }, so pass the created item to parent
-      onAdd?.(res?.data ?? res);
+      // Ensure quantity is in the response - backend may not return it
+      const createdData = res?.data ?? res;
+      if (!createdData.quantity && form.quantity) {
+        createdData.quantity = Number(form.quantity);
+      }
+      onAdd?.(createdData);
       onClose();
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to add raw material");

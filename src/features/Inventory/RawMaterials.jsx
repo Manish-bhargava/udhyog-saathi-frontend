@@ -34,28 +34,33 @@ export default function RawMaterials({ variant = "raw" }) {
     setStatus("all");
   };
 
-  const mapItemToProduct = (item) => ({
-    id: item._id,
-    name: item.name,
-    category: item.unit,
-    price: item.sellingPrice ?? 0,
-    // backend `getRaw` enriches items with: quantity, reservedQuantity, availableQuantity
-    // show availableQuantity as "Current Stock" (fallback to quantity)
-    stock: item.availableQuantity ?? item.quantity ?? item.reorderLevel ?? 0,
-    capacity: 60,
-    status:
-      (item.availableQuantity ?? item.quantity ?? 0) > 0 ? "In Stock" : "Out of Stock",
-    image: item.imageUrl || "",
-    sku: item.sku || "",
-    brand: item.brand || "",
-    location: item.location || "",
-    weight: item.weight || "",
-    warehouseId: item.warehouseId || item.warehouse?._id || null,
-    warehouseName: item.warehouseName || item.warehouse?.name || "",
-    updatedAt: item.updatedAt
-      ? new Date(item.updatedAt).toLocaleString()
-      : "",
-  });
+  const mapItemToProduct = (item) => {
+    // Ensure quantity defaults to a number, not undefined
+    const qty = item.availableQuantity ?? item.quantity ?? item.reorderLevel ?? 0;
+    const numQty = Number(qty) || 0;
+    
+    return {
+      id: item._id,
+      name: item.name,
+      category: item.unit,
+      price: item.sellingPrice ?? 0,
+      // backend `getRaw` enriches items with: quantity, reservedQuantity, availableQuantity
+      // show availableQuantity as "Current Stock" (fallback to quantity)
+      stock: numQty,
+      capacity: 60,
+      status: numQty > 0 ? "In Stock" : "Out of Stock",
+      image: item.imageUrl || "",
+      sku: item.sku || "",
+      brand: item.brand || "",
+      location: item.location || "",
+      weight: item.weight || "",
+      warehouseId: item.warehouseId || item.warehouse?._id || null,
+      warehouseName: item.warehouseName || item.warehouse?.name || "",
+      updatedAt: item.updatedAt
+        ? new Date(item.updatedAt).toLocaleString()
+        : "",
+    };
+  };
 
   const fetchProducts = async () => {
     try {
@@ -73,7 +78,6 @@ export default function RawMaterials({ variant = "raw" }) {
 
       setProducts(mapped);
       setSelectedProduct(mapped[0] || null);
-      return mapped;
 
     } catch (error) {
       const status = error?.response?.status;
@@ -126,14 +130,34 @@ export default function RawMaterials({ variant = "raw" }) {
   }, [products, search, sort, category, status]);
 
   const handleAddProduct = async (createdItem) => {
-    // Backend create endpoints usually return the Item only (without computed stock).
-    // Refresh from GET so "Current Stock" reflects inventory quantities.
-    const mapped = await fetchProducts();
-    const createdId = createdItem?._id || createdItem?.id;
-    if (createdId && Array.isArray(mapped)) {
-      setSelectedProduct(mapped.find((p) => p.id === createdId) || mapped[0] || null);
+    // Immediately construct the product from createdItem to show it right away
+    if (createdItem) {
+      const tempProduct = mapItemToProduct(createdItem);
+      setProducts((prev) => [tempProduct, ...prev]);
+      setSelectedProduct(tempProduct);
     }
+    
     setShowAddModal(false);
+    
+    // Then fetch fresh data to ensure all quantities are properly calculated
+    try {
+      const res = await inventoryAPI.getRawItems();
+      const items = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+      const mapped = items.map(mapItemToProduct);
+      setProducts(mapped);
+      
+      // Keep the newly created product selected
+      const createdId = createdItem?._id || createdItem?.id;
+      if (createdId) {
+        const updatedProduct = mapped.find((p) => p.id === createdId);
+        if (updatedProduct) {
+          setSelectedProduct(updatedProduct);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to refresh inventory after add:", error);
+      // If refresh fails, we already have the temp product displayed
+    }
   };
 
   const hasProducts = products.length > 0;
