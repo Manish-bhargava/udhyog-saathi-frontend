@@ -1,15 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import inventoryAPI from "../api";
 import { toast } from "sonner";
 import ImageUploadField from "./ImageUploadField";
 import WarehouseSelector from "./WarehouseSelector";
 
-export default function AddProductModal({
-  onClose,
-  onAdd,
-  title = "Add New Product",
-  initialName = "",
-}) {
+export default function AddRawProduct({ onClose, onAdd, title = "Add Raw Material" }) {
   const [form, setForm] = useState({
     name: "",
     unit: "",
@@ -25,12 +20,6 @@ export default function AddProductModal({
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (initialName && typeof initialName === "string") {
-      setForm((f) => ({ ...f, name: initialName.trim() }));
-    }
-  }, [initialName]);
-
   const set = (field, val) => setForm((f) => ({ ...f, [field]: val }));
 
   const handleSubmit = async () => {
@@ -44,7 +33,7 @@ export default function AddProductModal({
     payload.append("unit", form.unit.trim());
     if (form.sellingPrice) payload.append("sellingPrice", form.sellingPrice);
     if (form.costPrice)    payload.append("costPrice",    form.costPrice);
-    if (form.quantity)     payload.append("quantity",     form.quantity);
+    payload.append("quantity", form.quantity || "0");  // Always append quantity, default to 0
     if (form.reorderLevel) payload.append("reorderLevel", form.reorderLevel);
     payload.append("canBeSold", form.status === "In Stock");
     payload.append("canBePurchased", false);
@@ -55,13 +44,17 @@ export default function AddProductModal({
     if (imageFile)        payload.append("productImg",  imageFile);
 
     try {
-      const res = await inventoryAPI.addFinishedItem(payload);
-      toast.success("Product added successfully");
-      // inventoryAPI returns { success, message, data }, so pass the created item to parent
-      onAdd?.(res?.data ?? res);
+      const res = await inventoryAPI.addRawItem(payload);
+      toast.success("Raw material added successfully");
+      // Ensure quantity is in the response - backend may not return it
+      const createdData = res?.data ?? res;
+      if (!createdData.quantity && form.quantity) {
+        createdData.quantity = Number(form.quantity);
+      }
+      onAdd?.(createdData);
       onClose();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to add product");
+      toast.error(error?.response?.data?.message || "Failed to add raw material");
     } finally {
       setSubmitting(false);
     }
@@ -84,45 +77,41 @@ export default function AddProductModal({
         {/* Scrollable body */}
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
 
-          {/* Product image */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Product Image</label>
             <ImageUploadField onFileSelect={setImageFile} />
           </div>
 
-          {/* Name + Unit */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Name <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="Product name"
+              <input type="text" placeholder="Material name"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
                 value={form.name} onChange={(e) => set('name', e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Unit / Category <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="e.g. KG, Pieces"
+              <label className="block text-xs font-medium text-gray-600 mb-1">Unit <span className="text-red-500">*</span></label>
+              <input type="text" placeholder="e.g. KG, Litres"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
                 value={form.unit} onChange={(e) => set('unit', e.target.value)} />
             </div>
           </div>
 
-          {/* Selling Price + Cost Price */}
           <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Purchase Price (₹)</label>
+              <input type="number" min="0" placeholder="0.00"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                value={form.costPrice} onChange={(e) => set('costPrice', e.target.value)} />
+            </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Selling Price (₹)</label>
               <input type="number" min="0" placeholder="0.00"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
                 value={form.sellingPrice} onChange={(e) => set('sellingPrice', e.target.value)} />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Cost Price (₹)</label>
-              <input type="number" min="0" placeholder="0.00"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
-                value={form.costPrice} onChange={(e) => set('costPrice', e.target.value)} />
-            </div>
           </div>
 
-          {/* Quantity + Reorder Level */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Current Stock (Qty)</label>
@@ -138,17 +127,15 @@ export default function AddProductModal({
             </div>
           </div>
 
-          {/* Warehouse */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Warehouse</label>
             <WarehouseSelector value={form.warehouseId} onChange={(id) => set('warehouseId', id)} />
           </div>
 
-          {/* Brand + Weight */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Brand</label>
-              <input type="text" placeholder="Brand name"
+              <label className="block text-xs font-medium text-gray-600 mb-1">Brand / Supplier</label>
+              <input type="text" placeholder="Brand or supplier"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
                 value={form.brand} onChange={(e) => set('brand', e.target.value)} />
             </div>
@@ -160,7 +147,6 @@ export default function AddProductModal({
             </div>
           </div>
 
-          {/* Status */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
             <select
@@ -183,7 +169,7 @@ export default function AddProductModal({
             className={`px-5 py-2 rounded-lg text-sm font-semibold text-white transition ${
               submitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             }`}>
-            {submitting ? 'Adding…' : 'Add Product'}
+            {submitting ? 'Adding…' : 'Add Raw Material'}
           </button>
         </div>
       </div>

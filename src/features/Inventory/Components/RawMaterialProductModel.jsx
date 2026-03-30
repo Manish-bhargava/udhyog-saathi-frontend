@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import ImageUploadField from "./ImageUploadField";
 import WarehouseSelector from "./WarehouseSelector";
 
-export default function CreateProductModal({ product = {}, onClose, onSuccess }) {
+export default function RawMaterialProductModel({ product = {}, onClose, onSuccess }) {
   const [form, setForm] = useState({
     name: product.name || "",
     unit: product.unit || product.category || "",
@@ -43,12 +43,12 @@ export default function CreateProductModal({ product = {}, onClose, onSuccess })
       payload.append("canBeManufactured", form.canBeManufactured);
       if (imageFile) payload.append("productImg", imageFile);
 
-      await inventoryAPI.updateFinishedItem(productId, payload);
-      toast.success("Product updated successfully");
+      await inventoryAPI.updateRawItem(productId, payload);
+      toast.success("Raw material updated successfully");
       onSuccess?.();
       onClose();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to update product");
+      toast.error(error?.response?.data?.message || "Failed to update raw material");
     } finally {
       setSubmitting(false);
     }
@@ -60,7 +60,7 @@ export default function CreateProductModal({ product = {}, onClose, onSuccess })
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">Edit Product</h2>
+          <h2 className="text-base font-bold text-gray-900">Edit Raw Material</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -82,13 +82,13 @@ export default function CreateProductModal({ product = {}, onClose, onSuccess })
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Name <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="Product name"
+              <input type="text" placeholder="Material name"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
                 value={form.name} onChange={(e) => set('name', e.target.value)} />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Unit <span className="text-red-500">*</span></label>
-              <input type="text" placeholder="e.g. KG, Pieces"
+              <input type="text" placeholder="e.g. KG, Litres"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
                 value={form.unit} onChange={(e) => set('unit', e.target.value)} />
             </div>
@@ -141,7 +141,7 @@ export default function CreateProductModal({ product = {}, onClose, onSuccess })
             className={`px-5 py-2 rounded-lg text-sm font-semibold text-white transition ${
               submitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             }`}>
-            {submitting ? 'Saving…' : 'Update Product'}
+            {submitting ? 'Saving…' : 'Update Raw Material'}
           </button>
         </div>
       </div>

@@ -54,7 +54,6 @@ const LoginPage = () => {
   };
 
   useEffect(() => {
-    /* global google */
     if (window.google) {
       initializeGoogleAuth();
       return;

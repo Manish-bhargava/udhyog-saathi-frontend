@@ -20,9 +20,9 @@ const billAPI = {
     return response.data;
   },
 
-  // Get from /all?type=...
-  getBillsByType: async (type) => {
-    const response = await axios.get(`${API_BASE_URL}/bills/all?type=${type}`, getAuthHeader());
+  // Get from /bill/all
+  getBillsByType: async (_type) => {
+    const response = await axios.get(`${API_BASE_URL}/bill/all`, getAuthHeader());
     return response.data;
   },
 

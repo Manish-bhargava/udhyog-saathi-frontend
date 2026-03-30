@@ -139,6 +139,7 @@ const DashboardLayout = () => {
                 <button
                   onClick={() => {
                     if (item.label === 'Bills') handleBillsClick();
+                    else if (item.label === 'Inventory') handleInventoryClick();
                     else {
                       navigate(item.path);
                       setSidebarOpen(false);
@@ -149,11 +150,19 @@ const DashboardLayout = () => {
                   {item.icon}
                   <span className="font-medium">{item.label}</span>
                   {item.label === 'Bills' && <span className="ml-auto">{billsMenuOpen ? <FaCaretDown /> : <FaCaretRight />}</span>}
+                  {item.label === 'Inventory' && <span className="ml-auto">{inventoryMenuOpen ? <FaCaretDown /> : <FaCaretRight />}</span>}
                 </button>
                 {item.label === 'Bills' && billsMenuOpen && (
                   <div className="ml-8 mt-2 space-y-1">
                     <button onClick={() => { navigate('/bills/kacha'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Kacha Bills</button>
                     <button onClick={() => { navigate('/bills/pakka'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Pakka Bills</button>
+                  </div>
+                )}
+                {item.label === 'Inventory' && inventoryMenuOpen && (
+                  <div className="ml-8 mt-2 space-y-1">
+                    <button onClick={() => { navigate('/inventory/finished'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Finished Products</button>
+                    <button onClick={() => { navigate('/inventory/raw'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Raw Materials</button>
+                    <button onClick={() => { navigate('/inventory/warehouses'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Warehouses</button>
                   </div>
                 )}
               </div>
@@ -235,6 +244,11 @@ const DashboardLayout = () => {
                       onClick={() => navigate("/inventory/raw")}
                       className="w-full text-left py-2 text-xs text-slate-400 hover:text-white">
                         Raw Materials
+                    </button>
+                    <button
+                      onClick={() => navigate("/inventory/warehouses")}
+                      className="w-full text-left py-2 text-xs text-slate-400 hover:text-white">
+                        Warehouses
                     </button>
                     </div>
                   )}

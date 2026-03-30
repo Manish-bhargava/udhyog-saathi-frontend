@@ -19,11 +19,24 @@ const inventoryAPI = {
     return response.data;
   },
 
-  // GET /inventory/stock/finished/get
-  getFinishedItems: async () => {
+  // GET /inventory/stock/warehouse-summary — stock per warehouse (Inventory rows)
+  getWarehouseStockSummary: async () => {
+    const response = await axios.get(
+      `${API_BASE_URL}/inventory/stock/warehouse-summary`,
+      getAuthHeader(),
+    );
+    return response.data;
+  },
+
+  // GET /inventory/stock/finished/get — optional { warehouseId } for per-location qty
+  getFinishedItems: async (query = {}) => {
+    const config = { ...getAuthHeader() };
+    if (query && Object.keys(query).length > 0) {
+      config.params = query;
+    }
     const response = await axios.get(
       `${API_BASE_URL}/inventory/stock/finished/get`,
-      getAuthHeader()
+      config,
     );
     return response.data;
   },
@@ -52,43 +65,70 @@ const inventoryAPI = {
   },
 
 
-  // POST /api/inventory/raw/add
+  // POST /inventory/stock/raw/add
   addRawItem: async (itemData) => {
+    const headers = { ...getAuthHeader().headers };
+    if (itemData instanceof FormData) {
+      delete headers["Content-Type"];
+    }
     const response = await axios.post(
-      `${API_BASE_URL}/inventory/raw/add`,
+      `${API_BASE_URL}/inventory/stock/raw/add`,
       itemData,
-      getAuthHeader()
+      { headers }
     );
     return response.data;
   },
 
-  // GET /api/inventory/raw/:businessId
-  getRawItems: async (businessId) => {
+  // GET /inventory/stock/raw/get
+  getRawItems: async () => {
     const response = await axios.get(
-      `${API_BASE_URL}/inventory/raw/${businessId}`,
+      `${API_BASE_URL}/inventory/stock/raw/get`,
       getAuthHeader()
     );
     return response.data;
   },
 
-  // PUT /api/inventory/raw/:itemId
+  // PUT /inventory/stock/raw/update/:itemId
   updateRawItem: async (itemId, updateData) => {
+    const headers = { ...getAuthHeader().headers };
+    if (updateData instanceof FormData) {
+      delete headers["Content-Type"];
+    }
     const response = await axios.put(
-      `${API_BASE_URL}/inventory/raw/${itemId}`,
+      `${API_BASE_URL}/inventory/stock/raw/update/${itemId}`,
       updateData,
-      getAuthHeader()
+      { headers }
     );
     return response.data;
   },
 
-  // DELETE /api/inventory/raw/:itemId
+  // DELETE /inventory/stock/raw/delete/:itemId
   deleteRawItem: async (itemId) => {
     const response = await axios.delete(
-      `${API_BASE_URL}/inventory/raw/${itemId}`,
+      `${API_BASE_URL}/inventory/stock/raw/delete/${itemId}`,
       getAuthHeader()
     );
     return response.data;
-  }
+  },
+
+  // GET /inventory/warehouse/get
+  getWarehouses: async () => {
+    const response = await axios.get(
+      `${API_BASE_URL}/inventory/warehouse/get`,
+      getAuthHeader()
+    );
+    return response.data;
+  },
+
+  // POST /inventory/warehouse/add
+  addWarehouse: async (data) => {
+    const response = await axios.post(
+      `${API_BASE_URL}/inventory/warehouse/add`,
+      data,
+      getAuthHeader()
+    );
+    return response.data;
+  },
 };
 
 export default inventoryAPI;
