@@ -175,17 +175,17 @@ const SignupPage = () => {
           <PasswordField label="Password" name="password" value={formData.password} onChange={handleChange} required placeholder="Create a password (min. 6 characters)" disabled={loading} />
           <PasswordField label="Confirm Password" name="confirmPassword" value={confirmPassword} onChange={handleConfirmPasswordChange} required placeholder="Re-enter your password" disabled={loading} />
           
-          <Button type="submit" disabled={loading} fullWidth className="py-3.5 text-base font-semibold">Create Account</Button>
+          <Button type="submit" disabled={loading} fullWidth className="py-2.5 text-sm font-semibold">Create Account</Button>
         </form>
 
-        <Divider className="my-8" text="Or sign up with"></Divider>
-        <div className="flex flex-col gap-4">
-          <div id="google-btn" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}></div>
+        <Divider className="my-4" text="Or" />
+        <div className="flex flex-col gap-2">
+          <div id="google-btn" style={{ width: '100%', display: 'flex', justifyContent: 'center', transform: 'scale(0.9)', transformOrigin: 'top' }}></div>
         </div>
 
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-600">
+            Have account?{' '}
             <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">Sign in</Link>
           </p>
         </div>

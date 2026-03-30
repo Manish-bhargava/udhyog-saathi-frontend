@@ -27,7 +27,7 @@ const Button = ({
           ? 'bg-gray-400 cursor-not-allowed' 
           : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
         }
-        text-white font-semibold py-3 px-4 rounded-lg
+        text-white font-semibold py-2.5 px-4 rounded-lg text-sm
         transition-all duration-200 ease-in-out
         transform hover:scale-[1.02] active:scale-[0.98]
         shadow-md hover:shadow-lg

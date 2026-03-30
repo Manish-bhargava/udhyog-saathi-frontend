@@ -158,12 +158,12 @@ const LoginPage = () => {
           </div>
         )}
 
-        <div className="text-center mb-10">
-          <Heading className="text-3xl">Welcome back</Heading>
-          <Subheading className="mt-3 text-gray-600">Sign in to your account to continue</Subheading>
+        <div className="text-center mb-5">
+          <Heading className="text-2xl">Welcome back</Heading>
+          <Subheading className="mt-1.5 text-sm text-gray-600">Sign in to continue</Subheading>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <InputField
             label="Email Address"
             type="email"
@@ -185,26 +185,26 @@ const LoginPage = () => {
             disabled={loading}
           />
           
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between text-xs">
             <div className="flex items-center">
-              <input id="remember-me" type="checkbox" className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">Remember me</label>
+              <input id="remember-me" type="checkbox" className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-400 border-gray-300 rounded" />
+              <label htmlFor="remember-me" className="ml-1.5 block text-xs text-gray-700">Remember</label>
             </div>
-            <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500">Forgot password?</Link>
+            <Link to="/forgot-password" className="text-xs font-medium text-blue-600 hover:text-blue-500">Forgot?</Link>
           </div>
           
-          <Button type="submit" disabled={loading} fullWidth className="py-3.5 text-base font-semibold">Sign in to Dashboard</Button>
+          <Button type="submit" disabled={loading} fullWidth className="py-2.5 text-sm font-semibold">Sign In</Button>
         </form>
 
-        <Divider className="my-8" text="Or continue with" />
-        <div className="flex flex-col gap-4">
-          <div id="google-btn" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}></div>
+        <Divider className="my-4" text="Or" />
+        <div className="flex flex-col gap-2">
+          <div id="google-btn" style={{ width: '100%', display: 'flex', justifyContent: 'center', transform: 'scale(0.9)', transformOrigin: 'top' }}></div>
         </div>
 
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">Create account</Link>
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-600">
+            No account?{' '}
+            <Link to="/signup" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">Sign up</Link>
           </p>
         </div>
       </AuthCard>
