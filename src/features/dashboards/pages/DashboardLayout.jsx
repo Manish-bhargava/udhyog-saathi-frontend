@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { profileAPI } from '../../profiles/api';
+import { useBillPageContext } from '../../bills/BillPageContext';
+import { useInventoryContext } from '../../Inventory/InventoryContext';
 import { 
   FaTachometerAlt, 
   FaFileInvoiceDollar, 
@@ -20,7 +22,8 @@ import {
   FaUserCircle,
   FaReceipt,
   FaFileAlt,
-  FaFileContract
+  FaFileContract,
+  FaChevronDown
 } from 'react-icons/fa';
 
 const DashboardLayout = () => {
@@ -28,6 +31,8 @@ const DashboardLayout = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [billsMenuOpen, setBillsMenuOpen] = useState(false);
   const [inventoryMenuOpen, setInventoryMenuOpen] = useState(false);
+  const { billPageState } = useBillPageContext();
+  const { inventoryPageState } = useInventoryContext();
   
   // State for user data to ensure name display is always correct
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
@@ -82,7 +87,7 @@ const DashboardLayout = () => {
     { path: '/dashboard', label: 'Dashboard', icon: <FaTachometerAlt /> },
     { path: '/bills/template', label: 'Bills', icon: <FaFileInvoiceDollar /> },
     { path: '/ai-assistant', label: 'AI Assistant', icon: <FaRobot /> },
-    { path: '/reports', label: 'Reports', icon: <FaChartBar /> },
+    // { path: '/reports', label: 'Reports', icon: <FaChartBar /> }, // TODO: Implement Reports feature
     { path: '/billing', label: 'Billing', icon: <FaRupeeSign /> },
     { path: '/inventory', label: 'Inventory', icon: <FaShoppingCart /> },
   ];
@@ -191,7 +196,7 @@ const DashboardLayout = () => {
       <aside className={`
         hidden md:flex bg-gradient-to-b from-slate-900 to-slate-800 text-white 
         transition-all duration-300 ease-in-out flex-col shrink-0 h-screen sticky top-0 z-40
-        ${sidebarOpen ? 'w-64' : 'w-20'}
+        ${sidebarOpen ? 'w-56' : 'w-20'}
       `}>
         <div className="flex flex-col h-full overflow-hidden">
           <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
@@ -281,33 +286,184 @@ const DashboardLayout = () => {
       {/* MAIN CONTENT WRAPPER */}
       <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${sidebarOpen && window.innerWidth < 768 ? 'blur-md brightness-75' : ''}`}>
         
-        <header className="h-16 md:h-20 bg-white border-b border-gray-200 px-4 md:px-8 flex items-center justify-between shrink-0 sticky top-0 z-30 shadow-sm">
-          <div className="flex items-center space-x-4">
+        <header className="h-auto md:h-16 bg-white border-b border-gray-200 px-2 md:px-4 flex flex-wrap items-center justify-between gap-2 md:gap-4 shrink-0 sticky top-0 z-30 shadow-sm py-2 md:py-0">
+          <div className="flex items-center space-x-2">
             {/* MOBILE ONLY TOGGLE */}
             <button 
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="md:hidden p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-transform duration-300"
+              style={{ transform: sidebarOpen ? 'rotateX(180deg)' : 'rotateX(0deg)' }}
             >
-              <FaBars size={20} />
+              <FaChevronDown size={18} />
             </button>
 
             {/* REMOVED: Redundant desktop toggle button from top bar */}
             
-            <h1 className="text-lg md:text-2xl font-bold text-gray-900">{getPageTitle()}</h1>
+            <div className="flex items-center gap-2">
+              {location.pathname.includes('/inventory/warehouses') ? (
+                <h1 className="text-base md:text-lg font-bold text-gray-900 whitespace-nowrap">Warehouses &amp; stock</h1>
+              ) : (
+                <>
+                  <h1 className="text-base md:text-lg font-bold text-gray-900">{getPageTitle()}</h1>
+                  {/* BILL TYPE BADGE - SHOWN ON BILL PAGES */}
+                  {location.pathname.includes('/bills/kacha') && (
+                    <span className="hidden sm:inline-block px-2 py-0.5 bg-amber-100 text-amber-700 text-[8px] md:text-[10px] font-bold uppercase rounded">
+                      Proforma
+                    </span>
+                  )}
+                  {location.pathname.includes('/bills/pakka') && (
+                    <span className="hidden sm:inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-[8px] md:text-[10px] font-bold uppercase rounded">
+                      Tax Invoice
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
           </div>
+
+          {/* WAREHOUSES PAGE SEARCH - SHOWN ON WAREHOUSES PAGE */}
+          {location.pathname.includes('/inventory/warehouses') && (
+            <div className="flex items-center gap-2 flex-1 mx-2 md:mx-4">
+              <input
+                type="text"
+                value={inventoryPageState.warehouseSearch}
+                onChange={(e) => inventoryPageState.setWarehouseSearch(e.target.value)}
+                placeholder="Search warehouse..."
+                className="flex-1 px-2 md:px-3 py-1.5 rounded-lg border border-gray-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              />
+              {inventoryPageState.warehouseSearch && (
+                <button
+                  onClick={() => inventoryPageState.setWarehouseSearch('')}
+                  className="text-xs text-blue-600 font-medium hover:underline whitespace-nowrap"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* INVENTORY PAGE SEARCH - SHOWN ON FINISHED AND RAW MATERIALS PAGES */}
+          {(location.pathname.includes('/inventory/finished') || location.pathname.includes('/inventory/raw')) && (
+            <div className="flex items-center gap-1 md:gap-2 flex-1 mx-2 md:mx-4 overflow-x-auto">
+              <input
+                type="text"
+                value={inventoryPageState.search}
+                onChange={(e) => inventoryPageState.setSearch(e.target.value)}
+                placeholder="Search..."
+                className="flex-1 px-2 md:px-3 py-1.5 rounded-lg border border-gray-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white min-w-[120px]"
+              />
+              <select
+                value={inventoryPageState.sort}
+                onChange={(e) => inventoryPageState.setSort(e.target.value)}
+                className="px-1.5 md:px-2 py-1.5 rounded-lg border border-gray-200 text-[10px] md:text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white shrink-0"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="priceHigh">Price ↓</option>
+                <option value="priceLow">Price ↑</option>
+              </select>
+              <select
+                value={inventoryPageState.status}
+                onChange={(e) => inventoryPageState.setStatus(e.target.value)}
+                className="px-1.5 md:px-2 py-1.5 rounded-lg border border-gray-200 text-[10px] md:text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white shrink-0"
+              >
+                <option value="all">All Status</option>
+                <option value="In Stock">In Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+              </select>
+              <select
+                value={inventoryPageState.warehouse}
+                onChange={(e) => inventoryPageState.setWarehouse(e.target.value)}
+                className="px-1.5 md:px-2 py-1.5 rounded-lg border border-gray-200 text-[10px] md:text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white shrink-0"
+              >
+                <option value="all">All WH</option>
+                {inventoryPageState.warehouses.map((wh) => (
+                  <option key={wh.key || wh._id} value={wh.key || wh._id}>
+                    {wh.name}
+                  </option>
+                ))}
+              </select>
+              {(inventoryPageState.search || inventoryPageState.sort !== 'newest' || inventoryPageState.status !== 'all' || inventoryPageState.warehouse !== 'all') && (
+                <button
+                  onClick={inventoryPageState.clearFilters}
+                  className="text-xs text-blue-600 font-medium hover:underline whitespace-nowrap shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* WAREHOUSES PAGE REFRESH BUTTON - SHOWN ON WAREHOUSES PAGE */}
+          {location.pathname.includes('/inventory/warehouses') && (
+            <button
+              type="button"
+              onClick={() => inventoryPageState.warehouseRefresh?.()}
+              className="px-2 md:px-4 py-1.5 rounded-lg border border-gray-200 text-xs md:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shrink-0"
+            >
+              Refresh
+            </button>
+          )}
+
+          {/* BILL PAGE ACTION BUTTONS - SHOWN ONLY ON BILL PAGES */}
+          {(location.pathname.includes('/bills/kacha') || location.pathname.includes('/bills/pakka')) && billPageState.onSetActiveTab && (
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              {/* SEGMENTED TOGGLE */}
+              <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                <button
+                  className={`px-2 md:px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${
+                    billPageState.activeTab === "form"
+                      ? (location.pathname.includes('kacha') ? 'bg-amber-600' : 'bg-blue-600') + ' text-white shadow-sm'
+                      : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                  }`}
+                  onClick={() => billPageState.onSetActiveTab("form")}
+                >
+                  Edit
+                </button>
+                <button
+                  className={`px-2 md:px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${
+                    billPageState.activeTab === "preview"
+                      ? (location.pathname.includes('kacha') ? 'bg-amber-600' : 'bg-blue-600') + ' text-white shadow-sm'
+                      : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                  }`}
+                  onClick={() => billPageState.onSetActiveTab("preview")}
+                >
+                  Preview
+                </button>
+              </div>
+
+              <button
+                onClick={billPageState.onClear}
+                className="px-2 md:px-3 py-1.5 border border-gray-300 text-gray-600 text-[10px] md:text-xs font-medium rounded-md hover:bg-gray-50 shrink-0"
+              >
+                Clear
+              </button>
+              <button
+                onClick={billPageState.onSave}
+                disabled={billPageState.submitting || !billPageState.isFormValid}
+                className={`px-2 md:px-4 py-1.5 text-[10px] md:text-xs font-bold rounded-md text-white shadow-sm transition-all shrink-0 ${
+                  location.pathname.includes('kacha')
+                    ? (billPageState.submitting || !billPageState.isFormValid ? "bg-amber-300" : "bg-amber-600 hover:bg-amber-700")
+                    : (billPageState.submitting || !billPageState.isFormValid ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700")
+                }`}
+              >
+                {billPageState.submitting ? "Saving..." : location.pathname.includes('kacha') ? "Save Bill" : "Save Invoice"}
+              </button>
+            </div>
+          )}
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50">
+        <main className="flex-1 overflow-y-auto p-3 md:p-6 bg-slate-50">
           {showBanner && (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl md:rounded-2xl p-4 md:p-6 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center space-x-4">
-                <div className="bg-amber-100 p-3 rounded-xl"><FaExclamationTriangle className="text-amber-600 text-xl" /></div>
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl md:rounded-2xl p-3 md:p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <div className="bg-amber-100 p-2.5 rounded-xl"><FaExclamationTriangle className="text-amber-600 text-lg" /></div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-sm md:text-base">Complete Your Profile</h3>
-                  <p className="text-xs md:text-sm text-gray-600">Finish onboarding to unlock all features.</p>
+                  <h3 className="font-bold text-gray-900 text-xs md:text-sm">Complete Your Profile</h3>
+                  <p className="text-xs text-gray-600">Finish onboarding to unlock all features.</p>
                 </div>
               </div>
-              <button onClick={() => navigate('/profile')} className="w-full sm:w-auto bg-orange-500 text-white px-6 py-2 rounded-xl font-bold text-sm">Finish</button>
+              <button onClick={() => navigate('/profile')} className="w-full sm:w-auto bg-orange-500 text-white px-4 py-1.5 rounded-xl font-bold text-xs">Finish</button>
             </div>
           )}
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import inventoryAPI from "./api";
 import { toast } from "sonner";
+import { useInventoryContext } from "./InventoryContext";
 
 export default function WarehousesPage() {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const { inventoryPageState } = useInventoryContext();
+  const { warehouseSearch, setWarehouseSearch, setWarehouseRefresh } = inventoryPageState;
 
   const load = useCallback(async () => {
     try {
@@ -24,8 +26,13 @@ export default function WarehousesPage() {
     load();
   }, [load]);
 
+  // Register refresh function with context
+  useEffect(() => {
+    setWarehouseRefresh(() => load);
+  }, [load, setWarehouseRefresh]);
+
   const filteredSections = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = warehouseSearch.trim().toLowerCase();
     if (!q) return sections;
     return sections.filter((s) => {
       if (s.name.toLowerCase().includes(q)) return true;
@@ -36,37 +43,15 @@ export default function WarehousesPage() {
           (l.kind || "").toLowerCase().includes(q),
       );
     });
-  }, [sections, search]);
+  }, [sections, warehouseSearch]);
 
   return (
     <div className="w-full p-4 md:p-6 bg-gray-50 min-h-screen">
-      <div className="bg-blue-50 rounded-xl p-4 mb-4 space-y-3 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Warehouses &amp; stock</h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              <span className="font-medium text-gray-700">On hand</span> is total stock in the bin.
-              <span className="font-medium text-amber-800"> Reserved</span> is tied to open kaccha bills;
-              <span className="font-medium text-gray-700"> available</span> is free to sell or ship.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="shrink-0 px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-          >
-            Refresh
-          </button>
-        </div>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search warehouse, location, or product..."
-          className="w-full px-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-        />
-      </div>
+      <p className="text-sm text-gray-600 mb-4 px-2">
+        <span className="font-medium text-gray-700">On hand</span> is total stock in the bin.
+        <span className="font-medium text-amber-800"> Reserved</span> is tied to open kaccha bills;
+        <span className="font-medium text-gray-700"> available</span> is free to sell or ship.
+      </p>
 
       {loading ? (
         <div className="text-center py-16 text-gray-500 text-sm">
@@ -74,7 +59,7 @@ export default function WarehousesPage() {
         </div>
       ) : filteredSections.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-gray-500 text-sm">
-          {search.trim()
+          {warehouseSearch.trim()
             ? "No matching warehouses or products for this search."
             : sections.length === 0
               ? "No warehouse stock to show yet. Add warehouses and stock products with a quantity to see balances per location."

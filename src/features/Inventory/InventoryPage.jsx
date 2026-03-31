@@ -130,10 +130,13 @@ import AddRawProduct from "./Components/AddRawProduct";
 import Rawproductdetails from "./Components/Rawproductdetails";
 import inventoryAPI from "./api";
 import { toast } from "sonner";
+import { useInventoryContext } from "./InventoryContext";
 
 export default function InventoryPage({ variant = "finished" }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { inventoryPageState } = useInventoryContext();
+  
   // ✅ PRODUCTS STATE (mutable)
   const [products, setProducts] = useState([]);
 
@@ -147,43 +150,38 @@ export default function InventoryPage({ variant = "finished" }) {
 
   const [loading, setLoading] = useState(false);
 
-  // FILTER STATES
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("newest");
-  const [category, setCategory] = useState("all");
-  const [status, setStatus] = useState("all");
-
   const isRaw = variant === "raw";
   const pageTitle = isRaw ? "Raw Materials Inventory" : "Finished Products Inventory";
   const addButtonLabel = isRaw ? "+ Add Raw Material" : "+ Add Product";
 
-  // CLEAR FILTERS
-  const clearFilters = () => {
-    setSearch("");
-    setSort("newest");
-    setCategory("all");
-    setStatus("all");
+  const mapItemToProduct = (item) => {
+    // Ensure quantity defaults to a number, not undefined
+    const qty = item.availableQuantity ?? item.quantity ?? item.reorderLevel ?? 0;
+    const numQty = Number(qty) || 0;
+    const reorderLevel = Number(item.reorderLevel) || 0;
+    
+    return {
+      id: item._id,
+      name: item.name,
+      category: item.unit,
+      price: item.sellingPrice ?? 0,
+      stock: numQty,
+      reorderLevel,
+      maxStock: Number(item.maxStock) || (reorderLevel > 0 ? reorderLevel * 2 : 0),
+      status: numQty > 0 ? "In Stock" : "Out of Stock",
+      image: item.imageUrl || "",
+      sku: item.sku || "",
+      brand: item.brand || "",
+      location: item.location || "",
+      weight: item.weight || "",
+      // Try warehouse.key first (warehouse section key), then warehouseId, then warehouse._id
+      warehouseId: item.warehouse?.key || item.warehouseId || item.warehouse?._id || null,
+      warehouseName: item.warehouseName || item.warehouse?.name || "",
+      updatedAt: item.updatedAt
+        ? new Date(item.updatedAt).toLocaleString()
+        : "",
+    };
   };
-
-  const mapItemToProduct = (item) => ({
-    id: item._id,
-    name: item.name,
-    category: item.unit,
-    price: item.sellingPrice ?? 0,
-    stock: item.quantity ?? item.reorderLevel ?? 0,
-    capacity: 60,
-    status: item.isActive ? "In Stock" : "Out of Stock",
-    image: item.imageUrl || "",
-    sku: item.sku || "",
-    brand: item.brand || "",
-    location: item.location || "",
-    weight: item.weight || "",
-    warehouseId: item.warehouseId || item.warehouse?._id || null,
-    warehouseName: item.warehouseName || item.warehouse?.name || "",
-    updatedAt: item.updatedAt
-      ? new Date(item.updatedAt).toLocaleString()
-      : "",
-  });
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -233,45 +231,70 @@ export default function InventoryPage({ variant = "finished" }) {
   const filteredProducts = useMemo(() => {
     let data = [...products];
 
-    if (search) {
+    if (inventoryPageState.search) {
       data = data.filter(
         (p) =>
-          p.name?.toLowerCase().includes(search.toLowerCase()) ||
-          p.sku?.toLowerCase().includes(search.toLowerCase()) ||
-          p.category?.toLowerCase().includes(search.toLowerCase())
+          p.name?.toLowerCase().includes(inventoryPageState.search.toLowerCase()) ||
+          p.sku?.toLowerCase().includes(inventoryPageState.search.toLowerCase()) ||
+          p.category?.toLowerCase().includes(inventoryPageState.search.toLowerCase())
       );
     }
 
-    if (category !== "all") {
-      data = data.filter((p) => p.category === category);
+    if (inventoryPageState.category !== "all") {
+      data = data.filter((p) => p.category === inventoryPageState.category);
     }
 
-    if (status !== "all") {
-      data = data.filter((p) => p.status === status);
+    if (inventoryPageState.status !== "all") {
+      data = data.filter((p) => p.status === inventoryPageState.status);
     }
 
-    if (sort === "priceHigh") {
+    if (inventoryPageState.warehouse !== "all") {
+      data = data.filter((p) => p.warehouseId === inventoryPageState.warehouse);
+    }
+
+    if (inventoryPageState.sort === "priceHigh") {
       data.sort((a, b) => (b.price || 0) - (a.price || 0));
-    } else if (sort === "priceLow") {
+    } else if (inventoryPageState.sort === "priceLow") {
       data.sort((a, b) => (a.price || 0) - (b.price || 0));
-    } else if (sort === "newest") {
-      data.sort((a, b) => (b.id || 0) - (a.id || 0)); // assuming id can be compared
+    } else if (inventoryPageState.sort === "newest") {
+      data.sort((a, b) => (b.id || 0) - (a.id || 0));
     }
-    // 'oldest' is default (no sort)
 
     return data;
-  }, [products, search, sort, category, status]);
+  }, [products, inventoryPageState.search, inventoryPageState.sort, inventoryPageState.category, inventoryPageState.status, inventoryPageState.warehouse]);
 
   // ✅ ADD PRODUCT HANDLER
-  const handleAddProduct = (createdItem) => {
+  const handleAddProduct = async (createdItem) => {
+    // Immediately show the newly created product with its data
     if (createdItem && typeof createdItem === "object") {
       const mapped = mapItemToProduct(createdItem);
       setProducts((prev) => [mapped, ...prev]);
       setSelectedProduct(mapped);
-    } else {
-      fetchProducts();
     }
+    
     closeAddModal();
+    
+    // Then fetch fresh data to ensure all quantities are properly calculated
+    try {
+      const res = isRaw
+        ? await inventoryAPI.getRawItems()
+        : await inventoryAPI.getFinishedItems();
+      const items = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const mapped = items.map(mapItemToProduct);
+      setProducts(mapped);
+      
+      // Keep the newly created product selected
+      const createdId = createdItem?._id || createdItem?.id;
+      if (createdId) {
+        const updatedProduct = mapped.find((p) => p.id === createdId);
+        if (updatedProduct) {
+          setSelectedProduct(updatedProduct);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to refresh inventory after add:", error);
+      // If refresh fails, we already have the temp product displayed
+    }
   };
 
   const hasProducts = products.length > 0;
@@ -316,56 +339,8 @@ export default function InventoryPage({ variant = "finished" }) {
 
   return (
     <div className="w-full p-4 md:p-6 bg-gray-50 min-h-screen">
-      {/* Top search + filters bar - full width */}
-      <div className="bg-blue-50 rounded-xl p-4 mb-4 space-y-3 shadow-sm">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={`Search ${isRaw ? "raw materials" : "products"} by name, SKU, or category...`}
-          className="w-full px-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm font-semibold text-gray-700">Advanced Searching</span>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="priceHigh">Price: High to Low</option>
-            <option value="priceLow">Price: Low to High</option>
-          </select>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-          >
-            <option value="all">All Categories</option>
-            <option value="Electronics">Electronics</option>
-            <option value="Accessories">Accessories</option>
-            <option value="Clothing">Clothing</option>
-            <option value="Home">Home</option>
-          </select>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-          >
-            <option value="all">All Status</option>
-            <option value="In Stock">In Stock</option>
-            <option value="Out of Stock">Out of Stock</option>
-          </select>
-          <button
-            onClick={clearFilters}
-            className="text-xs text-blue-600 font-medium hover:underline ml-auto"
-          >
-            CLEAR ALL
-          </button>
-        </div>
-      </div>
-
+      {/* Search bar removed - now in global header */}
+      
       <div className="flex flex-col lg:flex-row gap-6">
         {/* LEFT */}
         <div className="w-full lg:w-[38%] flex flex-col gap-6">

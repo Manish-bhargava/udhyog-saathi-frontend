@@ -4,8 +4,10 @@ import RawInventorygrid from "./Components/RawInventorygrid";
 import AddRawProduct from "./Components/AddRawProduct";
 import inventoryAPI from "./api";
 import { toast } from "sonner";
+import { useInventoryContext } from "./InventoryContext";
 
 export default function RawMaterials({ variant = "raw" }) {
+  const { inventoryPageState } = useInventoryContext();
 
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -14,10 +16,6 @@ export default function RawMaterials({ variant = "raw" }) {
   const [loading, setLoading] = useState(false);
   const [apiUnavailable, setApiUnavailable] = useState(false);
 
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("newest");
-  const [category, setCategory] = useState("all");
-  const [status, setStatus] = useState("all");
   const isRaw = variant === "raw"; 
   const pageTitle = isRaw
     ? "Raw Materials Inventory"
@@ -27,17 +25,11 @@ export default function RawMaterials({ variant = "raw" }) {
     ? "+ Add Raw Material"
     : "+ Add Product";
 
-  const clearFilters = () => {
-    setSearch("");
-    setSort("newest");
-    setCategory("all");
-    setStatus("all");
-  };
-
   const mapItemToProduct = (item) => {
     // Ensure quantity defaults to a number, not undefined
     const qty = item.availableQuantity ?? item.quantity ?? item.reorderLevel ?? 0;
     const numQty = Number(qty) || 0;
+    const reorderLevel = Number(item.reorderLevel) || 0;
     
     return {
       id: item._id,
@@ -47,14 +39,16 @@ export default function RawMaterials({ variant = "raw" }) {
       // backend `getRaw` enriches items with: quantity, reservedQuantity, availableQuantity
       // show availableQuantity as "Current Stock" (fallback to quantity)
       stock: numQty,
-      capacity: 60,
+      reorderLevel,
+      maxStock: Number(item.maxStock) || (reorderLevel > 0 ? reorderLevel * 2 : 0),
       status: numQty > 0 ? "In Stock" : "Out of Stock",
       image: item.imageUrl || "",
       sku: item.sku || "",
       brand: item.brand || "",
       location: item.location || "",
       weight: item.weight || "",
-      warehouseId: item.warehouseId || item.warehouse?._id || null,
+      // Try warehouse.key first (warehouse section key), then warehouseId, then warehouse._id
+      warehouseId: item.warehouse?.key || item.warehouseId || item.warehouse?._id || null,
       warehouseName: item.warehouseName || item.warehouse?.name || "",
       updatedAt: item.updatedAt
         ? new Date(item.updatedAt).toLocaleString()
@@ -100,34 +94,38 @@ export default function RawMaterials({ variant = "raw" }) {
   const filteredProducts = useMemo(() => {
     let data = [...products];
 
-    if (search) {
+    if (inventoryPageState.search) {
       data = data.filter(
         (p) =>
-          p.name?.toLowerCase().includes(search.toLowerCase()) ||
-          p.sku?.toLowerCase().includes(search.toLowerCase()) ||
-          p.category?.toLowerCase().includes(search.toLowerCase())
+          p.name?.toLowerCase().includes(inventoryPageState.search.toLowerCase()) ||
+          p.sku?.toLowerCase().includes(inventoryPageState.search.toLowerCase()) ||
+          p.category?.toLowerCase().includes(inventoryPageState.search.toLowerCase())
       );
     }
 
-    if (category !== "all") {
-      data = data.filter((p) => p.category === category);
+    if (inventoryPageState.category !== "all") {
+      data = data.filter((p) => p.category === inventoryPageState.category);
     }
 
-    if (status !== "all") {
-      data = data.filter((p) => p.status === status);
+    if (inventoryPageState.status !== "all") {
+      data = data.filter((p) => p.status === inventoryPageState.status);
     }
 
-    if (sort === "priceHigh") {
+    if (inventoryPageState.warehouse !== "all") {
+      data = data.filter((p) => p.warehouseId === inventoryPageState.warehouse);
+    }
+
+    if (inventoryPageState.sort === "priceHigh") {
       data.sort((a, b) => (b.price || 0) - (a.price || 0));
-    } else if (sort === "priceLow") {
+    } else if (inventoryPageState.sort === "priceLow") {
       data.sort((a, b) => (a.price || 0) - (b.price || 0));
-    } else if (sort === "newest") {
+    } else if (inventoryPageState.sort === "newest") {
       data.sort((a, b) => (b.id || 0) - (a.id || 0));
     }
 
     return data;
 
-  }, [products, search, sort, category, status]);
+  }, [products, inventoryPageState.search, inventoryPageState.sort, inventoryPageState.category, inventoryPageState.status, inventoryPageState.warehouse]);
 
   const handleAddProduct = async (createdItem) => {
     // Immediately construct the product from createdItem to show it right away

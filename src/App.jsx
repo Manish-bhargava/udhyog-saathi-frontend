@@ -21,6 +21,8 @@ import PakkaBillsPage from "./features/bills/pages/PakkaBillsPage";
 import KachaBillsPage from "./features/bills/pages/KachaBillsPage";
 import InventoryPage from "./features/Inventory/InventoryPage";
 import WarehousesPage from "./features/Inventory/WarehousesPage";
+import { BillPageProvider } from "./features/bills/BillPageContext";
+import { InventoryProvider } from "./features/Inventory/InventoryContext";
 // Raw materials now use the same UI as finished products
 import { RiPhoneCameraFill, RiSpace } from "react-icons/ri";
 
@@ -41,9 +43,10 @@ function App() {
   }, []);
 
   return (
-    <>
-      <Toaster position="top-right" richColors closeButton />
-      <Routes>
+    <BillPageProvider>
+      <InventoryProvider>
+        <Toaster position="top-right" richColors closeButton />
+        <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/terms" element={<TermsOfUsage />} />
         <Route path="/about-us" element={<AboutUs />} />
@@ -100,14 +103,15 @@ function App() {
             }
           />
 
-          <Route
+          {/* <Route
             path="/reports"
             element={
               <div className="p-8 text-gray-500 font-medium">
                 Business Reports - Coming Soon
               </div>
             }
-          />
+          /> */}
+          {/* TODO: Implement Reports feature */}
           <Route path="/billing" element={<BillingPage />} />
           <Route path="inventory">
             <Route path="finished" element={isAuth ? <InventoryPage /> : <Navigate to="/login" replace />}/>
@@ -118,7 +122,8 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+      </InventoryProvider>
+    </BillPageProvider>
   );
 }
 
