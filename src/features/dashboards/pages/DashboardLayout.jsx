@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { profileAPI } from '../../profiles/api';
@@ -23,7 +23,8 @@ import {
   FaReceipt,
   FaFileAlt,
   FaFileContract,
-  FaChevronDown
+  FaChevronDown,
+  FaSearch
 } from 'react-icons/fa';
 
 const DashboardLayout = () => {
@@ -31,6 +32,9 @@ const DashboardLayout = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [billsMenuOpen, setBillsMenuOpen] = useState(false);
   const [inventoryMenuOpen, setInventoryMenuOpen] = useState(false);
+  const [inventoryFiltersOpen, setInventoryFiltersOpen] = useState(false);
+  const [dashboardSearch, setDashboardSearch] = useState('');
+  const inventoryFiltersRef = useRef(null);
   const { billPageState } = useBillPageContext();
   const { inventoryPageState } = useInventoryContext();
   
@@ -113,6 +117,32 @@ const DashboardLayout = () => {
   const handleInventoryClick = () => {
     setInventoryMenuOpen(!inventoryMenuOpen);
   };
+
+  useEffect(() => {
+    setInventoryFiltersOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!inventoryFiltersOpen) return;
+    const handleClickOutside = (event) => {
+      if (inventoryFiltersRef.current && !inventoryFiltersRef.current.contains(event.target)) {
+        setInventoryFiltersOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [inventoryFiltersOpen]);
+
+  const isInventoryListPage =
+    location.pathname.includes('/inventory/finished') ||
+    location.pathname.includes('/inventory/raw');
+  const isDashboardPage = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
+
+  const activeInventoryFilterCount = [
+    inventoryPageState.sort !== 'newest',
+    inventoryPageState.status !== 'all',
+    inventoryPageState.warehouse !== 'all',
+  ].filter(Boolean).length;
   return (
     <div className="h-screen w-full bg-gray-50 flex flex-col md:flex-row overflow-hidden">
       
@@ -165,7 +195,7 @@ const DashboardLayout = () => {
                 )}
                 {item.label === 'Inventory' && inventoryMenuOpen && (
                   <div className="ml-8 mt-2 space-y-1">
-                    <button onClick={() => { navigate('/inventory/finished'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Finished Products</button>
+                    <button onClick={() => { navigate('/inventory/finished'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Products</button>
                     <button onClick={() => { navigate('/inventory/raw'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Raw Materials</button>
                     <button onClick={() => { navigate('/inventory/warehouses'); setSidebarOpen(false); }} className="w-full text-left p-2 text-sm text-slate-400">Warehouses</button>
                   </div>
@@ -231,6 +261,16 @@ const DashboardLayout = () => {
                 >
                   <span className="text-xl">{item.icon}</span>
                   {sidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
+                  {sidebarOpen && item.label === 'Bills' && (
+                    <span className="ml-auto text-xs">
+                      {billsMenuOpen ? <FaCaretDown /> : <FaCaretRight />}
+                    </span>
+                  )}
+                  {sidebarOpen && item.label === 'Inventory' && (
+                    <span className="ml-auto text-xs">
+                      {inventoryMenuOpen ? <FaCaretDown /> : <FaCaretRight />}
+                    </span>
+                  )}
                 </button>
                 {sidebarOpen && item.label === 'Bills' && billsMenuOpen && (
                   <div className="ml-10 mt-2 space-y-1 border-l border-slate-700 pl-4">
@@ -243,7 +283,7 @@ const DashboardLayout = () => {
                     <button
                     onClick={() => navigate("/inventory/finished")}
                     className="w-full text-left py-2 text-xs text-slate-400 hover:text-white">
-                      Finished Products
+                      Products
                     </button>
                     <button
                       onClick={() => navigate("/inventory/raw")}
@@ -321,6 +361,29 @@ const DashboardLayout = () => {
             </div>
           </div>
 
+          {isDashboardPage && (
+            <div className="order-3 md:order-none flex items-center gap-2 w-full md:flex-1 md:mx-4 min-w-0">
+              <div className="relative flex-1 min-w-[160px]">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                <input
+                  type="text"
+                  value={dashboardSearch}
+                  onChange={(e) => setDashboardSearch(e.target.value)}
+                  placeholder="Search bills, clients, products, status..."
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                />
+              </div>
+              {dashboardSearch && (
+                <button
+                  onClick={() => setDashboardSearch('')}
+                  className="text-xs text-blue-600 font-medium hover:underline whitespace-nowrap shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
           {/* WAREHOUSES PAGE SEARCH - SHOWN ON WAREHOUSES PAGE */}
           {location.pathname.includes('/inventory/warehouses') && (
             <div className="flex items-center gap-2 flex-1 mx-2 md:mx-4">
@@ -343,53 +406,97 @@ const DashboardLayout = () => {
           )}
 
           {/* INVENTORY PAGE SEARCH - SHOWN ON FINISHED AND RAW MATERIALS PAGES */}
-          {(location.pathname.includes('/inventory/finished') || location.pathname.includes('/inventory/raw')) && (
-            <div className="flex items-center gap-1 md:gap-2 flex-1 mx-2 md:mx-4 overflow-x-auto">
+          {isInventoryListPage && (
+            <div ref={inventoryFiltersRef} className="relative flex items-center gap-2 flex-1 mx-2 md:mx-4 min-w-0">
               <input
                 type="text"
                 value={inventoryPageState.search}
                 onChange={(e) => inventoryPageState.setSearch(e.target.value)}
                 placeholder="Search..."
-                className="flex-1 px-2 md:px-3 py-1.5 rounded-lg border border-gray-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white min-w-[120px]"
+                className="flex-1 min-w-[120px] px-2 md:px-3 py-1.5 rounded-lg border border-gray-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
               />
-              <select
-                value={inventoryPageState.sort}
-                onChange={(e) => inventoryPageState.setSort(e.target.value)}
-                className="px-1.5 md:px-2 py-1.5 rounded-lg border border-gray-200 text-[10px] md:text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white shrink-0"
+
+              <button
+                type="button"
+                onClick={() => setInventoryFiltersOpen((prev) => !prev)}
+                className="px-2 md:px-3 py-1.5 rounded-lg border border-gray-200 text-xs md:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shrink-0 inline-flex items-center gap-1"
               >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="priceHigh">Price ↓</option>
-                <option value="priceLow">Price ↑</option>
-              </select>
-              <select
-                value={inventoryPageState.status}
-                onChange={(e) => inventoryPageState.setStatus(e.target.value)}
-                className="px-1.5 md:px-2 py-1.5 rounded-lg border border-gray-200 text-[10px] md:text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white shrink-0"
-              >
-                <option value="all">All Status</option>
-                <option value="In Stock">In Stock</option>
-                <option value="Out of Stock">Out of Stock</option>
-              </select>
-              <select
-                value={inventoryPageState.warehouse}
-                onChange={(e) => inventoryPageState.setWarehouse(e.target.value)}
-                className="px-1.5 md:px-2 py-1.5 rounded-lg border border-gray-200 text-[10px] md:text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white shrink-0"
-              >
-                <option value="all">All WH</option>
-                {inventoryPageState.warehouses.map((wh) => (
-                  <option key={wh.key || wh._id} value={wh.key || wh._id}>
-                    {wh.name}
-                  </option>
-                ))}
-              </select>
-              {(inventoryPageState.search || inventoryPageState.sort !== 'newest' || inventoryPageState.status !== 'all' || inventoryPageState.warehouse !== 'all') && (
+                Filters
+                {activeInventoryFilterCount > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px]">
+                    {activeInventoryFilterCount}
+                  </span>
+                )}
+                <FaChevronDown className={`transition-transform ${inventoryFiltersOpen ? 'rotate-180' : ''}`} size={10} />
+              </button>
+
+              {(inventoryPageState.search || activeInventoryFilterCount > 0) && (
                 <button
                   onClick={inventoryPageState.clearFilters}
                   className="text-xs text-blue-600 font-medium hover:underline whitespace-nowrap shrink-0"
                 >
                   Clear
                 </button>
+              )}
+
+              {inventoryFiltersOpen && (
+                <div className="absolute right-0 top-full mt-2 w-[min(92vw,320px)] bg-white border border-gray-200 rounded-xl shadow-lg z-40 p-3 space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Sort By</label>
+                    <select
+                      value={inventoryPageState.sort}
+                      onChange={(e) => inventoryPageState.setSort(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-lg border border-gray-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    >
+                      <option value="newest">Newest</option>
+                      <option value="oldest">Oldest</option>
+                      <option value="priceHigh">Price: High to Low</option>
+                      <option value="priceLow">Price: Low to High</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Stock Status</label>
+                    <select
+                      value={inventoryPageState.status}
+                      onChange={(e) => inventoryPageState.setStatus(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-lg border border-gray-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="In Stock">In Stock</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">Warehouse</label>
+                    <select
+                      value={inventoryPageState.warehouse}
+                      onChange={(e) => inventoryPageState.setWarehouse(e.target.value)}
+                      className="w-full px-2.5 py-2 rounded-lg border border-gray-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    >
+                      <option value="all">All Warehouses</option>
+                      {inventoryPageState.warehouses.map((wh) => (
+                        <option key={wh.key || wh._id} value={wh.key || wh._id}>
+                          {wh.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        inventoryPageState.clearFilters();
+                        setInventoryFiltersOpen(false);
+                      }}
+                      className="text-xs text-blue-600 font-medium hover:underline"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -468,7 +575,7 @@ const DashboardLayout = () => {
           )}
 
           <div className="max-w-[1600px] mx-auto">
-            <Outlet />
+            <Outlet context={{ dashboardSearch, setDashboardSearch }} />
           </div>
         </main>
       </div>

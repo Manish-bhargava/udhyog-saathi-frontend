@@ -30,6 +30,8 @@ export default function RawMaterials({ variant = "raw" }) {
     const qty = item.availableQuantity ?? item.quantity ?? item.reorderLevel ?? 0;
     const numQty = Number(qty) || 0;
     const reorderLevel = Number(item.reorderLevel) || 0;
+    const updatedAtRaw = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+    const createdAtRaw = item.createdAt ? new Date(item.createdAt).getTime() : 0;
     
     return {
       id: item._id,
@@ -50,6 +52,8 @@ export default function RawMaterials({ variant = "raw" }) {
       // Try warehouse.key first (warehouse section key), then warehouseId, then warehouse._id
       warehouseId: item.warehouse?.key || item.warehouseId || item.warehouse?._id || null,
       warehouseName: item.warehouseName || item.warehouse?.name || "",
+      createdAtRaw,
+      updatedAtRaw,
       updatedAt: item.updatedAt
         ? new Date(item.updatedAt).toLocaleString()
         : "",
@@ -119,8 +123,18 @@ export default function RawMaterials({ variant = "raw" }) {
       data.sort((a, b) => (b.price || 0) - (a.price || 0));
     } else if (inventoryPageState.sort === "priceLow") {
       data.sort((a, b) => (a.price || 0) - (b.price || 0));
+    } else if (inventoryPageState.sort === "oldest") {
+      data.sort(
+        (a, b) =>
+          Math.max(a.updatedAtRaw || 0, a.createdAtRaw || 0) -
+          Math.max(b.updatedAtRaw || 0, b.createdAtRaw || 0),
+      );
     } else if (inventoryPageState.sort === "newest") {
-      data.sort((a, b) => (b.id || 0) - (a.id || 0));
+      data.sort(
+        (a, b) =>
+          Math.max(b.updatedAtRaw || 0, b.createdAtRaw || 0) -
+          Math.max(a.updatedAtRaw || 0, a.createdAtRaw || 0),
+      );
     }
 
     return data;

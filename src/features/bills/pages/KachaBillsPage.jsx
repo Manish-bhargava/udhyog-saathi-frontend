@@ -7,11 +7,20 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useBillPageContext } from "../BillPageContext";
 
+const getTodayDateInput = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const KachaBillsPage = () => {
   const navigate = useNavigate();
   const { billPageState, registerFormHandlers } = useBillPageContext();
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showValidation, setShowValidation] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [formWidth, setFormWidth] = useState(50);
   const containerRef = useRef(null);
@@ -44,6 +53,7 @@ const KachaBillsPage = () => {
   const [formData, setFormData] = useState({
     buyer: { clientName: "", clientAddress: "", clientGst: "" },
     products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+    invoiceDate: "",
     discount: 0,
     notes: "",
   });
@@ -107,6 +117,7 @@ const KachaBillsPage = () => {
   }, [isDragging]);
 
   const handleSave = async () => {
+    setShowValidation(true);
     if (!businessData?.company?.companyName) {
       toast.error("Action Blocked", { description: "Onboarding required." });
       return;
@@ -114,7 +125,12 @@ const KachaBillsPage = () => {
 
     billPageState.setSubmitting(true);
     try {
-      const response = await billAPI.createKachaBill(formData);
+      const { invoiceDate, ...restFormData } = formData;
+      const payload = {
+        ...restFormData,
+        requestedInvoiceDate: invoiceDate || getTodayDateInput(),
+      };
+      const response = await billAPI.createKachaBill(payload);
 
       if (response.success) {
         toast.success("Kacha Bill Created!", {
@@ -128,9 +144,11 @@ const KachaBillsPage = () => {
         setFormData({
           buyer: { clientName: "", clientAddress: "", clientGst: "" },
           products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+          invoiceDate: "",
           discount: 0,
           notes: "",
         });
+        setShowValidation(false);
       }
     } catch (err) {
       toast.error("Failed to Save");
@@ -150,10 +168,10 @@ const KachaBillsPage = () => {
         {/* CONTENT */}
         <div className="flex-1 overflow-y-auto pb-16">
           {billPageState.activeTab === "form" ? (
-            <BillForm formData={formData} setFormData={setFormData} isKachaBill={true} />
+            <BillForm formData={formData} setFormData={setFormData} isKachaBill={true} showValidation={showValidation} />
           ) : (
             <div className="flex justify-center bg-gray-50 p-4">
-              <div className="w-full max-w-[420px] scale-[0.98] origin-top">
+              <div className="w-full max-w-[420px] sm:max-w-[560px] md:max-w-[760px] origin-top">
                 {!loading && (
                   <BillPreview
                     formData={formData}

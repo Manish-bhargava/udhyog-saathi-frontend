@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import inventoryAPI from '../../Inventory/api';
 import ProductSearchInput from './ProductSearchInput';
 
-const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
+const BillForm = ({ formData, setFormData, isKachaBill = false, showValidation = false }) => {
   const [inventoryItems, setInventoryItems] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
 
@@ -49,6 +49,10 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
     setFormData({ ...formData, buyer: { ...formData.buyer, [field]: value } });
   };
 
+  const updateInvoiceDate = (value) => {
+    setFormData({ ...formData, invoiceDate: value || '' });
+  };
+
   const updateProduct = (index, field, value) => {
     const newProducts = [...formData.products];
     newProducts[index][field] = value;
@@ -87,6 +91,10 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
     }
   };
 
+  const clientNameError = showValidation && !formData.buyer.clientName?.trim();
+  const clientGstError = showValidation && !isKachaBill && !formData.buyer.clientGst?.trim();
+  const clientAddressError = showValidation && !isKachaBill && !formData.buyer.clientAddress?.trim();
+
   return (
     <div className="space-y-6 md:space-y-8 max-w-full overflow-x-hidden">
       {/* Buyer Details Card */}
@@ -102,6 +110,23 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
         
         <div className="grid grid-cols-1 gap-4 md:gap-6">
           <div className="space-y-2">
+            <label className="text-xs md:text-sm font-medium text-gray-700">Bill Date</label>
+            <input
+              type="date"
+              value={formData.invoiceDate || ''}
+              onChange={(e) => updateInvoiceDate(e.target.value)}
+              className={`w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none text-sm ${
+                isKachaBill
+                  ? 'focus:ring-2 focus:ring-amber-500 focus:border-amber-500'
+                  : 'focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+              }`}
+            />
+            <p className="text-[11px] text-gray-500">
+              If left empty, today&apos;s date will be used while saving.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <label className="text-xs md:text-sm font-medium text-gray-700 flex items-center">
               Client Name <span className="text-red-500 ml-1">*</span>
             </label>
@@ -109,32 +134,51 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
               type="text"
               value={formData.buyer.clientName}
               onChange={(e) => updateBuyer('clientName', e.target.value)}
-              className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              className={`w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm ${
+                clientNameError ? 'border-red-400' : 'border-gray-200'
+              }`}
               placeholder="Enter client name"
             />
+            {clientNameError && (
+              <p className="text-xs text-red-600">Client name is required.</p>
+            )}
           </div>
           
           {!isKachaBill && (
             <div className="space-y-2">
-              <label className="text-xs md:text-sm font-medium text-gray-700">Client GST</label>
+              <label className="text-xs md:text-sm font-medium text-gray-700">
+                Client GST <span className="text-red-500">*</span>
+              </label>
               <input 
                 type="text"
                 value={formData.buyer.clientGst}
                 onChange={(e) => updateBuyer('clientGst', e.target.value.toUpperCase())}
-                className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                className={`w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm ${
+                  clientGstError ? 'border-red-400' : 'border-gray-200'
+                }`}
                 placeholder="GSTIN number"
               />
+              {clientGstError && (
+                <p className="text-xs text-red-600">Client GST is required for Pakka bill.</p>
+              )}
             </div>
           )}
           
           <div className="space-y-2">
-            <label className="text-xs md:text-sm font-medium text-gray-700">Client Address</label>
+            <label className="text-xs md:text-sm font-medium text-gray-700">
+              Client Address {!isKachaBill && <span className="text-red-500">*</span>}
+            </label>
             <textarea 
               value={formData.buyer.clientAddress}
               onChange={(e) => updateBuyer('clientAddress', e.target.value)}
-              className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-y min-h-[80px] md:min-h-[100px] text-sm"
+              className={`w-full px-3 md:px-4 py-2.5 md:py-3 bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-y min-h-[80px] md:min-h-[100px] text-sm ${
+                clientAddressError ? 'border-red-400' : 'border-gray-200'
+              }`}
               placeholder="Complete address with city and state"
             />
+            {clientAddressError && (
+              <p className="text-xs text-red-600">Client address is required for Pakka bill.</p>
+            )}
           </div>
         </div>
       </div>
@@ -162,19 +206,31 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
         </div>
         
         <div className="hidden md:grid grid-cols-12 gap-4 mb-4 px-4">
-          <div className="col-span-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Description</div>
+          <div className="col-span-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
+            Description <span className="text-red-500">*</span>
+          </div>
           <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider">Warehouse</div>
-          <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Rate</div>
-          <div className="col-span-1 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Qty</div>
+          <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">
+            Rate <span className="text-red-500">*</span>
+          </div>
+          <div className="col-span-1 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">
+            Qty <span className="text-red-500">*</span>
+          </div>
           <div className="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-right">Amount</div>
           <div className="col-span-1"></div>
         </div>
         
         <div className="space-y-3 md:space-y-4">
           {formData.products.map((p, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-3 items-center p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-white transition-colors">
+            <div key={i} className={`grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-3 items-center p-3 md:p-4 bg-gray-50 rounded-lg border hover:bg-white transition-colors ${
+              showValidation && (!p.name?.trim() || !(Number(p.rate) > 0) || !(Number(p.quantity) > 0))
+                ? 'border-red-300'
+                : 'border-gray-200'
+            }`}>
               <div className="col-span-1 md:col-span-4 min-w-0">
-                <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">Description</label>
+                <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">
+                  Description <span className="text-red-500">*</span>
+                </label>
                 <ProductSearchInput
                   value={p.name}
                   onChangeText={(val) => updateProduct(i, 'name', val)}
@@ -182,6 +238,9 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
                   inventoryItems={inventoryItems}
                   isKachaBill={isKachaBill}
                 />
+                {showValidation && !p.name?.trim() && (
+                  <p className="text-[11px] text-red-600 mt-1">Description is required.</p>
+                )}
               </div>
 
               <div className="col-span-1 md:col-span-2 min-w-0">
@@ -208,11 +267,15 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
               
               {/* Rate Input with Placeholder Logic */}
               <div className="col-span-1 md:col-span-2 min-w-0">
-                <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">Rate</label>
+                <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">
+                  Rate <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm font-medium">₹</span>
                   <input
-                    className="w-full pl-8 pr-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-right text-sm md:text-base font-semibold text-gray-800 tracking-tight"
+                    className={`w-full pl-8 pr-3 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-right text-sm md:text-base font-semibold text-gray-800 tracking-tight ${
+                      showValidation && !(Number(p.rate) > 0) ? 'border-red-400' : 'border-gray-300'
+                    }`}
                     type="number"
                     step="any"
                     min="0"
@@ -221,19 +284,29 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
                     onChange={(e) => updateProduct(i, 'rate', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                   />
                 </div>
+                {showValidation && !(Number(p.rate) > 0) && (
+                  <p className="text-[11px] text-red-600 mt-1">Rate must be greater than 0.</p>
+                )}
               </div>
               
               {/* Quantity Input with Placeholder Logic */}
               <div className="col-span-1 md:col-span-1 min-w-0">
-                <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">Quantity</label>
+                <label className="md:hidden text-xs font-bold text-gray-600 uppercase mb-1 block">
+                  Quantity <span className="text-red-500">*</span>
+                </label>
                 <input
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-right text-sm md:text-base font-semibold text-gray-800 tracking-tight"
+                  className={`w-full px-3 py-2 bg-white border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-right text-sm md:text-base font-semibold text-gray-800 tracking-tight ${
+                    showValidation && !(Number(p.quantity) > 0) ? 'border-red-400' : 'border-gray-300'
+                  }`}
                   type="number"
                   min="0"
                   placeholder="1"
                   value={p.quantity === 0 ? '' : p.quantity}
                   onChange={(e) => updateProduct(i, 'quantity', e.target.value === '' ? 0 : parseInt(e.target.value))}
                 />
+                {showValidation && !(Number(p.quantity) > 0) && (
+                  <p className="text-[11px] text-red-600 mt-1">Qty must be greater than 0.</p>
+                )}
               </div>
               
               <div className="col-span-1 md:col-span-2 text-right">
@@ -251,6 +324,7 @@ const BillForm = ({ formData, setFormData, isKachaBill = false }) => {
                   <button
                     onClick={() => removeProduct(i)}
                     className="p-1.5 md:p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    aria-label={`Remove item ${i + 1}`}
                   >
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
