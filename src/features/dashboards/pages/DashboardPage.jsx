@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { 
   Eye, 
   Trash2, 
@@ -33,6 +34,7 @@ import {
 
 import { profileAPI } from '../../profiles/api';
 import billAPI from '../../bills/api';
+import inventoryAPI from '../../Inventory/api';
 import BillForm from '../../bills/components/BillForm';
 import BillPreview from '../../bills/components/BillPreview';
 
@@ -43,7 +45,23 @@ export default function UdhyogDashboard() {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all'); 
   const [viewMode, setViewMode] = useState('table');   
+  const [dashboardSection, setDashboardSection] = useState('billing');
+  const outletContext = useOutletContext() || {};
+  const globalSearch = outletContext.dashboardSearch || '';
+  const [inventoryFilter, setInventoryFilter] = useState('all');
+  const [inventoryMode, setInventoryMode] = useState('table');
   const [profileData, setProfileData] = useState(null);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [inventorySummary, setInventorySummary] = useState({
+    totalItems: 0,
+    totalUnits: 0,
+    inStock: 0,
+    lowStock: 0,
+    outOfStock: 0,
+    categoryBreakdown: [],
+    lowStockItems: [],
+  });
   
   const [selectedBill, setSelectedBill] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,15 +78,20 @@ export default function UdhyogDashboard() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingBillId, setEditingBillId] = useState(null);
+  const [editingBillType, setEditingBillType] = useState('kaccha');
+  const [showEditValidation, setShowEditValidation] = useState(false);
   const [editFormData, setEditFormData] = useState({
     buyer: { clientName: '', clientAddress: '', clientGst: '' },
     products: [{ name: '', rate: 0, quantity: 1 }],
+    invoiceDate: '',
+    gstPercentage: 18,
     discount: 0,
     notes: ''
   });
 
   const fetchData = async () => {
     setLoading(true);
+    setInventoryLoading(true);
     try {
       const token = localStorage.getItem('token'); 
       if (!token) return;
@@ -79,7 +102,6 @@ export default function UdhyogDashboard() {
         }),
         profileAPI.getProfile()
       ]);
-      console.log("billRes:", billRes);
       const billResult = await billRes.json();
       
       if (billResult.success) {
@@ -93,11 +115,103 @@ export default function UdhyogDashboard() {
       if (profileRes.success) {
         setProfileData(profileRes.data);
       }
+
+      const [finishedResult, rawResult] = await Promise.allSettled([
+        inventoryAPI.getFinishedItems(),
+        inventoryAPI.getRawItems(),
+      ]);
+
+      const normalizeItems = (result) => {
+        if (result.status !== 'fulfilled') return [];
+        const payload = result.value;
+        if (Array.isArray(payload?.data)) return payload.data;
+        if (Array.isArray(payload)) return payload;
+        return [];
+      };
+
+      const allInventoryItems = [
+        ...normalizeItems(finishedResult).map((item) => ({ ...item, _inventoryType: 'finished' })),
+        ...normalizeItems(rawResult).map((item) => ({ ...item, _inventoryType: 'raw' })),
+      ];
+
+      const normalizedInventoryItems = allInventoryItems.map((item) => {
+        const qty = Number(item.availableQuantity ?? item.quantity ?? item.reorderLevel ?? 0) || 0;
+        const reorderLevel = Number(item.reorderLevel) || 0;
+        const status = qty <= 0 ? 'out' : (reorderLevel > 0 && qty <= reorderLevel ? 'low' : 'healthy');
+        return {
+          id: item._id || item.id || `${item.name || 'item'}-${item._inventoryType || 'general'}`,
+          name: item.name || 'Unnamed Item',
+          qty,
+          reorderLevel,
+          unit: item.unit || '-',
+          status,
+          type: item._inventoryType === 'finished' ? 'Finished' : 'Raw',
+          updatedAt: item.updatedAt || item.createdAt || null,
+        };
+      });
+
+      const summary = allInventoryItems.reduce(
+        (acc, item) => {
+          const qty = Number(item.availableQuantity ?? item.quantity ?? item.reorderLevel ?? 0) || 0;
+          const reorderLevel = Number(item.reorderLevel) || 0;
+          const isOut = qty <= 0;
+          const isLow = !isOut && reorderLevel > 0 && qty <= reorderLevel;
+          const category = item.unit || 'Uncategorized';
+
+          acc.totalItems += 1;
+          acc.totalUnits += qty;
+          if (isOut) acc.outOfStock += 1;
+          else if (isLow) acc.lowStock += 1;
+          else acc.inStock += 1;
+
+          acc.categoryMap.set(category, (acc.categoryMap.get(category) || 0) + qty);
+          if (isLow || isOut) {
+            acc.lowStockItems.push({
+              id: item._id || item.id || `${item.name}-${category}`,
+              name: item.name || 'Unnamed Item',
+              qty,
+              reorderLevel,
+              category,
+            });
+          }
+          return acc;
+        },
+        {
+          totalItems: 0,
+          totalUnits: 0,
+          inStock: 0,
+          lowStock: 0,
+          outOfStock: 0,
+          categoryMap: new Map(),
+          lowStockItems: [],
+        },
+      );
+
+      const categoryBreakdown = Array.from(summary.categoryMap.entries())
+        .map(([name, units]) => ({ name, units }))
+        .sort((a, b) => b.units - a.units)
+        .slice(0, 6);
+
+      const lowStockItems = summary.lowStockItems
+        .sort((a, b) => a.qty - b.qty)
+        .slice(0, 5);
+
+      setInventorySummary({
+        totalItems: summary.totalItems,
+        totalUnits: summary.totalUnits,
+        inStock: summary.inStock,
+        lowStock: summary.lowStock,
+        outOfStock: summary.outOfStock,
+        categoryBreakdown,
+        lowStockItems,
+      });
+      setInventoryItems(normalizedInventoryItems);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       toast.error("Failed to load dashboard data.");
     } finally {
       setLoading(false);
+      setInventoryLoading(false);
     }
   };
 
@@ -146,12 +260,15 @@ export default function UdhyogDashboard() {
 
   const editTotals = useMemo(() => {
     const subtotal = editFormData.products.reduce((s, p) => s + (p.rate * p.quantity), 0);
+    const discountAmount = Number(editFormData.discount) || 0;
+    const gstRate = Number(editFormData.gstPercentage) || 0;
+    const gst = editingBillType === 'pakka' ? ((subtotal - discountAmount) * gstRate) / 100 : 0;
     return {
       subtotal,
-      discount: editFormData.discount,
-      grandTotal: subtotal - editFormData.discount
+      discount: discountAmount,
+      grandTotal: Math.max(0, subtotal + gst - discountAmount)
     };
-  }, [editFormData]);
+  }, [editFormData, editingBillType]);
 
   const stats = useMemo(() => {
     const totalRev = bills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
@@ -194,8 +311,82 @@ export default function UdhyogDashboard() {
     };
   }, [bills]);
 
+  const filteredInventoryItems = useMemo(() => {
+    if (inventoryFilter === 'all') return inventoryItems;
+    return inventoryItems.filter((item) => item.status === inventoryFilter);
+  }, [inventoryItems, inventoryFilter]);
+
+  const normalizedSearch = globalSearch.trim().toLowerCase();
+
+  const visibleBills = useMemo(() => {
+    if (!normalizedSearch) return bills;
+    return bills.filter((bill) => {
+      const searchable = [
+        formatInvoiceId(bill.invoiceNumber),
+        bill.buyer?.clientName,
+        bill.buyer?.clientAddress,
+        bill.buyer?.clientGst,
+        bill.billType,
+        formatDate(bill.invoiceDate || bill.createdAt),
+        ...(bill.products?.map((p) => p.name) || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return searchable.includes(normalizedSearch);
+    });
+  }, [bills, normalizedSearch]);
+
+  const visibleInventoryItems = useMemo(() => {
+    if (!normalizedSearch) return filteredInventoryItems;
+    return filteredInventoryItems.filter((item) => {
+      const searchable = [
+        item.name,
+        item.type,
+        item.unit,
+        item.status,
+        String(item.qty),
+        String(item.reorderLevel),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return searchable.includes(normalizedSearch);
+    });
+  }, [filteredInventoryItems, normalizedSearch]);
+
+  const filteredInventorySummary = useMemo(() => {
+    return visibleInventoryItems.reduce(
+      (acc, item) => {
+        acc.total += 1;
+        if (item.status === 'healthy') acc.healthy += 1;
+        else if (item.status === 'low') acc.low += 1;
+        else acc.out += 1;
+        return acc;
+      },
+      { total: 0, healthy: 0, low: 0, out: 0 },
+    );
+  }, [visibleInventoryItems]);
+
+  const inventoryTypeSplit = useMemo(() => {
+    return visibleInventoryItems.reduce(
+      (acc, item) => {
+        if (item.type === 'Finished') acc.finished += 1;
+        else acc.raw += 1;
+        return acc;
+      },
+      { finished: 0, raw: 0 },
+    );
+  }, [visibleInventoryItems]);
+
+  const filteredLowStockItems = useMemo(() => {
+    return visibleInventoryItems
+      .filter((item) => item.status === 'low' || item.status === 'out')
+      .sort((a, b) => a.qty - b.qty)
+      .slice(0, 5);
+  }, [visibleInventoryItems]);
+
   const handleView = (bill) => {
-    console.log("Viewing bill:", bill);
     setSelectedBill(bill);
     setIsModalOpen(true);
   };
@@ -251,6 +442,8 @@ export default function UdhyogDashboard() {
 
   const handleEdit = (bill) => {
     setEditingBillId(bill._id);
+    setEditingBillType(bill.billType === 'pakka' ? 'pakka' : 'kaccha');
+    setShowEditValidation(false);
     setEditFormData({
       buyer: { 
         clientName: bill.buyer?.clientName || '', 
@@ -260,6 +453,8 @@ export default function UdhyogDashboard() {
       products: bill.products?.map(p => ({ 
         name: p.name, rate: p.rate, quantity: p.quantity 
       })) || [{ name: '', rate: 0, quantity: 1 }],
+      invoiceDate: bill.invoiceDate ? new Date(bill.invoiceDate).toISOString().slice(0, 10) : '',
+      gstPercentage: Number.isFinite(Number(bill.gstPercentage)) ? Number(bill.gstPercentage) : 18,
       discount: bill.discount || 0, // Just load the value as-is
       notes: bill.notes || ''       // Capture existing notes
     });
@@ -267,23 +462,41 @@ export default function UdhyogDashboard() {
   };
 
   const handleUpdateSave = async () => {
+    setShowEditValidation(true);
+    const invalidProducts = editFormData.products.some(
+      (p) => !p.name?.trim() || !(Number(p.rate) > 0) || !(Number(p.quantity) > 0),
+    );
+    const missingBuyer =
+      !editFormData.buyer?.clientName?.trim() ||
+      (editingBillType === 'pakka' &&
+        (!editFormData.buyer?.clientAddress?.trim() || !editFormData.buyer?.clientGst?.trim()));
+
+    if (missingBuyer || invalidProducts) {
+      toast.error('Please fill all required fields before saving.');
+      return;
+    }
+
     try {
       setLoading(true);
+      const { invoiceDate, gstPercentage, ...restEditFormData } = editFormData;
       const sanitizedData = {
-        ...editFormData,
+        ...restEditFormData,
         discount: Number(editFormData.discount) || 0, // Ensure numeric amount
         notes: editFormData.notes || "",             // Ensure notes are sent
+        ...(editingBillType === 'pakka' ? { gstPercentage: Number(gstPercentage) || 0 } : {}),
         products: editFormData.products.map(p => ({
           ...p,
           rate: Number(p.rate),
           quantity: Number(p.quantity)
-        }))
+        })),
+        ...(invoiceDate ? { requestedInvoiceDate: invoiceDate } : {})
       };
 
       const result = await billAPI.updateBill(editingBillId, sanitizedData);
       if (result.success) {
         await fetchData();
         setIsEditModalOpen(false);
+        setShowEditValidation(false);
         setMobileActionsOpen(null);
         toast.success("Bill updated successfully!");
       }
@@ -412,71 +625,259 @@ export default function UdhyogDashboard() {
     `;
   };
 
+  const inventoryPercent = (value, total) => Math.round((value / Math.max(total, 1)) * 100);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-3 md:p-6 font-sans text-slate-800">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-8 gap-3 md:gap-4">
-        <div><p className="text-slate-500 text-sm md:text-xl">Overview of your business performance.</p></div>
+    <div className="min-h-screen bg-gray-50 p-2.5 md:p-4 font-sans text-slate-800">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 md:mb-5 gap-2 md:gap-3">
+        <div className="w-full md:max-w-xl">
+          <p className="text-slate-500 text-sm md:text-lg">Overview of your business performance.</p>
+        </div>
         <button onClick={() => window.location.href = '/bills/pakka'} className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 md:px-5 py-2.5 rounded-lg text-sm font-medium shadow-lg transition active:scale-95 w-full md:w-auto justify-center"><FileText size={18} /><span>New Bill</span></button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3 mb-4 md:mb-5">
         <StatCard label="Total Revenue" value={formatLargeNumber(stats.revenue)} fullValue={formatCurrency(stats.revenue)} icon={<TrendingUp className="w-4 h-4 md:w-5 md:h-5" />} color="blue" />
         <StatCard label="GST Collected" value={formatLargeNumber(stats.gst)} fullValue={formatCurrency(stats.gst)} icon={<FileText className="w-4 h-4 md:w-5 md:h-5" />} color="green" />
         <StatCard label="Discounts" value={formatLargeNumber(stats.discount)} fullValue={formatCurrency(stats.discount)} icon={<AlertCircle className="w-4 h-4 md:w-5 md:h-5" />} color="yellow" />
         <StatCard label="Products Sold" value={formatCompactNumber(stats.products)} fullValue={stats.products.toLocaleString('en-IN')} icon={<CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />} color="purple" />
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-6 gap-3 md:gap-4">
-        <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex w-full md:w-auto">
-          {['all', 'kaccha', 'pakka'].map((type) => (
-            <button key={type} onClick={() => setFilterType(type)} className={`flex-1 md:flex-none px-3 md:px-6 py-2 md:py-2.5 rounded-lg text-sm font-medium capitalize transition-all ${filterType === type ? 'bg-slate-900 text-white shadow' : 'text-slate-500 hover:bg-slate-50'}`}>{type === 'all' ? 'All' : type}</button>
-          ))}
+      <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex w-full md:w-fit mb-3 md:mb-4">
+        <button
+          onClick={() => setDashboardSection('billing')}
+          className={`flex-1 md:flex-none px-3 md:px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+            dashboardSection === 'billing' ? 'bg-slate-900 text-white shadow' : 'text-slate-500 hover:bg-slate-50'
+          }`}
+        >
+          Billing View
+        </button>
+        <button
+          onClick={() => setDashboardSection('inventory')}
+          className={`flex-1 md:flex-none px-3 md:px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+            dashboardSection === 'inventory' ? 'bg-slate-900 text-white shadow' : 'text-slate-500 hover:bg-slate-50'
+          }`}
+        >
+          Inventory View
+        </button>
+      </div>
+
+      {dashboardSection === 'inventory' && (
+      <>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-3 md:mb-4 gap-2.5 md:gap-3">
+        <div className="w-full md:w-auto">
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Inventory Filter</label>
+          <select
+            value={inventoryFilter}
+            onChange={(e) => setInventoryFilter(e.target.value)}
+            className="w-full md:min-w-[190px] px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">All Items</option>
+            <option value="healthy">Healthy Stock</option>
+            <option value="low">Low Stock</option>
+            <option value="out">Out of Stock</option>
+          </select>
         </div>
         <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex w-full md:w-auto">
-          <button onClick={() => setViewMode('table')} className={`flex-1 flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}><LayoutList className="w-4 h-4 md:w-5 md:h-5" /> <span>Table</span></button>
-          <button onClick={() => setViewMode('analytics')} className={`flex-1 flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'analytics' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}><BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> <span>Analytics</span></button>
+          <button onClick={() => setInventoryMode('table')} className={`flex-1 flex items-center justify-center gap-2 px-3 md:px-5 py-2 rounded-lg text-sm font-medium transition-all ${inventoryMode === 'table' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}><LayoutList className="w-4 h-4 md:w-5 md:h-5" /> <span>Table</span></button>
+          <button onClick={() => setInventoryMode('analytics')} className={`flex-1 flex items-center justify-center gap-2 px-3 md:px-5 py-2 rounded-lg text-sm font-medium transition-all ${inventoryMode === 'analytics' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}><BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> <span>Analytics</span></button>
         </div>
       </div>
 
-      {viewMode === 'table' ? (
+      {inventoryMode === 'table' ? (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center text-slate-400">Loading invoices...</div>
-          ) : bills.length === 0 ? (
-            <div className="p-8 text-center text-slate-500">No bills found.</div>
+          {inventoryLoading ? (
+            <div className="p-6 text-center text-slate-400">Loading inventory...</div>
+          ) : visibleInventoryItems.length === 0 ? (
+            <div className="p-6 text-center text-slate-500">No inventory items match your search.</div>
           ) : (
             <>
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-left border-collapse min-w-[768px]">
                   <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-xs border-b border-slate-200">
                     <tr>
-                      <th className="py-4 px-6">Invoice ID</th>
-                      <th className="py-4 px-6">Date</th>
-                      <th className="py-4 px-6">Client</th>
-                      <th className="py-4 px-6">Type</th>
-                      <th className="py-4 px-6 text-right">Amount</th>
-                      <th className="py-4 px-6 text-center">Actions</th>
+                      <th className="py-3 px-4">Item</th>
+                      <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4">Unit</th>
+                      <th className="py-3 px-4 text-right">Available Qty</th>
+                      <th className="py-3 px-4 text-right">Reorder Level</th>
+                      <th className="py-3 px-4 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {bills.map((bill) => (
+                    {visibleInventoryItems.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4 font-medium text-slate-800">{item.name}</td>
+                        <td className="py-3 px-4 text-slate-600">{item.type}</td>
+                        <td className="py-3 px-4 text-slate-600">{item.unit}</td>
+                        <td className="py-3 px-4 text-right font-bold text-slate-800">{formatCompactNumber(item.qty)}</td>
+                        <td className="py-3 px-4 text-right text-slate-600">{item.reorderLevel > 0 ? formatCompactNumber(item.reorderLevel) : '-'}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${item.status === 'healthy' ? 'bg-green-100 text-green-700' : item.status === 'low' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                            {item.status === 'healthy' ? 'Healthy' : item.status === 'low' ? 'Low' : 'Out'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="md:hidden p-3 space-y-3">
+                {visibleInventoryItems.map((item) => (
+                  <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-slate-800 truncate">{item.name}</div>
+                        <div className="text-xs text-slate-500 mt-1">{item.type} · {item.unit}</div>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${item.status === 'healthy' ? 'bg-green-100 text-green-700' : item.status === 'low' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><div className="text-xs text-slate-500">Available Qty</div><div className="font-bold text-slate-800">{formatCompactNumber(item.qty)}</div></div>
+                      <div className="text-right"><div className="text-xs text-slate-500">Reorder Level</div><div className="font-medium text-slate-700">{item.reorderLevel > 0 ? formatCompactNumber(item.reorderLevel) : '-'}</div></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
+            <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4">Stock Health</h3>
+            <div className="space-y-4">
+              {[
+                { label: 'Healthy', value: inventorySummary.inStock, color: 'bg-green-500' },
+                { label: 'Low Stock', value: inventorySummary.lowStock, color: 'bg-amber-500' },
+                { label: 'Out of Stock', value: inventorySummary.outOfStock, color: 'bg-red-500' },
+              ].map((row) => (
+                <div key={row.label}>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="font-medium text-slate-700">{row.label}</span>
+                    <span className="text-slate-500">{row.value} ({inventoryPercent(row.value, inventorySummary.totalItems)}%)</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-3">
+                    <div className={`${row.color} h-3 rounded-full transition-all duration-500`} style={{ width: `${inventoryPercent(row.value, inventorySummary.totalItems)}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
+            <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4">Inventory Type Distribution</h3>
+            <div className="flex items-center justify-center h-44 md:h-56">
+              <div className="w-full max-w-xs space-y-5">
+                <div>
+                  <div className="flex justify-between text-sm mb-2"><span className="font-medium text-slate-700">Finished</span><span className="font-semibold text-slate-800">{inventoryTypeSplit.finished}</span></div>
+                  <div className="w-full bg-slate-100 rounded-full h-3"><div className="bg-blue-500 h-3 rounded-full transition-all duration-500" style={{ width: `${inventoryPercent(inventoryTypeSplit.finished, filteredInventorySummary.total)}%` }} /></div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2"><span className="font-medium text-slate-700">Raw</span><span className="font-semibold text-slate-800">{inventoryTypeSplit.raw}</span></div>
+                  <div className="w-full bg-slate-100 rounded-full h-3"><div className="bg-slate-500 h-3 rounded-full transition-all duration-500" style={{ width: `${inventoryPercent(inventoryTypeSplit.raw, filteredInventorySummary.total)}%` }} /></div>
+                </div>
+                <div className="pt-4 border-t border-slate-100 flex justify-between font-bold text-slate-800"><span>Total Items</span><span>{filteredInventorySummary.total}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm md:col-span-2">
+            <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4">Attention Needed Items</h3>
+            {filteredLowStockItems.length === 0 ? (
+              <p className="text-slate-500 text-sm">All tracked inventory is in healthy range for this filter.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {filteredLowStockItems.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg border ${item.qty <= 0 ? 'bg-red-50 border-red-200 text-red-500' : 'bg-amber-50 border-amber-200 text-amber-500'}`}>
+                        <AlertCircle size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-slate-800 truncate">{item.name}</p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                          <span>{item.unit}</span>
+                          {item.reorderLevel > 0 && <span>Reorder at {item.reorderLevel}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-4">
+                      <p className={`font-bold ${item.qty <= 0 ? 'text-red-600' : 'text-amber-600'}`}>{item.qty}</p>
+                      <p className="text-xs text-slate-500">Available</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {dashboardSection === 'billing' && (
+      <>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-3 md:mb-4 gap-2.5 md:gap-3">
+        <div className="w-full md:w-auto">
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Bill Filter</label>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="w-full md:min-w-[190px] px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">All Bills</option>
+            <option value="kaccha">Kaccha Bills</option>
+            <option value="pakka">Pakka Bills</option>
+          </select>
+        </div>
+        <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex w-full md:w-auto">
+          <button onClick={() => setViewMode('table')} className={`flex-1 flex items-center justify-center gap-2 px-3 md:px-5 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}><LayoutList className="w-4 h-4 md:w-5 md:h-5" /> <span>Table</span></button>
+          <button onClick={() => setViewMode('analytics')} className={`flex-1 flex items-center justify-center gap-2 px-3 md:px-5 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'analytics' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}><BarChart3 className="w-4 h-4 md:w-5 md:h-5" /> <span>Analytics</span></button>
+        </div>
+      </div>
+
+      {viewMode === 'table' ? (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {loading ? (
+            <div className="p-6 text-center text-slate-400">Loading invoices...</div>
+          ) : visibleBills.length === 0 ? (
+            <div className="p-6 text-center text-slate-500">No bills match your search.</div>
+          ) : (
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm text-left border-collapse min-w-[768px]">
+                  <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-xs border-b border-slate-200">
+                    <tr>
+                      <th className="py-3 px-4">Invoice ID</th>
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Client</th>
+                      <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4 text-right">Amount</th>
+                      <th className="py-3 px-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visibleBills.map((bill) => (
                       <tr key={bill._id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-4 px-6 font-medium text-slate-800">{formatInvoiceId(bill.invoiceNumber)}</td>
-                        <td className="py-4 px-6 text-slate-600 whitespace-nowrap">{formatDate(bill.invoiceDate || bill.createdAt)}</td>
-                        <td className="py-4 px-6"><div className="font-medium text-slate-800 truncate max-w-[180px]">{bill.buyer?.clientName || 'N/A'}</div></td>
-                        <td className="py-4 px-6"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${bill.billType === 'kaccha' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>{bill.billType}</span></td>
-                        <td className="py-4 px-6 text-right font-bold text-slate-800">{formatLargeNumber(bill.grandTotal)}</td>
-                        <td className="py-4 px-6">
+                        <td className="py-3 px-4 font-medium text-slate-800">{formatInvoiceId(bill.invoiceNumber)}</td>
+                        <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{formatDate(bill.invoiceDate || bill.createdAt)}</td>
+                        <td className="py-3 px-4"><div className="font-medium text-slate-800 truncate max-w-[180px]">{bill.buyer?.clientName || 'N/A'}</div></td>
+                        <td className="py-3 px-4"><span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase ${bill.billType === 'kaccha' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>{bill.billType}</span></td>
+                        <td className="py-3 px-4 text-right font-bold text-slate-800">{formatLargeNumber(bill.grandTotal)}</td>
+                        <td className="py-3 px-4">
                           <div className="flex items-center justify-center gap-2">
                             {bill.billType === 'kaccha' && (
                               <>
-                                <button onClick={() => handleEdit(bill)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit"><Pencil size={16} /></button>
-                                <button onClick={() => handleConvert(bill)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Convert"><RefreshCw size={16} /></button>
+                                <button onClick={() => handleEdit(bill)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit" aria-label={`Edit bill ${formatInvoiceId(bill.invoiceNumber)}`}><Pencil size={16} /></button>
+                                <button onClick={() => handleConvert(bill)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Convert" aria-label={`Convert bill ${formatInvoiceId(bill.invoiceNumber)} to pakka`}><RefreshCw size={16} /></button>
                               </>
                             )}
-                            <button onClick={() => handleView(bill)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View"><Eye size={16} /></button>
-                            <button onClick={() => handleDownloadPDF(bill)} disabled={downloading === bill.invoiceNumber} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">{downloading === bill.invoiceNumber ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}</button>
-                            <button onClick={() => handleDelete(bill.invoiceNumber)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                            <button onClick={() => handleView(bill)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View" aria-label={`View bill ${formatInvoiceId(bill.invoiceNumber)}`}><Eye size={16} /></button>
+                            <button onClick={() => handleDownloadPDF(bill)} disabled={downloading === bill.invoiceNumber} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" aria-label={`Download bill ${formatInvoiceId(bill.invoiceNumber)}`}>{downloading === bill.invoiceNumber ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}</button>
+                            <button onClick={() => handleDelete(bill.invoiceNumber)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" aria-label={`Delete bill ${formatInvoiceId(bill.invoiceNumber)}`}><Trash2 size={16} /></button>
                           </div>
                         </td>
                       </tr>
@@ -485,11 +886,11 @@ export default function UdhyogDashboard() {
                 </table>
               </div>
               <div className="md:hidden p-3 space-y-3">
-                {bills.map((bill) => (
-                  <div key={bill._id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                    <div className="flex justify-between items-start mb-3">
+                {visibleBills.map((bill) => (
+                  <div key={bill._id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+                    <div className="flex justify-between items-start mb-2">
                       <div className="min-w-0 flex-1"><div className="font-semibold text-slate-800 truncate">{bill.buyer?.clientName || 'N/A'}</div><div className="text-xs text-slate-500 mt-1">{formatDate(bill.invoiceDate || bill.createdAt)}</div></div>
-                      <div className="flex items-center gap-2"><span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${bill.billType === 'kaccha' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>{bill.billType}</span><button onClick={() => setMobileActionsOpen(mobileActionsOpen === bill._id ? null : bill._id)} className="p-1 text-slate-500"><MoreVertical size={16} /></button></div>
+                      <div className="flex items-center gap-2"><span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${bill.billType === 'kaccha' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>{bill.billType}</span><button onClick={() => setMobileActionsOpen(mobileActionsOpen === bill._id ? null : bill._id)} className="p-1 text-slate-500" aria-label={`Toggle actions for bill ${formatInvoiceId(bill.invoiceNumber)}`}><MoreVertical size={16} /></button></div>
                     </div>
                     <div className="flex justify-between items-center text-sm"><div><div className="text-xs text-slate-500">Invoice ID</div><div className="font-medium text-slate-600">{formatInvoiceId(bill.invoiceNumber)}</div></div><div className="text-right"><div className="text-xs text-slate-500">Amount</div><div className="font-bold text-slate-800">{formatLargeNumber(bill.grandTotal)}</div></div></div>
                     {mobileActionsOpen === bill._id && (
@@ -512,10 +913,10 @@ export default function UdhyogDashboard() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-6">Revenue Trend</h3>
-                <div className="h-64 md:h-80 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4">Revenue Trend</h3>
+                <div className="h-56 md:h-64 w-full">
                   {stats.chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={stats.chartData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
@@ -529,26 +930,28 @@ export default function UdhyogDashboard() {
                   ) : <div className="h-full flex items-center justify-center text-slate-400">Not enough data</div>}
                 </div>
             </div>
-            <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-6">Bill Type Distribution</h3>
-                <div className="flex items-center justify-center h-48 md:h-64"><div className="w-full max-w-xs space-y-6">
+            <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4">Bill Type Distribution</h3>
+                <div className="flex items-center justify-center h-44 md:h-56"><div className="w-full max-w-xs space-y-5">
                     <div><div className="flex justify-between text-sm mb-2"><span className="font-medium text-slate-700">Pakka Bills</span><span>{formatLargeNumber(stats.typeSplit.pakka)}</span></div><div className="w-full bg-slate-100 rounded-full h-3"><div className="bg-green-500 h-3 rounded-full transition-all duration-500" style={{ width: `${(stats.typeSplit.pakka / (stats.revenue || 1)) * 100}%` }}></div></div></div>
                     <div><div className="flex justify-between text-sm mb-2"><span className="font-medium text-slate-700">Kaccha Bills</span><span>{formatLargeNumber(stats.typeSplit.kaccha)}</span></div><div className="w-full bg-slate-100 rounded-full h-3"><div className="bg-orange-400 h-3 rounded-full transition-all duration-500" style={{ width: `${(stats.typeSplit.kaccha / (stats.revenue || 1)) * 100}%` }}></div></div></div>
                     <div className="pt-4 border-t border-slate-100 flex justify-between font-bold text-slate-800"><span>Total Revenue</span><span>{formatLargeNumber(stats.revenue)}</span></div>
                 </div></div>
             </div>
-            <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm md:col-span-2">
+            <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm md:col-span-2">
                 <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4">Top Recent Transactions</h3>
-                <div className="space-y-3">
-                    {bills.slice(0, 5).map(bill => (
-                        <div key={bill._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                            <div className="flex items-center gap-3"><div className="bg-white p-2 rounded-lg border border-slate-200 text-slate-400"><ArrowUpRight size={16} /></div><div className="min-w-0 flex-1"><p className="font-bold text-slate-800 truncate">{bill.buyer?.clientName || 'N/A'}</p><div className="flex items-center gap-2 mt-1 text-xs text-slate-500"><span>{formatDate(bill.invoiceDate)}</span><span className={`px-2 py-0.5 rounded-full ${bill.billType === 'kaccha' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>{bill.billType}</span></div></div></div>
+                <div className="space-y-2.5">
+                    {visibleBills.slice(0, 5).map(bill => (
+                        <div key={bill._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                            <div className="flex items-center gap-2.5"><div className="bg-white p-2 rounded-lg border border-slate-200 text-slate-400"><ArrowUpRight size={16} /></div><div className="min-w-0 flex-1"><p className="font-bold text-slate-800 truncate">{bill.buyer?.clientName || 'N/A'}</p><div className="flex items-center gap-2 mt-1 text-xs text-slate-500"><span>{formatDate(bill.invoiceDate || bill.createdAt)}</span><span className={`px-2 py-0.5 rounded-full ${bill.billType === 'kaccha' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>{bill.billType}</span></div></div></div>
                             <div className="text-right flex-shrink-0 ml-4"><p className="font-bold text-slate-900">{formatLargeNumber(bill.grandTotal)}</p><p className="text-xs text-slate-500">{bill.products?.length || 0} Items</p></div>
                         </div>
                     ))}
                 </div>
             </div>
         </div>
+      )}
+      </>
       )}
 
       {/* VIEW MODAL */}
@@ -613,14 +1016,14 @@ export default function UdhyogDashboard() {
             <div className="p-4 md:p-6 bg-white border-b flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
                 <div className="bg-amber-100 p-2 md:p-3 rounded-lg"><Pencil size={24} className="text-amber-600" /></div>
-                <div><h2 className="text-lg md:text-2xl font-bold text-gray-900">Edit Kacha Bill</h2><p className="text-xs md:text-sm text-gray-500 mt-1">Modify details and preview in real-time</p></div>
+                <div><h2 className="text-lg md:text-2xl font-bold text-gray-900">Edit {editingBillType === 'pakka' ? 'Pakka' : 'Kacha'} Bill</h2><p className="text-xs md:text-sm text-gray-500 mt-1">Modify details and preview in real-time</p></div>
               </div>
-              <div className="flex items-center gap-2"><button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button><button onClick={handleUpdateSave} className="px-4 md:px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg shadow-lg active:scale-95 transition-all">Save Changes</button></div>
+              <div className="flex items-center gap-2"><button onClick={() => { setIsEditModalOpen(false); setShowEditValidation(false); }} className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button><button onClick={handleUpdateSave} className="px-4 md:px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg shadow-lg active:scale-95 transition-all">Save Changes</button></div>
             </div>
 
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
               <div className="w-full md:w-1/2 overflow-y-auto p-4 md:p-6 border-b md:border-r border-gray-200">
-                <div className="max-w-2xl mx-auto"><h3 className="text-base font-bold text-gray-900 mb-6">Client & Product Information</h3><BillForm formData={editFormData} setFormData={setEditFormData} isKachaBill={true} /></div>
+                <div className="max-w-2xl mx-auto"><h3 className="text-base font-bold text-gray-900 mb-6">Client & Product Information</h3><BillForm formData={editFormData} setFormData={setEditFormData} isKachaBill={editingBillType !== 'pakka'} showValidation={showEditValidation} /></div>
               </div>
 
               <div className="hidden md:block w-1/2 overflow-y-auto bg-gray-50 p-6">
@@ -632,7 +1035,7 @@ export default function UdhyogDashboard() {
                       <BillPreview 
                         formData={editFormData} 
                         totals={editTotals} 
-                        isKachaBill={true}
+                        isKachaBill={editingBillType !== 'pakka'}
                         companyDetails={{
                           companyName: profileData?.company?.companyName,
                           companyAddress: profileData?.company?.companyAddress,
@@ -661,8 +1064,8 @@ export default function UdhyogDashboard() {
 function StatCard({ label, value, fullValue, icon, color }) {
   const colors = { blue: "text-blue-600 bg-blue-50", green: "text-green-600 bg-green-50", yellow: "text-yellow-600 bg-yellow-50", purple: "text-purple-600 bg-purple-50" };
   return (
-    <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start"><div className="min-w-0"><p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">{label}</p><h3 className="text-xl md:text-2xl font-bold text-slate-800 truncate" title={fullValue || value}>{value}</h3>{fullValue && fullValue !== value && <p className="text-xs text-slate-400 mt-1 truncate">{fullValue}</p>}</div><div className={`p-2 rounded-lg ${colors[color]} flex-shrink-0 ml-2`}>{icon}</div></div>
+    <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start"><div className="min-w-0"><p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">{label}</p><h3 className="text-lg md:text-xl font-bold text-slate-800 truncate" title={fullValue || value}>{value}</h3>{fullValue && fullValue !== value && <p className="text-[11px] text-slate-400 mt-1 truncate">{fullValue}</p>}</div><div className={`p-1.5 md:p-2 rounded-lg ${colors[color]} flex-shrink-0 ml-2`}>{icon}</div></div>
     </div>
   );
 }

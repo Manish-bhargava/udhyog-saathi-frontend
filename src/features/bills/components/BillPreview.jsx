@@ -5,14 +5,24 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
     return `₹${(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   };
 
-  const formattedDate = new Date().toLocaleDateString('en-IN', { 
+  const getPreviewDate = () => {
+    const value = formData?.invoiceDate;
+    if (!value) return new Date();
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return new Date(`${value}T00:00:00`);
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
+  const formattedDate = getPreviewDate().toLocaleDateString('en-IN', { 
     day: 'numeric', month: 'short', year: 'numeric' 
   });
 
   const invoiceNumber = formData?.invoiceNumber || 'INV-DRAFT';
 
   return (
-    <div className="bg-white w-full shadow-2xl rounded-lg flex flex-col p-4 md:p-6 lg:p-10 print:shadow-none print:p-0 overflow-hidden scale-95 md:scale-100 origin-top">
+    <div className="bg-white w-full shadow-2xl rounded-lg flex flex-col p-4 md:p-6 lg:p-10 print:shadow-none print:p-0 overflow-hidden origin-top">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-6 mb-6 md:mb-10 border-b pb-4 md:pb-8 border-slate-100">

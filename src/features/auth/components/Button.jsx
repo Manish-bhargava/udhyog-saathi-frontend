@@ -10,7 +10,6 @@ const Button = ({
   ...props 
 }) => {
   const handleClick = (e) => {
-    console.log('Button clicked'); // Debug log
     if (onClick && !disabled) {
       onClick(e);
     }
