@@ -136,7 +136,7 @@ const KachaBillsPage = () => {
             <BillForm formData={formData} setFormData={setFormData} isKachaBill={true} showValidation={showValidation} />
           ) : (
             <div className="flex justify-center bg-gray-50 p-4">
-              <div className="w-full max-w-[420px] sm:max-w-[560px] md:max-w-[760px] origin-top">
+              <div className="w-full max-w-[900px] shadow-lg rounded-xl overflow-hidden border border-gray-200 bg-white">
                 {!loading && (
                   <BillPreview
                     formData={formData}

@@ -235,7 +235,7 @@ const DashboardLayout = () => {
                 <div className="flex items-center space-x-3 truncate">
                   <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bold shadow-lg">U</div>
                   <div className="min-w-0">
-                    <h2 className="text-sm font-bold uppercase tracking-tight">Udhyog Saathi</h2>
+                    <h2 className="text-xs font-bold uppercase tracking-tight">Udhyog Saathi</h2>
                     <p className="text-slate-400 text-[10px]">Business Suite</p>
                   </div>
                 </div>

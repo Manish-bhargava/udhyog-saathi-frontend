@@ -27,7 +27,7 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-6 mb-6 md:mb-10 border-b pb-4 md:pb-8 border-slate-100">
         <div className="min-w-0 flex-1">
-          <h1 className={`text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-4 md:mb-6 break-words ${isKachaBill ? 'text-amber-600' : 'text-slate-800'}`}>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-4 md:mb-6 break-words text-slate-800">
             {isKachaBill ? 'Proforma Invoice' : 'Invoice'}
           </h1>
           <div className="flex flex-wrap gap-4 md:gap-8">
@@ -132,7 +132,7 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
                 <span className="font-semibold text-red-600">-{formatCurrency(totals.discount)}</span>
               </div>
             )}
-          <div className={`flex justify-between text-lg md:text-xl lg:text-2xl font-black pt-3 md:pt-4 border-t-2 mt-1 md:mt-2 ${isKachaBill ? 'text-amber-600 border-amber-50' : 'text-slate-900 border-slate-900'}`}>
+          <div className="flex justify-between text-lg md:text-xl lg:text-2xl font-black pt-3 md:pt-4 border-t-2 mt-1 md:mt-2 text-slate-900 border-slate-900">
             <span className="mr-2 md:mr-4">Total</span>
             <span className="break-all">{formatCurrency(totals.grandTotal)}</span>
           </div>
