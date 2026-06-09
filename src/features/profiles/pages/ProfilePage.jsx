@@ -42,6 +42,12 @@ const ProfilePage = () => {
     companySignature: ''
   });
 
+  const revokePreviewUrl = (url) => {
+    if (typeof url === 'string' && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -81,12 +87,15 @@ const ProfilePage = () => {
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
+      revokePreviewUrl(previews[field]);
+      const nextPreviewUrl = URL.createObjectURL(file);
       setFiles(prev => ({ ...prev, [field]: file }));
-      setPreviews(prev => ({ ...prev, [field]: URL.createObjectURL(file) }));
+      setPreviews(prev => ({ ...prev, [field]: nextPreviewUrl }));
     }
   };
 
   const handleDeleteFile = (field) => {
+    revokePreviewUrl(previews[field]);
     setFiles(prev => ({ ...prev, [field]: null }));
     setPreviews(prev => ({ ...prev, [field]: '' }));
     setExistingImages(prev => ({ ...prev, [field]: '' }));
@@ -94,6 +103,12 @@ const ProfilePage = () => {
     const input = document.getElementById(`file-input-${field}`);
     if (input) input.value = '';
   };
+
+  useEffect(() => {
+    return () => {
+      Object.values(previews).forEach(revokePreviewUrl);
+    };
+  }, [previews]);
 
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
 

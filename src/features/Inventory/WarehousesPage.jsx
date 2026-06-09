@@ -7,7 +7,7 @@ export default function WarehousesPage() {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const { inventoryPageState } = useInventoryContext();
-  const { warehouseSearch, setWarehouseSearch, setWarehouseRefresh } = inventoryPageState;
+  const { warehouseSearch, setWarehouseRefresh } = inventoryPageState;
 
   const load = useCallback(async () => {
     try {
@@ -170,7 +170,7 @@ export default function WarehousesPage() {
                               )}
                             </td>
                             <td className="px-4 md:px-6 py-3 text-right font-mono text-gray-800">
-                              {(Number(line.availableQuantity) ?? 0).toLocaleString("en-IN")}
+                              {(Number(line.availableQuantity) || 0).toLocaleString("en-IN")}
                             </td>
                           </tr>
                         ))}

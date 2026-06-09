@@ -407,7 +407,7 @@ export default function UdhyogDashboard() {
       } else {
         toast.error(result.message);
       }
-    } catch (error) {
+    } catch {
       toast.error("Error deleting bill");
     }
   };
@@ -500,7 +500,7 @@ export default function UdhyogDashboard() {
         setMobileActionsOpen(null);
         toast.success("Bill updated successfully!");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to update bill");
     } finally {
       setLoading(false);
@@ -542,7 +542,7 @@ export default function UdhyogDashboard() {
       document.body.removeChild(tempDiv);
       setMobileActionsOpen(null);
       toast.success("PDF Downloaded successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to generate PDF.");
     } finally {
       setDownloading(null);
@@ -612,8 +612,8 @@ export default function UdhyogDashboard() {
         <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid #e2e8f0;">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
             <div>
-              ${bill.notes ? `<div style=\"margin-bottom: 24px;\"><p style=\"font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;\">Notes</p><p style=\"color: #64748b; font-size: 14px; white-space: pre-wrap;\">${bill.notes}</p></div>` : ''}
-              ${bankDetails?.bankName && bill.billType !== 'kaccha' ? `<div><p style=\"font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;\">Bank Details</p><div style=\"background: #f8fafc; padding: 16px; border-radius: 8px;\"><div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;\"><span style=\"color: #64748b;\">Bank:</span><span style=\"font-weight: 500; color: #334155;\">${bankDetails.bankName}</span><span style=\"color: #64748b;\">Account:</span><span style=\"font-weight: 500; color: #334155;\">${bankDetails.accountNumber}</span><span style=\"color: #64748b;\">IFSC:</span><span style=\"font-weight: 500; color: #334155;\">${bankDetails.IFSC}</span></div></div></div>` : ''}
+              ${bill.notes ? `<div style="margin-bottom: 24px;"><p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Notes</p><p style="color: #64748b; font-size: 14px; white-space: pre-wrap;">${bill.notes}</p></div>` : ''}
+              ${bankDetails?.bankName && bill.billType !== 'kaccha' ? `<div><p style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Bank Details</p><div style="background: #f8fafc; padding: 16px; border-radius: 8px;"><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;"><span style="color: #64748b;">Bank:</span><span style="font-weight: 500; color: #334155;">${bankDetails.bankName}</span><span style="color: #64748b;">Account:</span><span style="font-weight: 500; color: #334155;">${bankDetails.accountNumber}</span><span style="color: #64748b;">IFSC:</span><span style="font-weight: 500; color: #334155;">${bankDetails.IFSC}</span></div></div></div>` : ''}
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end;">
               <div style="position: relative; margin-bottom: 24px;">${companyStamp ? `<img src="${companyStamp}" style="position: absolute; top: -32px; opacity: 0.7; width: 80px; height: 80px; object-fit: contain;" />` : ''}${companySignature ? `<img src="${companySignature}" style="height: 64px; width: auto; object-fit: contain;" />` : ''}</div>

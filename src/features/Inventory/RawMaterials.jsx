@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Rawproductdetails from "./Components/Rawproductdetails";
 import RawInventorygrid from "./Components/RawInventorygrid";
 import AddRawProduct from "./Components/AddRawProduct";
@@ -8,6 +8,17 @@ import { useInventoryContext } from "./InventoryContext";
 
 export default function RawMaterials({ variant = "raw" }) {
   const { inventoryPageState } = useInventoryContext();
+  const {
+    search,
+    setSearch,
+    sort,
+    setSort,
+    category,
+    setCategory,
+    status,
+    setStatus,
+    clearFilters,
+  } = inventoryPageState;
 
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -60,7 +71,7 @@ export default function RawMaterials({ variant = "raw" }) {
     };
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
       setApiUnavailable(false);
@@ -89,11 +100,11 @@ export default function RawMaterials({ variant = "raw" }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
 
   const filteredProducts = useMemo(() => {
     let data = [...products];

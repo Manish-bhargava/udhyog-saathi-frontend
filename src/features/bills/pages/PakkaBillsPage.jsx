@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import BillForm from "../components/BillForm";
 import BillPreview from "../components/BillPreview";
 import billAPI from "../api";
@@ -21,9 +21,6 @@ const PakkaBillsPage = () => {
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showValidation, setShowValidation] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [formWidth, setFormWidth] = useState(50);
-  const containerRef = useRef(null);
 
   useEffect(() => {
     const fetchCompanyDetails = async () => {
@@ -42,7 +39,7 @@ const PakkaBillsPage = () => {
             });
           }
         }
-      } catch (err) {
+      } catch {
         toast.error("Error fetching profile data");
       } finally {
         setLoading(false);
@@ -88,39 +85,7 @@ const PakkaBillsPage = () => {
     billPageState.setIsFormValid(isFormValid);
   }, [isFormValid, billPageState]);
 
-  const handleDragStart = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  };
-
-  const handleDrag = (e) => {
-    if (!isDragging || !containerRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - containerRect.left;
-    let newWidth = (mouseX / containerRect.width) * 100;
-    setFormWidth(Math.max(30, Math.min(70, newWidth)));
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleDrag);
-      document.addEventListener("mouseup", handleDragEnd);
-    }
-    return () => {
-      document.removeEventListener("mousemove", handleDrag);
-      document.removeEventListener("mouseup", handleDragEnd);
-    };
-  }, [isDragging]);
-
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setShowValidation(true);
     if (!businessData?.company?.GST || !businessData?.company?.companyName) {
       toast.error("Profile Incomplete", {
@@ -172,7 +137,7 @@ const PakkaBillsPage = () => {
     } finally {
       billPageState.setSubmitting(false);
     }
-  };
+  }, [businessData?.company?.GST, businessData?.company?.companyName, billPageState, formData, navigate]);
 
   // Register form handlers with context
   useEffect(() => {

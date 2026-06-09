@@ -162,7 +162,6 @@ const LandingPage = () => {
     setLoadingPlanId(plan.id);
     
     try {
-      const token = localStorage.getItem("token");
       const userString = localStorage.getItem("user");
 
       if (!userString) {
@@ -172,8 +171,6 @@ const LandingPage = () => {
         return;
       }
 
-      const user = JSON.parse(userString);
-      
       // For demo purposes - in production, you'd integrate with your payment gateway
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded) {
@@ -345,7 +342,7 @@ const LandingPage = () => {
   );
 
   // FeatureCard Component
-  const FeatureCard = ({ feature, index }) => {
+  const FeatureCard = ({ feature }) => {
     const { title, description, icon, color, border } = feature;
     
     return (
