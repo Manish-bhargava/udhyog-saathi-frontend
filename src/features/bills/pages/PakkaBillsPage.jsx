@@ -55,6 +55,7 @@ const PakkaBillsPage = () => {
     gstPercentage: 18,
     discount: 0,
     notes: "",
+    invoiceDate: new Date().toISOString().split('T')[0],
   });
 
   const totals = (() => {

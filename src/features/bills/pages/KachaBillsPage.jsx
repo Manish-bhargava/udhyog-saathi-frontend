@@ -53,6 +53,7 @@ const KachaBillsPage = () => {
     invoiceDate: "",
     discount: 0,
     notes: "",
+    invoiceDate: new Date().toISOString().split('T')[0],
   });
 
   const totals = (() => {

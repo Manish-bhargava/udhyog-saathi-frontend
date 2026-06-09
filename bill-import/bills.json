@@ -1,0 +1,202 @@
+[
+  {
+    "buyer": {
+      "clientName": "Super Plastic",
+      "clientAddress": "Patna",
+      "clientGst": "NOT REG"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 7619,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-05"
+  },
+  {
+    "buyer": {
+      "clientName": "Prasant Kumar",
+      "clientAddress": "Said Nagar Thana Darbhanga",
+      "clientGst": "10EGHFR7959ELZL"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 8750,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-10"
+  },
+  {
+    "buyer": {
+      "clientName": "Suman Plastic",
+      "clientAddress": "Patna",
+      "clientGst": "NOT REG"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 8750,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-11"
+  },
+  {
+    "buyer": {
+      "clientName": "Suman Plastic",
+      "clientAddress": "Patna",
+      "clientGst": "NOT REG"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 6029,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-12"
+  },
+  {
+    "buyer": {
+      "clientName": "Prasant Kumar",
+      "clientAddress": "Said Nagar Thana Darbhanga",
+      "clientGst": "10EGHFR7959ELZL"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 8750,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-14"
+  },
+  {
+    "buyer": {
+      "clientName": "Suman Plastic",
+      "clientAddress": "Patna",
+      "clientGst": "NOT REG"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 4762,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-16"
+  },
+  {
+    "buyer": {
+      "clientName": "Prasant Kumar",
+      "clientAddress": "Said Nagar Thana Darbhanga",
+      "clientGst": "10EGHFR7959ELZL"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 8750,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-18"
+  },
+  {
+    "buyer": {
+      "clientName": "Prasant Kumar",
+      "clientAddress": "Said Nagar Thana Darbhanga",
+      "clientGst": "10EGHFR7959ELZL"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 6905,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-24"
+  },
+  {
+    "buyer": {
+      "clientName": "K.K. Readymade",
+      "clientAddress": "Laheria Sarai",
+      "clientGst": "10AHVPK1962H1ZA"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 7619,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-10-25"
+  },
+  {
+    "buyer": {
+      "clientName": "K.K. Readymade",
+      "clientAddress": "Laheria Sarai",
+      "clientGst": "10AHVPK1962H1ZA"
+    },
+    "products": [
+      {
+        "name": "Non woven feb",
+        "rate": 5,
+        "quantity": 6952,
+        "inventoryItemId": null,
+        "warehouseId": null
+      }
+    ],
+    "gstPercentage": 5,
+    "discount": 0,
+    "notes": "",
+    "requestedInvoiceDate": "2025-11-06"
+  }
+]
