@@ -6,8 +6,11 @@ import { useInventoryContext } from "./InventoryContext";
 export default function WarehousesPage() {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newWarehouseName, setNewWarehouseName] = useState("");
+  const [creatingWarehouse, setCreatingWarehouse] = useState(false);
   const { inventoryPageState } = useInventoryContext();
-  const { warehouseSearch, setWarehouseSearch, setWarehouseRefresh } = inventoryPageState;
+  const { warehouseSearch, setWarehouseRefresh } = inventoryPageState;
 
   const load = useCallback(async () => {
     try {
@@ -31,6 +34,32 @@ export default function WarehousesPage() {
     setWarehouseRefresh(() => load);
   }, [load, setWarehouseRefresh]);
 
+  const handleCreateWarehouse = async () => {
+    if (creatingWarehouse) return;
+    if (!newWarehouseName.trim()) {
+      toast.error("Warehouse name is required");
+      return;
+    }
+
+    setCreatingWarehouse(true);
+    try {
+      const res = await inventoryAPI.addWarehouse({ name: newWarehouseName.trim() });
+      const createdWarehouse = res?.data;
+      toast.success(
+        createdWarehouse?.name
+          ? `Warehouse "${createdWarehouse.name}" created`
+          : "Warehouse created successfully",
+      );
+      setShowAddModal(false);
+      setNewWarehouseName("");
+      await load();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to create warehouse");
+    } finally {
+      setCreatingWarehouse(false);
+    }
+  };
+
   const filteredSections = useMemo(() => {
     const q = warehouseSearch.trim().toLowerCase();
     if (!q) return sections;
@@ -47,11 +76,20 @@ export default function WarehousesPage() {
 
   return (
     <div className="w-full p-4 md:p-6 bg-gray-50 min-h-screen">
-      <p className="text-sm text-gray-600 mb-4 px-2">
-        <span className="font-medium text-gray-700">On hand</span> is total stock in the bin.
-        <span className="font-medium text-amber-800"> Reserved</span> is tied to open kaccha bills;
-        <span className="font-medium text-gray-700"> available</span> is free to sell or ship.
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4 px-2">
+        <p className="text-sm text-gray-600 max-w-3xl">
+          <span className="font-medium text-gray-700">On hand</span> is total stock in the bin.
+          <span className="font-medium text-amber-800"> Reserved</span> is tied to open kaccha bills;
+          <span className="font-medium text-gray-700"> available</span> is free to sell or ship.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowAddModal(true)}
+          className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition shadow-sm whitespace-nowrap"
+        >
+          + Add Warehouse
+        </button>
+      </div>
 
       {loading ? (
         <div className="text-center py-16 text-gray-500 text-sm">
@@ -170,7 +208,7 @@ export default function WarehousesPage() {
                               )}
                             </td>
                             <td className="px-4 md:px-6 py-3 text-right font-mono text-gray-800">
-                              {(Number(line.availableQuantity) ?? 0).toLocaleString("en-IN")}
+                              {(Number(line.availableQuantity) || 0).toLocaleString("en-IN")}
                             </td>
                           </tr>
                         ))}
@@ -181,6 +219,70 @@ export default function WarehousesPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 className="text-base font-bold text-gray-900">Add Warehouse</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewWarehouseName("");
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Warehouse Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Enter warehouse name"
+                  value={newWarehouseName}
+                  onChange={(e) => setNewWarehouseName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateWarehouse()}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewWarehouseName("");
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateWarehouse}
+                disabled={creatingWarehouse || !newWarehouseName.trim()}
+                className={`px-5 py-2 rounded-lg text-sm font-semibold text-white transition ${
+                  creatingWarehouse || !newWarehouseName.trim()
+                    ? "bg-blue-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {creatingWarehouse ? "Adding…" : "Add Warehouse"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

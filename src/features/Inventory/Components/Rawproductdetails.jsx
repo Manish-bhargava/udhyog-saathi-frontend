@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import StockAlert from "./Stockalert";
+import StockAlert from "./StockAlert";
 import RawMaterialProductModel from "./RawMaterialProductModel";
 import inventoryAPI from "../api";
 import { toast } from "sonner";

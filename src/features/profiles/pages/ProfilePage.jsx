@@ -42,6 +42,12 @@ const ProfilePage = () => {
     companySignature: ''
   });
 
+  const revokePreviewUrl = (url) => {
+    if (typeof url === 'string' && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -81,12 +87,15 @@ const ProfilePage = () => {
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
+      revokePreviewUrl(previews[field]);
+      const nextPreviewUrl = URL.createObjectURL(file);
       setFiles(prev => ({ ...prev, [field]: file }));
-      setPreviews(prev => ({ ...prev, [field]: URL.createObjectURL(file) }));
+      setPreviews(prev => ({ ...prev, [field]: nextPreviewUrl }));
     }
   };
 
   const handleDeleteFile = (field) => {
+    revokePreviewUrl(previews[field]);
     setFiles(prev => ({ ...prev, [field]: null }));
     setPreviews(prev => ({ ...prev, [field]: '' }));
     setExistingImages(prev => ({ ...prev, [field]: '' }));
@@ -94,6 +103,12 @@ const ProfilePage = () => {
     const input = document.getElementById(`file-input-${field}`);
     if (input) input.value = '';
   };
+
+  useEffect(() => {
+    return () => {
+      Object.values(previews).forEach(revokePreviewUrl);
+    };
+  }, [previews]);
 
   const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
@@ -169,7 +184,7 @@ const ProfilePage = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <p className="text-gray-600 test-xl mt-2">Update your information across business and personal accounts.</p>
+          <p className="text-gray-600 text-xl mt-2">Update your information across business and personal accounts.</p>
         </div>
         <div className={`px-5 py-2.5 rounded-full text-sm font-semibold ${user.onboarding ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
           {user.onboarding ? '✅ Profile Complete' : '⚠️ Profile Incomplete'}

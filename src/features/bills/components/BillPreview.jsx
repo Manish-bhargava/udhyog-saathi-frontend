@@ -5,19 +5,29 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
     return `₹${(amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   };
 
-  const formattedDate = new Date().toLocaleDateString('en-IN', { 
+  const getPreviewDate = () => {
+    const value = formData?.invoiceDate;
+    if (!value) return new Date();
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return new Date(`${value}T00:00:00`);
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
+  const formattedDate = getPreviewDate().toLocaleDateString('en-IN', { 
     day: 'numeric', month: 'short', year: 'numeric' 
   });
 
   const invoiceNumber = formData?.invoiceNumber || 'INV-DRAFT';
 
   return (
-    <div className="bg-white w-full shadow-2xl rounded-lg flex flex-col p-4 md:p-6 lg:p-10 print:shadow-none print:p-0 overflow-hidden scale-95 md:scale-100 origin-top">
+    <div className="bg-white w-full shadow-2xl rounded-lg flex flex-col p-4 md:p-6 lg:p-10 print:shadow-none print:p-0 overflow-hidden origin-top">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-6 mb-6 md:mb-10 border-b pb-4 md:pb-8 border-slate-100">
         <div className="min-w-0 flex-1">
-          <h1 className={`text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-4 md:mb-6 break-words ${isKachaBill ? 'text-amber-600' : 'text-slate-800'}`}>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-4 md:mb-6 break-words text-slate-800">
             {isKachaBill ? 'Proforma Invoice' : 'Invoice'}
           </h1>
           <div className="flex flex-wrap gap-4 md:gap-8">
@@ -122,7 +132,7 @@ const BillPreview = ({ formData, totals, companyDetails, isKachaBill = false }) 
                 <span className="font-semibold text-red-600">-{formatCurrency(totals.discount)}</span>
               </div>
             )}
-          <div className={`flex justify-between text-lg md:text-xl lg:text-2xl font-black pt-3 md:pt-4 border-t-2 mt-1 md:mt-2 ${isKachaBill ? 'text-amber-600 border-amber-50' : 'text-slate-900 border-slate-900'}`}>
+          <div className="flex justify-between text-lg md:text-xl lg:text-2xl font-black pt-3 md:pt-4 border-t-2 mt-1 md:mt-2 text-slate-900 border-slate-900">
             <span className="mr-2 md:mr-4">Total</span>
             <span className="break-all">{formatCurrency(totals.grandTotal)}</span>
           </div>

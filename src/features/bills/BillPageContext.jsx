@@ -26,6 +26,7 @@ export const BillPageProvider = ({ children }) => {
           return {
             buyer: { clientName: "", clientAddress: "", clientGst: "" },
             products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+            invoiceDate: "",
             gstPercentage: 18,
             discount: 0,
             notes: "",
@@ -34,6 +35,7 @@ export const BillPageProvider = ({ children }) => {
           return {
             buyer: { clientName: "", clientAddress: "", clientGst: "" },
             products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+            invoiceDate: "",
             discount: 0,
             notes: "",
           };

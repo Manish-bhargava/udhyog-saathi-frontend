@@ -21,7 +21,7 @@ const billAPI = {
   },
 
   // Get from /bill/all
-  getBillsByType: async (_type) => {
+  getBillsByType: async () => {
     const response = await axios.get(`${API_BASE_URL}/bill/all`, getAuthHeader());
     return response.data;
   },

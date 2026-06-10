@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import BillForm from "../components/BillForm";
 import BillPreview from "../components/BillPreview";
 import billAPI from "../api";
@@ -7,14 +7,20 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useBillPageContext } from "../BillPageContext";
 
+const getTodayDateInput = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const PakkaBillsPage = () => {
   const navigate = useNavigate();
   const { billPageState, registerFormHandlers } = useBillPageContext();
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const [formWidth, setFormWidth] = useState(50);
-  const containerRef = useRef(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   useEffect(() => {
     const fetchCompanyDetails = async () => {
@@ -33,7 +39,7 @@ const PakkaBillsPage = () => {
             });
           }
         }
-      } catch (err) {
+      } catch {
         toast.error("Error fetching profile data");
       } finally {
         setLoading(false);
@@ -45,9 +51,11 @@ const PakkaBillsPage = () => {
   const [formData, setFormData] = useState({
     buyer: { clientName: "", clientAddress: "", clientGst: "" },
     products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+    invoiceDate: "",
     gstPercentage: 18,
     discount: 0,
     notes: "",
+    invoiceDate: new Date().toISOString().split('T')[0],
   });
 
   const totals = (() => {
@@ -67,6 +75,8 @@ const PakkaBillsPage = () => {
 
   const isFormValid =
     formData.buyer.clientName.trim() &&
+    formData.buyer.clientAddress.trim() &&
+    formData.buyer.clientGst.trim() &&
     formData.products.every(
       (p) => p.name.trim() && p.rate > 0 && p.quantity > 0,
     );
@@ -76,39 +86,8 @@ const PakkaBillsPage = () => {
     billPageState.setIsFormValid(isFormValid);
   }, [isFormValid, billPageState]);
 
-  const handleDragStart = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  };
-
-  const handleDrag = (e) => {
-    if (!isDragging || !containerRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - containerRect.left;
-    let newWidth = (mouseX / containerRect.width) * 100;
-    setFormWidth(Math.max(30, Math.min(70, newWidth)));
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleDrag);
-      document.addEventListener("mouseup", handleDragEnd);
-    }
-    return () => {
-      document.removeEventListener("mousemove", handleDrag);
-      document.removeEventListener("mouseup", handleDragEnd);
-    };
-  }, [isDragging]);
-
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    setShowValidation(true);
     if (!businessData?.company?.GST || !businessData?.company?.companyName) {
       toast.error("Profile Incomplete", {
         description:
@@ -116,15 +95,23 @@ const PakkaBillsPage = () => {
       });
       return;
     }
+    if (!formData.buyer.clientName.trim() || !formData.buyer.clientAddress.trim() || !formData.buyer.clientGst.trim()) {
+      toast.error("Missing Required Fields", {
+        description: "Client Name, Client Address, and Client GST are required for Pakka bills.",
+      });
+      return;
+    }
 
     billPageState.setSubmitting(true);
     try {
+      const { invoiceDate, ...restFormData } = formData;
       const submissionData = {
-        ...formData,
+        ...restFormData,
+        requestedInvoiceDate: invoiceDate || getTodayDateInput(),
         discount: Number(formData.discount) || 0,
         notes: formData.notes || "",
       };
-      const response = await billAPI.createPakkaBill(formData);
+      const response = await billAPI.createPakkaBill(submissionData);
       if (response.success) {
         toast.success("Invoice Created!", {
           description: "Your GST invoice is ready.",
@@ -137,10 +124,12 @@ const PakkaBillsPage = () => {
         setFormData({
           buyer: { clientName: "", clientAddress: "", clientGst: "" },
           products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+          invoiceDate: "",
           gstPercentage: 18,
           discount: 0,
           notes: "",
         });
+        setShowValidation(false);
       }
     } catch (err) {
       const errorMessage =
@@ -149,7 +138,7 @@ const PakkaBillsPage = () => {
     } finally {
       billPageState.setSubmitting(false);
     }
-  };
+  }, [businessData?.company?.GST, businessData?.company?.companyName, billPageState, formData, navigate]);
 
   // Register form handlers with context
   useEffect(() => {
@@ -162,7 +151,7 @@ const PakkaBillsPage = () => {
         {/* CONTENT */}
         <div className="flex-1 overflow-y-auto pb-16">
           {billPageState.activeTab === "form" ? (
-            <BillForm formData={formData} setFormData={setFormData} />
+            <BillForm formData={formData} setFormData={setFormData} showValidation={showValidation} />
           ) : (
             <div className="flex justify-center bg-gray-50 p-4">
               <div className="w-full max-w-[900px] shadow-lg rounded-xl overflow-hidden border border-gray-200 bg-white">

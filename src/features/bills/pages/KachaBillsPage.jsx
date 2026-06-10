@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import BillForm from "../components/BillForm";
 import BillPreview from "../components/BillPreview";
 import billAPI from "../api";
@@ -7,14 +7,20 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useBillPageContext } from "../BillPageContext";
 
+const getTodayDateInput = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const KachaBillsPage = () => {
   const navigate = useNavigate();
   const { billPageState, registerFormHandlers } = useBillPageContext();
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const [formWidth, setFormWidth] = useState(50);
-  const containerRef = useRef(null);
+  const [showValidation, setShowValidation] = useState(false);
 
   useEffect(() => {
     const fetchCompanyDetails = async () => {
@@ -44,8 +50,10 @@ const KachaBillsPage = () => {
   const [formData, setFormData] = useState({
     buyer: { clientName: "", clientAddress: "", clientGst: "" },
     products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+    invoiceDate: "",
     discount: 0,
     notes: "",
+    invoiceDate: new Date().toISOString().split('T')[0],
   });
 
   const totals = (() => {
@@ -74,39 +82,8 @@ const KachaBillsPage = () => {
     billPageState.setIsFormValid(isFormValid);
   }, [isFormValid, billPageState]);
 
-  const handleDragStart = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  };
-
-  const handleDrag = (e) => {
-    if (!isDragging || !containerRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - containerRect.left;
-    let newWidth = (mouseX / containerRect.width) * 100;
-    setFormWidth(Math.max(30, Math.min(70, newWidth)));
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleDrag);
-      document.addEventListener("mouseup", handleDragEnd);
-    }
-    return () => {
-      document.removeEventListener("mousemove", handleDrag);
-      document.removeEventListener("mouseup", handleDragEnd);
-    };
-  }, [isDragging]);
-
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    setShowValidation(true);
     if (!businessData?.company?.companyName) {
       toast.error("Action Blocked", { description: "Onboarding required." });
       return;
@@ -114,7 +91,12 @@ const KachaBillsPage = () => {
 
     billPageState.setSubmitting(true);
     try {
-      const response = await billAPI.createKachaBill(formData);
+      const { invoiceDate, ...restFormData } = formData;
+      const payload = {
+        ...restFormData,
+        requestedInvoiceDate: invoiceDate || getTodayDateInput(),
+      };
+      const response = await billAPI.createKachaBill(payload);
 
       if (response.success) {
         toast.success("Kacha Bill Created!", {
@@ -128,16 +110,18 @@ const KachaBillsPage = () => {
         setFormData({
           buyer: { clientName: "", clientAddress: "", clientGst: "" },
           products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
+          invoiceDate: "",
           discount: 0,
           notes: "",
         });
+        setShowValidation(false);
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to Save");
     } finally {
       billPageState.setSubmitting(false);
     }
-  };
+  }, [businessData?.company?.companyName, billPageState, formData, navigate]);
 
   // Register form handlers with context
   useEffect(() => {
@@ -150,10 +134,10 @@ const KachaBillsPage = () => {
         {/* CONTENT */}
         <div className="flex-1 overflow-y-auto pb-16">
           {billPageState.activeTab === "form" ? (
-            <BillForm formData={formData} setFormData={setFormData} isKachaBill={true} />
+            <BillForm formData={formData} setFormData={setFormData} isKachaBill={true} showValidation={showValidation} />
           ) : (
             <div className="flex justify-center bg-gray-50 p-4">
-              <div className="w-full max-w-[420px] scale-[0.98] origin-top">
+              <div className="w-full max-w-[900px] shadow-lg rounded-xl overflow-hidden border border-gray-200 bg-white">
                 {!loading && (
                   <BillPreview
                     formData={formData}
