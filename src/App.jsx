@@ -11,7 +11,7 @@ import TourPage from "./features/onboarding/pages/TourPage";
 import DashboardLayout from "./features/dashboards/pages/DashboardLayout";
 import DashboardPage from "./features/dashboards/pages/DashboardPage";
 import ProfilePage from "./features/profiles/pages/ProfilePage";
-import BillingPage from "./features/billing/pages/billing.jsx";
+// import BillingPage from "./features/billing/pages/billing.jsx"; // TODO: re-enable when billing is ready
 import ChatInterface from "./features/aiAssistant/ChatInterface";
 import TermsOfUsage from "./features/landing/pages/TermsOfUsagePage.jsx";
 import AboutUs from "./features/landing/pages/AboutUsPage.jsx";
@@ -23,6 +23,7 @@ import InventoryPage from "./features/Inventory/InventoryPage";
 import WarehousesPage from "./features/Inventory/WarehousesPage";
 import { BillPageProvider } from "./features/bills/BillPageContext";
 import { InventoryProvider } from "./features/Inventory/InventoryContext";
+import { AuthProvider } from "./features/auth/context/AuthContext";
 // Raw materials now use the same UI as finished products
 import { RiPhoneCameraFill, RiSpace } from "react-icons/ri";
 
@@ -43,7 +44,8 @@ function App() {
   }, []);
 
   return (
-    <BillPageProvider>
+    <AuthProvider>
+      <BillPageProvider>
       <InventoryProvider>
         <Toaster position="top-right" richColors closeButton />
         <Routes>
@@ -112,7 +114,8 @@ function App() {
             }
           /> */}
           {/* TODO: Implement Reports feature */}
-          <Route path="/billing" element={<BillingPage />} />
+          {/* <Route path="/billing" element={<BillingPage />} /> */}
+          {/* TODO: Re-enable billing route once payment flow is finished */}
           <Route path="inventory">
             <Route path="finished" element={isAuth ? <InventoryPage /> : <Navigate to="/login" replace />}/>
             <Route path="raw" element={isAuth ? <InventoryPage variant="raw" /> : <Navigate to="/login" replace />}/>
@@ -123,7 +126,8 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </InventoryProvider>
-    </BillPageProvider>
+      </BillPageProvider>
+    </AuthProvider>
   );
 }
 
