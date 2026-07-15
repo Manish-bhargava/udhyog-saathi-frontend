@@ -50,10 +50,9 @@ const KachaBillsPage = () => {
   const [formData, setFormData] = useState({
     buyer: { clientName: "", clientAddress: "", clientGst: "" },
     products: [{ name: "", rate: 0, quantity: 1, inventoryItemId: null, warehouseId: null }],
-    invoiceDate: "",
+    invoiceDate: new Date().toISOString().split('T')[0],
     discount: 0,
     notes: "",
-    invoiceDate: new Date().toISOString().split('T')[0],
   });
 
   const totals = (() => {

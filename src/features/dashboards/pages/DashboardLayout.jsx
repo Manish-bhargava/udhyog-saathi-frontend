@@ -92,7 +92,7 @@ const DashboardLayout = () => {
     { path: '/bills/template', label: 'Bills', icon: <FaFileInvoiceDollar /> },
     { path: '/ai-assistant', label: 'AI Assistant', icon: <FaRobot /> },
     // { path: '/reports', label: 'Reports', icon: <FaChartBar /> }, // TODO: Implement Reports feature
-    { path: '/billing', label: 'Billing', icon: <FaRupeeSign /> },
+    // { path: '/billing', label: 'Billing', icon: <FaRupeeSign /> }, // TODO: Re-enable once payment flow is finished
     { path: '/inventory', label: 'Inventory', icon: <FaShoppingCart /> },
   ];
 

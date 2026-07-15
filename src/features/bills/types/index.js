@@ -1,7 +1,7 @@
 // src/features/bills/types/index.js
 export const BILL_TYPES = {
   PAKKA: 'pakka',
-  KACHA: 'kacha',
+  KACHA: 'kaccha', // matches backend billType value exactly ("kaccha", double-c)
   ALL: 'all'
 };
 
